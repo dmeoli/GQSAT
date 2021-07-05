@@ -223,7 +223,7 @@ install-bin: $(BUILD_DIR)/dynamic/bin/$(MINISAT)
 
 python-wrap: $(BUILD_DIR)/dynamic/lib/$(MINISAT_DLIB).$(SOMAJOR).$(SOMINOR)$(SORELEASE) $(SRCS)
     # Graph-Q-SAT UPD: bump python version
-	g++ -O2 -fPIC -c minisat/gym/GymSolver_wrap.cxx -o minisat/gym/GymSolver_wrap.o -I. -I/usr/include/python3.6
+	g++ -O2 -fPIC -c minisat/gym/GymSolver_wrap.cxx -o minisat/gym/GymSolver_wrap.o -I. -I/usr/include/python3.9
 	g++ -shared -o minisat/gym/_GymSolver.so $(foreach o,$(OBJS),$(BUILD_DIR)/dynamic/$(o)) minisat/gym/GymSolver_wrap.o /usr/lib/x86_64-linux-gnu/libz.so
 
 clean:
