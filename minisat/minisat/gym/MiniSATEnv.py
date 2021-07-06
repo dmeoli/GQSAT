@@ -44,15 +44,15 @@ VAR_ID_IDX = (
 
 class gym_sat_Env(gym.Env):
     def __init__(
-        self,
-        problems_paths,
-        args,
-        test_mode=False,
-        max_cap_fill_buffer=True,
-        penalty_size=None,
-        with_restarts=None,
-        compare_with_restarts=None,
-        max_data_limit_per_set=None,
+            self,
+            problems_paths,
+            args,
+            test_mode=False,
+            max_cap_fill_buffer=True,
+            penalty_size=None,
+            with_restarts=None,
+            compare_with_restarts=None,
+            max_data_limit_per_set=None,
     ):
 
         self.problems_paths = [realpath(el) for el in problems_paths.split(":")]
@@ -174,7 +174,7 @@ class gym_sat_Env(gym.Env):
                 # data = [1, 0] if l==True else [0, 1]
 
                 # this is not a typo, we want two edge here
-                edge_data[ec : ec + 2, int(l > 0)] = 1
+                edge_data[ec: ec + 2, int(l > 0)] = 1
 
                 remapped_l = vars_remapping[abs(l) - 1]
                 # from var to clause
@@ -217,7 +217,8 @@ class gym_sat_Env(gym.Env):
         self.step_ctr = 0
 
         if max_decisions_cap is None:
-            max_decisions_cap = sys.maxsize
+            # max_decisions_cap = sys.maxsize  # long
+            max_decisions_cap = np.iinfo(np.intc).max
         self.max_decisions_cap = max_decisions_cap
         self.curr_problem = self.random_pick_satProb()
         self.S = GymSolver(self.curr_problem, self.with_restarts, max_decisions_cap)
@@ -281,7 +282,7 @@ class gym_sat_Env(gym.Env):
             if decision < 0:  # this is to say that let minisat pick the decision
                 decision = MINISAT_DECISION_CONSTANT
             elif (
-                decision % 2 == 0
+                    decision % 2 == 0
             ):  # this is to say that pick decision and assign positive value
                 decision = int(decision / 2 + 1)
             else:  # this is to say that pick decision and assign negative value

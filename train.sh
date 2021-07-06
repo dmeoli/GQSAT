@@ -29,18 +29,18 @@ python3 dqn.py \
   --init-exploration-steps 5000 \
   --step-freq 4 \
   --target-update-freq 10 \
-  --loss mse  \
+  --loss mse \
   --opt adam \
   --save-freq 500 \
   --grad_clip 1 \
   --grad_clip_norm_type 2 \
   --eval-freq 1000 \
-  --eval-time-limit 3600  \
+  --eval-time-limit 3600 \
   --core-steps 4 \
   --expert-exploration-prob 0.0 \
   --priority_alpha 0.5 \
   --priority_beta 0.5 \
-  --e2v-aggregator sum  \
+  --e2v-aggregator sum \
   --n_hidden 1 \
   --hidden_size 64 \
   --decoder_v_out_size 32 \

@@ -45,7 +45,7 @@ def main():
                 action = agent.act(observation)
                 observation, reward, done, info = env.step(action, dummy=True)
             print(
-                f'Rollout {pr+1}, steps {env.step_ctr}, num_restarts {info["num_restarts"]}.'
+                f'Rollout {pr + 1}, steps {env.step_ctr}, num_restarts {info["num_restarts"]}.'
             )
             results[env.curr_problem].append(env.step_ctr)
             pr += 1
@@ -55,9 +55,9 @@ def main():
     return results, args
 
 
-from os import path
-
 if __name__ == "__main__":
+    from os import path
+
     results, args = main()
     for pdir in args.eval_problems_paths.split(":"):
         with open(os.path.join(pdir, "METADATA"), "w") as f:

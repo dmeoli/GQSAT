@@ -17,7 +17,7 @@ import numpy as np
 from minisat.minisat.gym.MiniSATEnv import VAR_ID_IDX
 
 
-class Agent(object):
+class Agent:
     def act(self, state):
         raise NotImplementedError
 

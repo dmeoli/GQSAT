@@ -34,7 +34,7 @@ import sys
 
 class ModifiedMetaLayer(MetaLayer):
     def forward(
-        self, x, edge_index, edge_attr=None, u=None, v_indices=None, e_indices=None
+            self, x, edge_index, edge_attr=None, u=None, v_indices=None, e_indices=None
     ):
         row, col = edge_index
 
@@ -63,7 +63,7 @@ class SatModel(torch.nn.Module):
         # this WILL NOT work with multiple inheritance of the leaf children
         frame, filename, line_number, function_name, lines, index = inspect.stack()[
             len(cls.mro()) - 2
-        ]
+            ]
         args, _, _, values = inspect.getargvalues(frame)
 
         save_dict = {
@@ -83,13 +83,13 @@ class SatModel(torch.nn.Module):
 
 
 def get_mlp(
-    in_size,
-    out_size,
-    n_hidden,
-    hidden_size,
-    activation=nn.LeakyReLU,
-    activate_last=True,
-    layer_norm=True,
+        in_size,
+        out_size,
+        n_hidden,
+        hidden_size,
+        activation=nn.LeakyReLU,
+        activate_last=True,
+        layer_norm=True,
 ):
     arch = []
     l_in = in_size
@@ -111,16 +111,16 @@ def get_mlp(
 
 class GraphNet(SatModel):
     def __init__(
-        self,
-        in_dims,
-        out_dims,
-        independent=False,
-        save_name=None,
-        e2v_agg="sum",
-        n_hidden=1,
-        hidden_size=64,
-        activation=ReLU,
-        layer_norm=True,
+            self,
+            in_dims,
+            out_dims,
+            independent=False,
+            save_name=None,
+            e2v_agg="sum",
+            n_hidden=1,
+            hidden_size=64,
+            activation=ReLU,
+            layer_norm=True,
     ):
         super().__init__(save_name)
         self.e2v_agg = e2v_agg
@@ -228,26 +228,26 @@ class GraphNet(SatModel):
         self.op = ModifiedMetaLayer(edge_model, node_model, global_model)
 
     def forward(
-        self, x, edge_index, edge_attr=None, u=None, v_indices=None, e_indices=None
+            self, x, edge_index, edge_attr=None, u=None, v_indices=None, e_indices=None
     ):
         return self.op(x, edge_index, edge_attr, u, v_indices, e_indices)
 
 
 class EncoderCoreDecoder(SatModel):
     def __init__(
-        self,
-        in_dims,
-        core_out_dims,
-        out_dims,
-        core_steps=1,
-        encoder_out_dims=None,
-        dec_out_dims=None,
-        save_name=None,
-        e2v_agg="sum",
-        n_hidden=1,
-        hidden_size=64,
-        activation=ReLU,
-        independent_block_layers=1,
+            self,
+            in_dims,
+            core_out_dims,
+            out_dims,
+            core_steps=1,
+            encoder_out_dims=None,
+            dec_out_dims=None,
+            save_name=None,
+            e2v_agg="sum",
+            n_hidden=1,
+            hidden_size=64,
+            activation=ReLU,
+            independent_block_layers=1,
     ):
         super().__init__(save_name)
         # all dims are tuples with (v,e) feature sizes

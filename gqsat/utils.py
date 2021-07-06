@@ -14,31 +14,30 @@
 
 
 import argparse
-import torch
-import numpy as np
-from minisat.minisat.gym.MiniSATEnv import VAR_ID_IDX
-import time
-import pickle
-from collections import deque
 import os
+import pickle
 import sys
+import time
+
+import numpy as np
+import torch
+from minisat.minisat.gym.MiniSATEnv import VAR_ID_IDX
 
 
 def add_common_options(parser):
     parser.add_argument(
         "--with_restarts",
         action="store_true",
-        help="Do restarts in Minisat if set",
+        help="Do restarts in MiniSAT if set",
         dest="with_restarts",
     )
     parser.add_argument(
         "--no_restarts",
         action="store_false",
-        help="Do not do restarts in Minisat if set",
+        help="Do not do restarts in MiniSAT if set",
         dest="with_restarts",
     )
     parser.set_defaults(with_restarts=False)
-
     parser.add_argument(
         "--compare_with_restarts",
         action="store_true",
@@ -58,21 +57,23 @@ def add_common_options(parser):
         help="Max number of problems to load from the dataset for the env. EVAL/TEST mode.",
         default=None,
     )
-
     parser.add_argument(
         "--test_time_max_decisions_allowed",
         type=int,
         help="Number of steps the agent will act from the beginning of the episode when evaluating. "
-        "Otherwise it will return -1 asking minisat to make a decision. "
-        "Float because I want infinity by default (no minisat at all)",
+             "Otherwise it will return -1 asking minisat to make a decision. "
+             "Float because I want infinity by default (no minisat at all)",
     )
-    parser.add_argument("--env-name", type=str, default="sat-v0", help="Environment.")
+    parser.add_argument(
+        "--env-name",
+        type=str,
+        default="sat-v0",
+        help="Environment.")
     parser.add_argument(
         "--debug",
         action="store_true",
         help="Modify the flow of the script, i.e. run for less iterations",
     )
-
     parser.add_argument(
         "--model-dir",
         help="Path to the folder with checkpoints and model.yaml file",
@@ -83,9 +84,15 @@ def add_common_options(parser):
         help="Filename of the checkpoint, relative to the --model-dir param.",
         type=str,
     )
-    parser.add_argument("--logdir", type=str, help="Dir for writing the logs")
     parser.add_argument(
-        "--eps-final", type=float, default=0.1, help="Final epsilon value."
+        "--logdir",
+        type=str,
+        help="Dir for writing the logs")
+    parser.add_argument(
+        "--eps-final",
+        type=float,
+        default=0.1,
+        help="Final epsilon value."
     )
     parser.add_argument(
         "--eval-problems-paths",
@@ -98,8 +105,9 @@ def add_common_options(parser):
         help="Max number of problems to load from the dataset for the env. TRAIN mode.",
         default=None,
     )
-    parser.add_argument("--no-cuda", action="store_true", help="Use the cpu")
-
+    parser.add_argument(
+        "--no-cuda", action="store_true",
+        help="Use the cpu")
     parser.add_argument(
         "--dump_timings_path",
         type=str,
@@ -114,7 +122,7 @@ def build_eval_argparser():
         "--core-steps",
         type=int,
         help="Number of message passing iterations. "
-        "\-1 for the same number as used for training",
+             "\-1 for the same number as used for training",
         default=-1,
     )
     parser.add_argument(
@@ -129,21 +137,34 @@ def build_eval_argparser():
 
 def build_argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
     parser.add_argument(
-        "--bsize", type=int, default=128, help="Batch size for the learning step"
+        "--lr",
+        type=float,
+        default=0.0001,
+        help="learning rate")
+    parser.add_argument(
+        "--bsize",
+        type=int,
+        default=128,
+        help="Batch size for the learning step"
     )
     parser.add_argument(
-        "--eps-init", type=float, default=1.0, help="Exploration epsilon"
+        "--eps-init",
+        type=float,
+        default=1.0,
+        help="Exploration epsilon"
     )
-
     parser.add_argument(
         "--expert-exploration-prob",
         type=float,
         default=0.0,
         help="When do an exploratory action, choose minisat action with this prob. Otherwise choose random.",
     )
-    parser.add_argument("--gamma", type=float, default=0.99, help="Discounting")
+    parser.add_argument(
+        "--gamma",
+        type=float,
+        default=0.99,
+        help="Discounting")
     parser.add_argument(
         "--eps-decay-steps",
         type=int,
@@ -154,7 +175,7 @@ def build_argparser():
         "--target-update-freq",
         type=int,
         default=1000,
-        help="How often to copy the parameters to traget.",
+        help="How often to copy the parameters to target.",
     )
     parser.add_argument(
         "--batch-updates",
@@ -163,10 +184,16 @@ def build_argparser():
         help="num of batch updates to train for",
     )
     parser.add_argument(
-        "--buffer-size", type=int, default=10000, help="Memory Replay size."
+        "--buffer-size",
+        type=int,
+        default=10000,
+        help="Memory Replay size."
     )
     parser.add_argument(
-        "--history-len", type=int, default=1, help="Frames to stack for the input"
+        "--history-len",
+        type=int,
+        default=1,
+        help="Frames to stack for the input"
     )
     parser.add_argument(
         "--init-exploration-steps",
@@ -175,18 +202,24 @@ def build_argparser():
         help="Start learning after this number of transitions.",
     )
     parser.add_argument(
-        "--step-freq", type=int, default=4, help="Step every k-th frame"
+        "--step-freq",
+        type=int,
+        default=4,
+        help="Step every k-th frame"
     )
-    parser.add_argument("--loss", default="mse", help="Loss to use: mse|huber")
+    parser.add_argument(
+        "--loss",
+        default="mse",
+        help="Loss to use: mse|huber")
     parser.add_argument(
         "--save-freq",
         default=100000,
         type=int,
         help="How often to save the model. Measured in minibatch updates.",
     )
-
-    parser.add_argument("--train-problems-paths", type=str)
-
+    parser.add_argument(
+        "--train-problems-paths",
+        type=str)
     parser.add_argument(
         "--eval-freq",
         default=10000,
@@ -199,16 +232,22 @@ def build_argparser():
         type=int,
         help="Time limit for evaluation. If it takes more, return what it has and quit eval. In seconds.",
     )
-
     parser.add_argument(
-        "--status-dict-path", help="Path to the saved status dict", type=str
+        "--status-dict-path",
+        help="Path to the saved status dict",
+        type=str
     )
     parser.add_argument(
-        "--core-steps", type=int, default=8, help="Number of message passing iterations"
+        "--core-steps",
+        type=int,
+        default=8,
+        help="Number of message passing iterations"
     )
-
     parser.add_argument(
-        "--priority_alpha", type=float, default=0.5, help="Alpha in the PER"
+        "--priority_alpha",
+        type=float,
+        default=0.5,
+        help="Alpha in the PER"
     )
     parser.add_argument(
         "--priority_beta",
@@ -217,16 +256,20 @@ def build_argparser():
         help="Initial value of the IS weight in PER. Annealed to 1 during training.",
     )
     parser.add_argument(
-        "--opt", default="sgd", help="Optimizer to use: sgd|adam|rmsprop"
+        "--opt",
+        default="sgd",
+        help="Optimizer to use: sgd|adam|rmsprop"
     )
     parser.add_argument(
         "--e2v-aggregator",
         default="sum",
         help="Aggregation to use for e->v. Can be sum|mean",
     )
-
     parser.add_argument(
-        "--n_hidden", type=int, default=1, help="Number of hidden layers for all MLPs."
+        "--n_hidden",
+        type=int,
+        default=1,
+        help="Number of hidden layers for all MLPs."
     )
     parser.add_argument(
         "--hidden_size",
@@ -300,27 +343,25 @@ def build_argparser():
         "--eval_separately_on_each",
         dest="eval_separately_on_each",
         help="If you provide multiple eval datasets e.g. path1:path2, it will "
-        "evaluate separately on each and tensorboard/metric them seaprately.",
+             "evaluate separately on each and tensorboard/metric them seaprately.",
         action="store_true",
     )
     parser.add_argument(
         "--no_eval_separately_on_each",
         dest="eval_separately_on_each",
         help="If you provide multiple eval datasets e.g. path1:path2, it will "
-        "evaluate JOINTLY on them",
+             "evaluate JOINTLY on them",
         action="store_false",
     )
     parser.set_defaults(eval_separately_on_each=True)
-
     parser.add_argument(
         "--train_time_max_decisions_allowed",
         type=int,
         default=sys.maxsize,
         help="Number of steps the agent will act from the beginning of the episode when training. "
-        "Otherwise it will return -1 asking minisat to make a decision. "
-        "Float because I want infinity by default (no minisat at all)",
+             "Otherwise it will return -1 asking minisat to make a decision. "
+             "Float because I want infinity by default (no minisat at all)",
     )
-
     parser.add_argument(
         "--activation",
         type=str,
@@ -328,7 +369,6 @@ def build_argparser():
         choices=["relu", "leaky_relu", "tanh"],
         help="Activation function",
     )
-
     parser.add_argument(
         "--lr_scheduler_gamma",
         type=float,
@@ -341,9 +381,11 @@ def build_argparser():
         default=1000,
         help="Every this number of steps, we multiply the lr by LR_SCHEDULER_GAMMA",
     )
-
     parser.add_argument(
-        "--grad_clip", type=float, default=1.0, help="Clip gradient by norm."
+        "--grad_clip",
+        type=float,
+        default=1.0,
+        help="Clip gradient by norm."
     )
     parser.add_argument(
         "--grad_clip_norm_type",
@@ -351,7 +393,6 @@ def build_argparser():
         default=2,
         help='Which norm to use when clipping. Use float("inf") to use maxnorm.',
     )
-
     parser.add_argument(
         "--max_cap_fill_buffer",
         dest="max_cap_fill_buffer",
@@ -365,7 +406,6 @@ def build_argparser():
         action="store_false",
     )
     parser.set_defaults(max_cap_fill_buffer=False)
-
     parser.add_argument(
         "--penalty_size",
         type=float,
@@ -429,7 +469,7 @@ def batch_graphs(graphs, device):
     )
 
 
-import gym, minisat
+import gym
 
 
 def make_env(problems_paths, args, test_mode=False):
@@ -505,7 +545,7 @@ def evaluate(agent, args, include_train_set=False):
                 )
                 sctr = 1 if eval_env.step_ctr == 0 else eval_env.step_ctr
                 ns = eval_env.normalized_score(sctr, eval_env.curr_problem)
-                print(f"Evaluation episode {pr+1} is over. Your score is {ns}.")
+                print(f"Evaluation episode {pr + 1} is over. Your score is {ns}.")
                 total_iters_ours += sctr
                 pdir, pname = os.path.split(eval_env.curr_problem)
                 total_iters_minisat += eval_env.metadata[pdir][pname][1]
@@ -516,18 +556,18 @@ def evaluate(agent, args, include_train_set=False):
         print(
             f"Evaluation is done. Median relative score: {np.nanmedian([el for el in scores.values()]):.2f}, "
             f"mean relative score: {np.mean([el for el in scores.values()]):.2f}, "
-            f"iters frac: {total_iters_minisat/total_iters_ours:.2f}"
+            f"iters frac: {total_iters_minisat / total_iters_ours:.2f}"
         )
         res[pset] = scores
 
     if args.dump_timings_path:
         target_fname = (
-            os.path.join(
-                args.dump_timings_path,
-                args.eval_problems_paths.replace("/", "_")
-                + f"_cap_{args.test_time_max_decisions_allowed}",
-            )
-            + ".pkl"
+                os.path.join(
+                    args.dump_timings_path,
+                    args.eval_problems_paths.replace("/", "_")
+                    + f"_cap_{args.test_time_max_decisions_allowed}",
+                )
+                + ".pkl"
         )
         with open(target_fname, "wb") as f:
             pickle.dump(walltime, f)
