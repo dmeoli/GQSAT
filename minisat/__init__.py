@@ -25,9 +25,9 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from .minisat.gym.MiniSATEnv import gym_sat_Env
-
 from gym.envs.registration import register
+
+from .minisat.gym.MiniSATEnv import gym_sat_Env
 
 # Graph-Q-SAT UPD: register the sat environment
 register(id="sat-v0", entry_point="minisat.minisat.gym.MiniSATEnv:gym_sat_Env")

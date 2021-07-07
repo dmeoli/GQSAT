@@ -25,16 +25,17 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # 
 
-# Graph-Q-SAT-UPD. This file is heavly changed and supports variable-sized SAT problems, multiple datasets
+# Graph-Q-SAT-UPD. This file is heavily changed and supports variable-sized SAT problems, multiple datasets
 # and generates graph-state representations for Graph-Q-SAT.
 
-import numpy as np
-import gym
 import random
 from os import listdir
 from os.path import join, realpath, split
+
+import gym
+import numpy as np
+
 from .GymSolver import GymSolver
-import sys
 
 MINISAT_DECISION_CONSTANT = 32767
 VAR_ID_IDX = (

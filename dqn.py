@@ -12,32 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+import os
+import pickle
+from collections import deque
+
 import numpy as np
 import torch
-
-import os
-from collections import deque
-import pickle
-import copy
 import yaml
-
-from gqsat.utils import build_argparser, evaluate, make_env
-from gqsat.models import EncoderCoreDecoder, SatModel
-from gqsat.agents import GraphAgent
-from gqsat.learners import GraphLearner
-from gqsat.buffer import ReplayGraphBuffer
-
 from tensorboardX import SummaryWriter
+
+from gqsat.agents import GraphAgent
+from gqsat.buffer import ReplayGraphBuffer
+from gqsat.learners import GraphLearner
+from gqsat.models import EncoderCoreDecoder, SatModel
+from gqsat.utils import build_argparser, evaluate, make_env
 
 
 def save_training_state(
-    model,
-    learner,
-    episodes_done,
-    transitions_seen,
-    best_eval_so_far,
-    args,
-    in_eval_mode=False,
+        model,
+        learner,
+        episodes_done,
+        transitions_seen,
+        best_eval_so_far,
+        args,
+        in_eval_mode=False,
 ):
     # save the model
     model_path = os.path.join(args.logdir, f"model_{learner.step_ctr}.chkp")
@@ -81,7 +80,7 @@ def get_annealed_eps(n_trans, args):
     else:
         assert n_trans - args.init_exploration_steps >= 0
         return (args.eps_init - args.eps_final) * (
-            1 - (n_trans - args.init_exploration_steps) / args.eps_decay_steps
+                1 - (n_trans - args.init_exploration_steps) / args.eps_decay_steps
         ) + args.eps_final
 
 
@@ -242,8 +241,8 @@ if __name__ == "__main__":
             ret += r
 
             if (not n_trans % args.step_freq) and (
-                buffer.ctr > max(args.init_exploration_steps, args.bsize + 1)
-                or buffer.full
+                    buffer.ctr > max(args.init_exploration_steps, args.bsize + 1)
+                    or buffer.full
             ):
                 step_info = learner.step()
                 if annealed_eps is not None:
@@ -266,7 +265,7 @@ if __name__ == "__main__":
                     )
                     save_flag = True
                 if (
-                    args.env_name == "sat-v0" and not learner.step_ctr % args.eval_freq
+                        args.env_name == "sat-v0" and not learner.step_ctr % args.eval_freq
                 ) or eval_resume_signal:
                     scores, _, eval_resume_signal = evaluate(
                         agent, args, include_train_set=False
@@ -278,8 +277,8 @@ if __name__ == "__main__":
                             res_vals = [el for el in sc_val.values()]
                             median_score = np.nanmedian(res_vals)
                             if (
-                                best_eval_so_far[sc_key] < median_score
-                                or best_eval_so_far[sc_key] == -1
+                                    best_eval_so_far[sc_key] < median_score
+                                    or best_eval_so_far[sc_key] == -1
                             ):
                                 best_eval_so_far[sc_key] = median_score
                             writer.add_scalar(

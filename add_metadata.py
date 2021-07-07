@@ -13,10 +13,12 @@
 # limitations under the License.
 
 import os
-import gym, minisat  # you need the latter to run __init__.py and register the environment.
 from collections import defaultdict
-from gqsat.utils import build_argparser
+
+import gym, minisat  # you need the latter to run __init__.py and register the environment.
+
 from gqsat.agents import MiniSATAgent
+from gqsat.utils import build_argparser
 
 DEBUG_ROLLOUTS = 10  # if --debug flag is present, run this many of rollouts, not the whole problem folder
 

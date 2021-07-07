@@ -12,18 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-
-import torch
-import pickle
-import yaml
-
-from gqsat.utils import build_eval_argparser, evaluate
-from gqsat.models import SatModel
-from gqsat.agents import GraphAgent
-
 import os
 import time
+
+import numpy as np
+import torch
+import yaml
+
+from gqsat.agents import GraphAgent
+from gqsat.models import SatModel
+from gqsat.utils import build_eval_argparser, evaluate
 
 if __name__ == "__main__":
     parser = build_eval_argparser()
