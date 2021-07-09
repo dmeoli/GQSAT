@@ -1,4 +1,4 @@
-# GQSAT 
+# GQSAT
 
 Can Q-learning with Graph Networks learn a Generalizable Branching Heuristic for a SAT solver?
 
@@ -10,7 +10,7 @@ Can Q-learning with Graph Networks learn a Generalizable Branching Heuristic for
 
 ```./train.sh```
 
-## How to evaluate 
+## How to evaluate
 
 * add the path to the model to the script first
 * choose the evaluation dataset
@@ -20,9 +20,10 @@ Can Q-learning with Graph Networks learn a Generalizable Branching Heuristic for
 
 Run `make && make python-wrap` in the minisat folder.
 
-## How to build swig code (if you changed minisat-python interface, e.g. in GymSolver.i)
+## How to build swig code (if you changed minisat-python interface, e.g., GymSolver.i)
 
-Go to minisat/minisat/gym, run `swig -fastdispatch -c++ -python3 GymSolver.i` and then repeat the building procedure from the previous step.
+Go to minisat/minisat/gym, run `swig -fastdispatch -c++ -python3 GymSolver.i` and then repeat the building procedure
+from the previous step.
 
 ## Individual Contributor License Agreement
 
@@ -41,6 +42,7 @@ Please fill out the following CLA and email to sgodil@nvidia.com:  https://www.a
 
 ## Acknowledgements
 
-We would like to thank [Fei Wang](https://github.com/feiwang3311/minisat) whose initial implementation of the environment we used as a start, and the creators of [Minisat](https://github.com/niklasso/minisat) on which it is based on.
-We would also like to thank the creators of [Pytorch Geometric](https://github.com/rusty1s/pytorch_geometric) whose 
+We would like to thank [Fei Wang](https://github.com/feiwang3311/minisat) whose initial implementation of the
+environment we used as a start, and the creators of [Minisat](https://github.com/niklasso/minisat) on which it is based
+on. We would also like to thank the creators of [Pytorch Geometric](https://github.com/rusty1s/pytorch_geometric) whose
 MetaLayer and [Graph Nets](https://arxiv.org/abs/1806.01261) implementation we built upon. 
