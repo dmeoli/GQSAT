@@ -18,6 +18,7 @@ if _swig_python_version_info >= (2, 7, 0):
         except ImportError:
             return importlib.import_module("_GymSolver")
 
+
     _GymSolver = swig_import_helper()
     del swig_import_helper
 elif _swig_python_version_info >= (2, 6, 0):
@@ -41,6 +42,7 @@ elif _swig_python_version_info >= (2, 6, 0):
             if fp is not None:
                 fp.close()
         return _mod
+
 
     _GymSolver = swig_import_helper()
     del swig_import_helper
@@ -112,6 +114,7 @@ except __builtin__.Exception:
 
     class _object:
         pass
+
 
     _newclass = 0
 

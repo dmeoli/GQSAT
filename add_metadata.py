@@ -26,7 +26,8 @@ DEBUG_ROLLOUTS = 10  # if --debug flag is present, run this many of rollouts, no
 def main():
     parser = build_argparser()
     args = parser.parse_args()
-    # key is the name of the problem file, value is a list with two values [minisat_steps_no_restarts, minisat_steps_with_restarts]
+    # key is the name of the problem file, value is a list with two values
+    # [minisat_steps_no_restarts, minisat_steps_with_restarts]
     results = defaultdict(list)
 
     for with_restarts in [False, True]:
