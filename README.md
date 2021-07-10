@@ -16,7 +16,7 @@ Can Q-learning with Graph Networks learn a Generalizable Branching Heuristic for
 * choose the evaluation dataset
 * ```./evaluate.sh```
 
-## How to build a solver (you need this only if you changed the c++ code)
+## How to build a solver (you need this only if you changed the C++ code)
 
 Run `make && make python-wrap` in the minisat folder.
 
