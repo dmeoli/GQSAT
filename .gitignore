@@ -1,6 +1,4 @@
 /minisat/build
 /minisat/minisat/gym/_GymSolver.so
 
-runs
-
 *.pyc
