@@ -27,7 +27,7 @@ from the previous step.
 
 ## Individual Contributor License Agreement
 
-Please fill out the following CLA and email to sgodil@nvidia.com:  https://www.apache.org/licenses/icla.pdf
+Please fill out the following CLA and email to sgodil@nvidia.com: https://www.apache.org/licenses/icla.pdf
 
 ## Cite
 
