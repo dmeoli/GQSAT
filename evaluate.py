@@ -59,7 +59,7 @@ if __name__ == "__main__":
     end_time = time.time()
 
     print(
-        f"Evaluation is over. It took {end_time - st_time} seconds for the whole procedure"
+        f"total_eval_time\t{end_time - st_time}"
     )
 
     # with open("../eval_results.pkl", "wb") as f:
@@ -67,7 +67,10 @@ if __name__ == "__main__":
 
     for pset, pset_res in scores.items():
         res_list = [el for el in pset_res.values()]
-        print(f"Results for {pset}")
+        print(f"Results for\t{pset}")
         print(
-            f"median_relative_score: {np.nanmedian(res_list)}, mean_relative_score: {np.mean(res_list)}"
+            f"median_relative_score:\t{np.nanmedian(res_list)}\n"
+            f"mean_relative_score:\t{np.mean(res_list)}\n"
+            f"min_score:\t{np.min(res_list)}\n"
+            f"max_score:\t{np.max(res_list)}"
         )
