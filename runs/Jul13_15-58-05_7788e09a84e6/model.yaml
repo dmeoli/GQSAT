@@ -1,0 +1,28 @@
+call_args:
+  activation: !!python/name:torch.nn.modules.activation.ReLU ''
+  core_out_dims: !!python/tuple
+  - 64
+  - 64
+  - 64
+  core_steps: 4
+  dec_out_dims: !!python/tuple
+  - 32
+  - 1
+  - 1
+  e2v_agg: sum
+  encoder_out_dims: !!python/tuple
+  - 32
+  - 32
+  - 32
+  hidden_size: 64
+  in_dims: !!python/tuple
+  - 2
+  - 2
+  - 1
+  independent_block_layers: 0
+  n_hidden: 1
+  out_dims: !!python/tuple
+  - 2
+  - null
+  - null
+class_name: EncoderCoreDecoder
