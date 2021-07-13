@@ -1,1 +1,4 @@
 __pycache__
+
+runs/*/*.insyncdl
+runs/*/buffer.pkl
