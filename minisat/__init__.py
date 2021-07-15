@@ -30,4 +30,5 @@ from gym.envs.registration import register
 from .minisat.gym.MiniSATEnv import gym_sat_Env
 
 # Graph-Q-SAT UPD: register the sat environment
-register(id="sat-v0", entry_point="minisat.minisat.gym.MiniSATEnv:gym_sat_Env")
+register(id='sat-v0',
+         entry_point='minisat.minisat.gym.MiniSATEnv:gym_sat_Env')
