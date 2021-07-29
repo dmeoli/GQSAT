@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
 import numpy as np
+import torch
 from gqsat.utils import batch_graphs
 
 
 class ReplayGraphBuffer:
+
     def __init__(self, args, size):
 
         self.ctr = 0
