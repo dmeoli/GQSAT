@@ -72,7 +72,7 @@ class GraphAgent:
                 self.qs_buffer.append(res.flatten().cpu().numpy())
             return res
 
-    def act(self, hist_buffer, eps):
+    def act(self, hist_buffer, eps=0):
         if np.random.random() < eps:
             vars_to_decide = np.where(hist_buffer[-1][0][:, VAR_ID_IDX] == 1)[0]
             acts = [a for v in vars_to_decide for a in (v * 2, v * 2 + 1)]
