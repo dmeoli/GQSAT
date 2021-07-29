@@ -1,8 +1,3 @@
-#################################################################################################################################
-# All the source files in `minisat` folder were initially copied and later modified from https://github.com/feiwang3311/minisat #
-# (which was taken from the MiniSat source at https://github.com/niklasso/minisat). The MiniSAT license is below.               #
-#################################################################################################################################
-
 # MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 #            Copyright (c) 2007-2010  Niklas Sorensson
 #
@@ -25,10 +20,22 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from gym.envs.registration import register
-
 from .minisat.gym.MiniSATEnv import gym_sat_Env
 
+import gym
+
+
+def register(id, entry_point, force=True):
+    env_specs = gym.envs.registry.env_specs
+    if id in env_specs.keys():
+        if not force:
+            return
+        del env_specs[id]
+    gym.register(
+        id=id,
+        entry_point=entry_point
+    )
+
+
 # Graph-Q-SAT UPD: register the sat environment
-register(id='sat-v0',
-         entry_point='minisat.minisat.gym.MiniSATEnv:gym_sat_Env')
+register(id="sat-v0", entry_point="minisat.minisat.gym.MiniSATEnv:gym_sat_Env")
