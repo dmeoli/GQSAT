@@ -53,7 +53,7 @@ class GraphLearner:
             edge_attr=states[1],
             v_indices=states[4],
             e_indices=states[5],
-            u=states[6],
+            u=states[6]
         )
         return vout[states[0][:, VAR_ID_IDX] == 1], states[3]
 
@@ -64,7 +64,7 @@ class GraphLearner:
             edge_attr=states[1],
             v_indices=states[4],
             e_indices=states[5],
-            u=states[6],
+            u=states[6]
         )
         return vout[states[0][:, VAR_ID_IDX] == 1].detach(), states[3]
 
@@ -80,7 +80,7 @@ class GraphLearner:
             idx_for_scatter = torch.tensor(
                 [el for subl in idx_for_scatter for el in subl],
                 dtype=torch.long,
-                device=self.device,
+                device=self.device
             ).flatten()
             target_qs = scatter_max(target_qs.flatten(), idx_for_scatter, dim=0)[0]
             targets = r + nonterminals * self.gamma * target_qs

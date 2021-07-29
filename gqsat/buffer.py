@@ -55,11 +55,11 @@ class ReplayGraphBuffer:
             self.actions[idx].to(self.device),
             self.rewards[idx].to(self.device),
             self.batch(self.observations[idx + 1]),
-            1.0 - self.dones[idx].to(self.device),
+            1.0 - self.dones[idx].to(self.device)
         )
 
     def batch(self, obs):
         return batch_graphs(
             [[torch.tensor(i, device=self.device) for i in el] for el in obs],
-            self.device,
+            self.device
         )

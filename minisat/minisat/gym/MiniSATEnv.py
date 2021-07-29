@@ -1,7 +1,3 @@
-#################################################################################################################################
-# All the source files in `minisat` folder were initially copied and later modified from https://github.com/feiwang3311/minisat #
-# (which was taken from the MiniSat source at https://github.com/niklasso/minisat). The MiniSAT license is below.               #
-#################################################################################################################################
 # MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 #            Copyright (c) 2007-2010  Niklas Sorensson
 # 
@@ -29,6 +25,7 @@
 # and generates graph-state representations for Graph-Q-SAT.
 
 import random
+import sys
 from os import listdir
 from os.path import join, realpath, split
 
@@ -42,21 +39,28 @@ VAR_ID_IDX = (
     0  # put 1 at the position of this index to indicate that the node is a variable
 )
 
+global_in_size = 1
+vertex_in_size = 2
+edge_in_size = 2
+
 
 class gym_sat_Env(gym.Env):
+
     def __init__(
             self,
             problems_paths,
             args,
+            problems_list=None,
             test_mode=False,
             max_cap_fill_buffer=True,
             penalty_size=None,
             with_restarts=None,
             compare_with_restarts=None,
-            max_data_limit_per_set=None,
+            max_data_limit_per_set=None
     ):
 
-        self.problems_paths = [realpath(el) for el in problems_paths.split(":")]
+        self.problem_list = problems_list
+        self.problems_paths = [realpath(el) for el in problems_paths.split(":")] if problems_paths is not None else []
         self.args = args
         self.test_mode = test_mode
 
@@ -98,16 +102,19 @@ class gym_sat_Env(gym.Env):
         self.step_ctr = 0
         self.curr_problem = None
 
-        self.global_in_size = 1
-        self.vertex_in_size = 2
-        self.edge_in_size = 2
+        self.global_in_size = global_in_size
+        self.vertex_in_size = vertex_in_size
+        self.edge_in_size = edge_in_size
         self.max_clause_len = 0
+        self.S = None
+        self.curr_state = None
+        self.is_solved = None
 
     def parse_state_as_graph(self):
 
         # if S is already Done, should return a dummy state to store in the buffer.
-        if self.S.getDone():
-            # to not mess with the c++ code, let's build a dummy graph which will not be used in the q updates anyways
+        if self.S.get_done():
+            # to not mess with the C++ code, let's build a dummy graph which will not be used in the q updates anyways
             # since we multiply (1-dones)
             empty_state = self.get_dummy_state()
             self.decision_to_var_mapping = {
@@ -125,9 +132,9 @@ class gym_sat_Env(gym.Env):
             current_depth,
             n_init_clauses,
             num_restarts,
-            _,
-        ) = self.S.getMetadata()
-        var_assignments = self.S.getAssignments()
+            _
+        ) = self.S.get_metadata()
+        var_assignments = self.S.get_assignments()
         num_var = sum([1 for el in var_assignments if el == 2])
 
         # only valid decisions
@@ -148,7 +155,7 @@ class gym_sat_Env(gym.Env):
         }
 
         # we should return the vertex/edge numpy objects from the c++ code to make this faster
-        clauses = self.S.getClauses()
+        clauses = self.S.get_clauses()
 
         if len(clauses) == 0:
             # this is to avoid feeding empty data structures to our model
@@ -189,7 +196,7 @@ class gym_sat_Env(gym.Env):
             clause_counter += 1
 
         vertex_data = np.zeros(
-            (num_var + clause_counter, self.vertex_in_size), dtype=np.float32
+            (num_var + clause_counter, vertex_in_size), dtype=np.float32
         )  # both vars and clauses are vertex in the graph
         vertex_data[:num_var, VAR_ID_IDX] = 1
         vertex_data[num_var:, VAR_ID_IDX + 1] = 1
@@ -199,12 +206,12 @@ class gym_sat_Env(gym.Env):
                 vertex_data,
                 edge_data,
                 connectivity,
-                np.zeros((1, self.global_in_size), dtype=np.float32),
+                np.zeros((1, global_in_size), dtype=np.float32)
             ),
-            False,
+            False
         )
 
-    def random_pick_satProb(self):
+    def random_pick_sat_prob(self):
         if self.test_mode:  # in the test mode, just iterate all test files in order
             filename = self.test_files[self.test_to]
             self.test_to += 1
@@ -219,13 +226,31 @@ class gym_sat_Env(gym.Env):
 
         if max_decisions_cap is None:
             # max_decisions_cap = sys.maxsize  # long
-            max_decisions_cap = np.iinfo(np.intc).max
+            max_decisions_cap = np.iinfo(np.intc).max  # i.e., 2**31 - 1
         self.max_decisions_cap = max_decisions_cap
-        self.curr_problem = self.random_pick_satProb()
-        self.S = GymSolver(self.curr_problem, self.with_restarts, max_decisions_cap)
+
+        if self.problem_list is not None:
+            self.curr_problem = "in_memory"
+            problem_adj_mat = self.problem_list[random.randrange(len(self.problem_list))]
+            self.S = GymSolver(
+                sat_prob="",
+                adj_mat=problem_adj_mat,
+                in_memory=True,
+                with_restarts=self.with_restarts,
+                max_decision_cap=max_decisions_cap
+            )
+        else:
+            self.curr_problem = self.random_pick_sat_prob()
+            self.S = GymSolver(
+                sat_prob=self.curr_problem,
+                adj_mat=np.array([[0]], dtype=np.intc),
+                in_memory=False,
+                with_restarts=self.with_restarts,
+                max_decision_cap=max_decisions_cap
+            )
         self.max_clause_len = 0
 
-        self.curr_state, self.isSolved = self.parse_state_as_graph()
+        self.curr_state, self.is_solved = self.parse_state_as_graph()
         return self.curr_state
 
     def step(self, decision, dummy=False):
@@ -243,21 +268,21 @@ class gym_sat_Env(gym.Env):
                 current_depth,
                 n_init_clauses,
                 num_restarts,
-                _,
-            ) = self.S.getMetadata()
+                _
+            ) = self.S.get_metadata()
             return (
                 None,
                 None,
-                self.S.getDone(),
+                self.S.get_done(),
                 {
                     "curr_problem": self.curr_problem,
                     "num_restarts": num_restarts,
                     "max_clause_len": self.max_clause_len,
-                },
+                }
             )
 
         if self.step_ctr > self.max_decisions_cap:
-            while not self.S.getDone():
+            while not self.S.get_done():
                 self.S.step(MINISAT_DECISION_CONSTANT)
                 if self.max_cap_fill_buffer:
                     # return every next state when param is true
@@ -272,7 +297,7 @@ class gym_sat_Env(gym.Env):
             # I removed this action_set checks for performance optimisation
 
             # var_values = self.curr_state[0][:, 2]
-            # var_values = self.S.getAssignments()
+            # var_values = self.S.get_assignments()
             # action_set = [
             #     a
             #     for v_idx, v in enumerate(var_values)
@@ -294,15 +319,15 @@ class gym_sat_Env(gym.Env):
             # else:
             #    raise ValueError("Illegal action")
 
-        self.curr_state, self.isSolved = self.parse_state_as_graph()
+        self.curr_state, self.is_solved = self.parse_state_as_graph()
         (
             num_var,
             _,
             current_depth,
             n_init_clauses,
             num_restarts,
-            _,
-        ) = self.S.getMetadata()
+            _
+        ) = self.S.get_metadata()
 
         # if we fill the buffer, the rewards are the same as GQSAT was making decisions
         if self.step_ctr > self.max_decisions_cap and not self.max_cap_fill_buffer:
@@ -310,17 +335,17 @@ class gym_sat_Env(gym.Env):
             # since GQSAT hasn't solved the problem
             step_reward = -self.penalty_size
         else:
-            step_reward = 0 if self.isSolved else -self.penalty_size
+            step_reward = 0 if self.is_solved else -self.penalty_size
 
         return (
             self.curr_state,
             step_reward,
-            self.isSolved,
+            self.is_solved,
             {
                 "curr_problem": self.curr_problem,
                 "num_restarts": num_restarts,
                 "max_clause_len": self.max_clause_len,
-            },
+            }
         )
 
     def normalized_score(self, steps, problem):
@@ -332,17 +357,17 @@ class gym_sat_Env(gym.Env):
             return no_restart_steps / steps
 
     def get_dummy_state(self):
-        DUMMY_V = np.zeros((2, self.vertex_in_size), dtype=np.float32)
+        DUMMY_V = np.zeros((2, vertex_in_size), dtype=np.float32)
         DUMMY_V[:, VAR_ID_IDX] = 1
         DUMMY_STATE = (
             DUMMY_V,
-            np.zeros((2, self.edge_in_size), dtype=np.float32),
+            np.zeros((2, edge_in_size), dtype=np.float32),
             np.eye(2, dtype=np.long),
-            np.zeros((1, self.global_in_size), dtype=np.float32),
+            np.zeros((1, global_in_size), dtype=np.float32)
         )
         return (
             DUMMY_STATE[0],
             DUMMY_STATE[1],
             DUMMY_STATE[2],
-            np.zeros((1, self.global_in_size), dtype=np.float32),
+            np.zeros((1, global_in_size), dtype=np.float32)
         )
