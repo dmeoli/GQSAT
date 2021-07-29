@@ -1,10 +1,4 @@
-/*
-#################################################################################################################################
-# All the source files in `minisat` folder were initially copied and later modified from https://github.com/feiwang3311/minisat #
-# (which was taken from the MiniSat source at https://github.com/niklasso/minisat). The MiniSAT license is below.               #
-#################################################################################################################################
-*/
-/***********************************************************************************[SolverTypes.h]
+/***********************************************************************************[GymSolver.h]
 Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
 
@@ -37,14 +31,14 @@ class GymSolver {
 	SimpSolver S;
 
 public:
-	GymSolver(char*, bool, int);
+	GymSolver(char* sat_prob, int* adj_mat, int cla_cnt, int var_cnt, bool in_memory, bool with_restarts, int max_decision_cap);
 	void step(int); 
-	double getReward();
-	bool getDone();
-	std::vector<int>* getMetadata();
-	std::vector<int>* getAssignments();
-	std::vector<double>* getActivities();
-    std::vector<std::vector<int> >* getClauses();
+	double get_reward();
+	bool get_done();
+	std::vector<int>* get_metadata();
+	std::vector<int>* get_assignments();
+	std::vector<double>* get_activities();
+    std::vector<std::vector<int> >* get_clauses();
 };
 
 }

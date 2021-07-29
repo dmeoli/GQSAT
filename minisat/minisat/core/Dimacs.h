@@ -48,7 +48,7 @@ static void readClause(B& in, Solver& S, vec<Lit>& lits) {
         if (parsed_lit == 0) break;
         var = abs(parsed_lit)-1;
         while (var >= S.nVars()) S.newVar();
-        lits.push( (parsed_lit > 0) ? mkLit(var, false) : ~mkLit(var, false) );
+        lits.push( (parsed_lit > 0) ? mkLit(var) : ~mkLit(var) );
     }
 }
 

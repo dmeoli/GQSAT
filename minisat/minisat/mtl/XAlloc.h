@@ -1,10 +1,3 @@
-/*
-#################################################################################################################################
-# All the source files in `minisat` folder were initially copied and later modified from https://github.com/feiwang3311/minisat #
-# (which was taken from the MiniSat source at https://github.com/niklasso/minisat). The MiniSAT license is below.               #
-#################################################################################################################################
-*/
-
 /****************************************************************************************[XAlloc.h]
 Copyright (c) 2009-2010, Niklas Sorensson
 

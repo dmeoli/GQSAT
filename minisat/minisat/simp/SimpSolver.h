@@ -1,10 +1,3 @@
-/*
-#################################################################################################################################
-# All the source files in `minisat` folder were initially copied and later modified from https://github.com/feiwang3311/minisat #
-# (which was taken from the MiniSat source at https://github.com/niklasso/minisat). The MiniSAT license is below.               #
-#################################################################################################################################
-*/
-
 /************************************************************************************[SimpSolver.h]
 Copyright (c) 2006,      Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
@@ -125,7 +118,7 @@ class SimpSolver : public Solver {
 
         // TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
         // 32-bit implementation instead then, but this will have to do for now.
-        uint64_t cost  (Var x)        const { return (uint64_t)n_occ[mkLit(x, false)] * (uint64_t)n_occ[~mkLit(x, false)]; }
+        uint64_t cost  (Var x)        const { return (uint64_t)n_occ[mkLit(x)] * (uint64_t)n_occ[~mkLit(x)]; }
         bool operator()(Var x, Var y) const { return cost(x) < cost(y); }
         
         // TODO: investigate this order alternative more.

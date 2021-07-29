@@ -1,7 +1,3 @@
-#################################################################################################################################
-# All the source files in `minisat` folder were initially copied and later modified from https://github.com/feiwang3311/minisat #
-# (which was taken from the MiniSat source at https://github.com/niklasso/minisat). The MiniSAT license is below.               #
-#################################################################################################################################
 # MiniSat -- Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 #            Copyright (c) 2007-2010  Niklas Sorensson
 # 

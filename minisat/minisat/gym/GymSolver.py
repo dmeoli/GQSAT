@@ -102,8 +102,8 @@ class GymSolver(_object):
     __getattr__ = lambda self, name: _swig_getattr(self, GymSolver, name)
     __repr__ = _swig_repr
 
-    def __init__(self, arg2, arg3, arg4):
-        this = _GymSolver.new_GymSolver(arg2, arg3, arg4)
+    def __init__(self, sat_prob, adj_mat, in_memory, with_restarts, max_decision_cap):
+        this = _GymSolver.new_GymSolver(sat_prob, adj_mat, in_memory, with_restarts, max_decision_cap)
         try:
             self.this.append(this)
         except __builtin__.Exception:
@@ -112,23 +112,23 @@ class GymSolver(_object):
     def step(self, arg2):
         return _GymSolver.GymSolver_step(self, arg2)
 
-    def getReward(self):
-        return _GymSolver.GymSolver_getReward(self)
+    def get_reward(self):
+        return _GymSolver.GymSolver_get_reward(self)
 
-    def getDone(self):
-        return _GymSolver.GymSolver_getDone(self)
+    def get_done(self):
+        return _GymSolver.GymSolver_get_done(self)
 
-    def getMetadata(self):
-        return _GymSolver.GymSolver_getMetadata(self)
+    def get_metadata(self):
+        return _GymSolver.GymSolver_get_metadata(self)
 
-    def getAssignments(self):
-        return _GymSolver.GymSolver_getAssignments(self)
+    def get_assignments(self):
+        return _GymSolver.GymSolver_get_assignments(self)
 
-    def getActivities(self):
-        return _GymSolver.GymSolver_getActivities(self)
+    def get_activities(self):
+        return _GymSolver.GymSolver_get_activities(self)
 
-    def getClauses(self):
-        return _GymSolver.GymSolver_getClauses(self)
+    def get_clauses(self):
+        return _GymSolver.GymSolver_get_clauses(self)
     __swig_destroy__ = _GymSolver.delete_GymSolver
     __del__ = lambda self: None
 GymSolver_swigregister = _GymSolver.GymSolver_swigregister

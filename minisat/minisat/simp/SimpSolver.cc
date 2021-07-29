@@ -1,10 +1,3 @@
-/*
-#################################################################################################################################
-# All the source files in `minisat` folder were initially copied and later modified from https://github.com/feiwang3311/minisat #
-# (which was taken from the MiniSat source at https://github.com/niklasso/minisat). The MiniSAT license is below.               #
-#################################################################################################################################
-*/
-
 /***********************************************************************************[SimpSolver.cc]
 Copyright (c) 2006,      Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
@@ -88,8 +81,8 @@ Var SimpSolver::newVar(lbool upol, bool dvar) {
     eliminated.insert(v, (char)false);
 
     if (use_simplification){
-        n_occ     .insert( mkLit(v, false), 0);
-        n_occ     .insert(~mkLit(v, false), 0);
+        n_occ     .insert( mkLit(v), 0);
+        n_occ     .insert(~mkLit(v), 0);
         occurs    .init  (v);
         touched   .insert(v, 0);
         elim_heap .insert(v);
@@ -505,7 +498,7 @@ bool SimpSolver::eliminateVar(Var v)
     const vec<CRef>& cls = occurs.lookup(v);
     vec<CRef>        pos, neg;
     for (int i = 0; i < cls.size(); i++)
-        (find(ca[cls[i]], mkLit(v, false)) ? pos : neg).push(cls[i]);
+        (find(ca[cls[i]], mkLit(v)) ? pos : neg).push(cls[i]);
 
     // Check wether the increase in number of clauses stays within the allowed ('grow'). Moreover, no
     // clause must exceed the limit on the maximal clause size (if it is set):
@@ -527,11 +520,11 @@ bool SimpSolver::eliminateVar(Var v)
     if (pos.size() > neg.size()){
         for (int i = 0; i < neg.size(); i++)
             mkElimClause(elimclauses, v, ca[neg[i]]);
-        mkElimClause(elimclauses, mkLit(v, false));
+        mkElimClause(elimclauses, mkLit(v));
     }else{
         for (int i = 0; i < pos.size(); i++)
             mkElimClause(elimclauses, v, ca[pos[i]]);
-        mkElimClause(elimclauses, ~mkLit(v, false));
+        mkElimClause(elimclauses, ~mkLit(v));
     }
 
     for (int i = 0; i < cls.size(); i++)
@@ -548,8 +541,8 @@ bool SimpSolver::eliminateVar(Var v)
     occurs[v].clear(true);
     
     // Free watchers lists for this variable, if possible:
-    if (watches[ mkLit(v, false)].size() == 0) watches[ mkLit(v, false)].clear(true);
-    if (watches[~mkLit(v, false)].size() == 0) watches[~mkLit(v, false)].clear(true);
+    if (watches[ mkLit(v)].size() == 0) watches[ mkLit(v)].clear(true);
+    if (watches[~mkLit(v)].size() == 0) watches[~mkLit(v)].clear(true);
 
     return backwardSubsumptionCheck();
 }
