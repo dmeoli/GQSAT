@@ -18,6 +18,7 @@ from minisat.minisat.gym.MiniSATEnv import VAR_ID_IDX
 
 
 class Agent:
+
     def act(self, state):
         raise NotImplementedError
 
@@ -50,8 +51,8 @@ class RandomAgent(Agent):
 
 
 class GraphAgent:
-    def __init__(self, net, args):
 
+    def __init__(self, net, args):
         self.net = net
         self.device = args.device
         self.debug = args.debug
