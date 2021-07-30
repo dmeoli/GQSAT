@@ -58,8 +58,11 @@ if __name__ == "__main__":
     _, _, scores, eval_metadata, _ = evaluate(agent, args)
     end_time = time.time()
 
+    # print(
+    #     f"Evaluation is over. It took {end_time - st_time} seconds for the whole procedure"
+    # )
     print(
-        f"Evaluation is over. It took {end_time - st_time} seconds for the whole procedure"
+        f"total_eval_time\t{end_time - st_time}"
     )
 
     # with open("../eval_results.pkl", "wb") as f:
