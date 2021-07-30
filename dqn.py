@@ -12,21 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-import os
-import pickle
-from collections import deque
-
 import numpy as np
 import torch
-import yaml
-from tensorboardX import SummaryWriter
 
-from gqsat.agents import GraphAgent
-from gqsat.buffer import ReplayGraphBuffer
-from gqsat.learners import GraphLearner
-from gqsat.models import EncoderCoreDecoder, SatModel
+import os
+from collections import deque
+import pickle
+import copy
+import yaml
+
 from gqsat.utils import build_argparser, evaluate, make_env
+from gqsat.models import EncoderCoreDecoder, SatModel
+from gqsat.agents import GraphAgent
+from gqsat.learners import GraphLearner
+from gqsat.buffer import ReplayGraphBuffer
+
+from tensorboardX import SummaryWriter
 
 
 def save_training_state(
@@ -36,7 +37,7 @@ def save_training_state(
         transitions_seen,
         best_eval_so_far,
         args,
-        in_eval_mode=False,
+        in_eval_mode=False
 ):
     # save the model
     model_path = os.path.join(args.logdir, f"model_{learner.step_ctr}.chkp")
@@ -178,26 +179,26 @@ if __name__ == "__main__":
                 core_out_dims=(
                     args.core_v_out_size,
                     args.core_e_out_size,
-                    args.core_e_out_size,
+                    args.core_e_out_size
                 ),
                 out_dims=(2, None, None),
                 core_steps=args.core_steps,
                 dec_out_dims=(
                     args.decoder_v_out_size,
                     args.decoder_e_out_size,
-                    args.decoder_e_out_size,
+                    args.decoder_e_out_size
                 ),
                 encoder_out_dims=(
                     args.encoder_v_out_size,
                     args.encoder_e_out_size,
-                    args.encoder_e_out_size,
+                    args.encoder_e_out_size
                 ),
                 save_name=model_save_path,
                 e2v_agg=args.e2v_aggregator,
                 n_hidden=args.n_hidden,
                 hidden_size=args.hidden_size,
                 activation=arg2activation(args.activation),
-                independent_block_layers=args.independent_block_layers,
+                independent_block_layers=args.independent_block_layers
             ).to(args.device)
         print(str(net))
         target_net = copy.deepcopy(net)
@@ -216,8 +217,10 @@ if __name__ == "__main__":
     while learner.step_ctr < args.batch_updates:
 
         ret = 0
-        obs = env.reset(args.train_time_max_decisions_allowed)
-        done = env.isSolved
+        obs = env.reset(
+            max_decisions_cap=args.train_time_max_decisions_allowed
+        )
+        done = env.is_solved
 
         if args.history_len > 1:
             raise NotImplementedError(
@@ -261,13 +264,13 @@ if __name__ == "__main__":
                         n_trans,
                         best_eval_so_far,
                         args,
-                        in_eval_mode=eval_resume_signal,
+                        in_eval_mode=eval_resume_signal
                     )
                     save_flag = True
                 if (
                         args.env_name == "sat-v0" and not learner.step_ctr % args.eval_freq
                 ) or eval_resume_signal:
-                    scores, _, eval_resume_signal = evaluate(
+                    _, _, scores, _, eval_resume_signal = evaluate(
                         agent, args, include_train_set=False
                     )
 
@@ -284,17 +287,17 @@ if __name__ == "__main__":
                             writer.add_scalar(
                                 f"data/median relative score: {sc_key}",
                                 np.nanmedian(res_vals),
-                                learner.step_ctr - 1,
+                                learner.step_ctr - 1
                             )
                             writer.add_scalar(
                                 f"data/mean relative score: {sc_key}",
                                 np.nanmean(res_vals),
-                                learner.step_ctr - 1,
+                                learner.step_ctr - 1
                             )
                             writer.add_scalar(
                                 f"data/max relative score: {sc_key}",
                                 np.nanmax(res_vals),
-                                learner.step_ctr - 1,
+                                learner.step_ctr - 1
                             )
                     for k, v in best_eval_so_far.items():
                         writer.add_scalar(k, v, learner.step_ctr - 1)
@@ -321,6 +324,6 @@ if __name__ == "__main__":
                 n_trans,
                 best_eval_so_far,
                 args,
-                in_eval_mode=eval_resume_signal,
+                in_eval_mode=eval_resume_signal
             )
             save_flag = False

@@ -55,11 +55,11 @@ if __name__ == "__main__":
     agent = GraphAgent(net, args)
 
     st_time = time.time()
-    scores, eval_metadata, _ = evaluate(agent, args)
+    _, _, scores, eval_metadata, _ = evaluate(agent, args)
     end_time = time.time()
 
     print(
-        f"total_eval_time\t{end_time - st_time}"
+        f"Evaluation is over. It took {end_time - st_time} seconds for the whole procedure"
     )
 
     # with open("../eval_results.pkl", "wb") as f:

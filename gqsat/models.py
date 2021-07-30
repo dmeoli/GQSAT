@@ -22,24 +22,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import torch
-from torch.nn import Sequential as Seq, Linear as Lin, ReLU, LayerNorm
-from torch_scatter import scatter_mean, scatter_add
-from torch_geometric.nn.meta import MetaLayer
-from torch import nn
 import inspect
-import yaml
 import sys
+
+import torch
+import yaml
+from torch import nn
+from torch.nn import Sequential as Seq, Linear as Lin, ReLU, LayerNorm
+from torch_geometric.nn.meta import MetaLayer
+from torch_scatter import scatter_mean, scatter_add
 
 
 class ModifiedMetaLayer(MetaLayer):
+
     def forward(
             self, x, edge_index, edge_attr=None, u=None, v_indices=None, e_indices=None
     ):
-        row, col = edge_index
+        tgt, src = edge_index
 
         if self.edge_model is not None:
-            edge_attr = self.edge_model(x[row], x[col], edge_attr, u, e_indices)
+            edge_attr = self.edge_model(x[tgt], x[src], edge_attr, u, e_indices)
 
         if self.node_model is not None:
             x = self.node_model(x, edge_index, edge_attr, u, v_indices)
@@ -51,6 +53,7 @@ class ModifiedMetaLayer(MetaLayer):
 
 
 class SatModel(torch.nn.Module):
+
     def __init__(self, save_name=None):
         super().__init__()
         if save_name is not None:
@@ -78,7 +81,7 @@ class SatModel(torch.nn.Module):
     @staticmethod
     def load_from_yaml(fname):
         with open(fname, "r") as f:
-            res = yaml.load(f)
+            res = yaml.load(f, Loader=yaml.Loader)
         return getattr(sys.modules[__name__], res["class_name"])(**res["call_args"])
 
 
@@ -89,7 +92,7 @@ def get_mlp(
         hidden_size,
         activation=nn.LeakyReLU,
         activate_last=True,
-        layer_norm=True,
+        layer_norm=True
 ):
     arch = []
     l_in = in_size
@@ -110,6 +113,7 @@ def get_mlp(
 
 
 class GraphNet(SatModel):
+
     def __init__(
             self,
             in_dims,
@@ -120,7 +124,7 @@ class GraphNet(SatModel):
             n_hidden=1,
             hidden_size=64,
             activation=ReLU,
-            layer_norm=True,
+            layer_norm=True
     ):
         super().__init__(save_name)
         self.e2v_agg = e2v_agg
@@ -142,7 +146,7 @@ class GraphNet(SatModel):
                 n_hidden,
                 hidden_size,
                 activation=activation,
-                layer_norm=layer_norm,
+                layer_norm=layer_norm
             )
             self.node_mlp = get_mlp(
                 v_in,
@@ -150,7 +154,7 @@ class GraphNet(SatModel):
                 n_hidden,
                 hidden_size,
                 activation=activation,
-                layer_norm=layer_norm,
+                layer_norm=layer_norm
             )
             self.global_mlp = get_mlp(
                 u_in,
@@ -158,7 +162,7 @@ class GraphNet(SatModel):
                 n_hidden,
                 hidden_size,
                 activation=activation,
-                layer_norm=layer_norm,
+                layer_norm=layer_norm
             )
         else:
             self.edge_mlp = get_mlp(
@@ -167,7 +171,7 @@ class GraphNet(SatModel):
                 n_hidden,
                 hidden_size,
                 activation=activation,
-                layer_norm=layer_norm,
+                layer_norm=layer_norm
             )
             self.node_mlp = get_mlp(
                 v_in + e_out + u_in,
@@ -175,7 +179,7 @@ class GraphNet(SatModel):
                 n_hidden,
                 hidden_size,
                 activation=activation,
-                layer_norm=layer_norm,
+                layer_norm=layer_norm
             )
             self.global_mlp = get_mlp(
                 u_in + v_out + e_out,
@@ -183,7 +187,7 @@ class GraphNet(SatModel):
                 n_hidden,
                 hidden_size,
                 activation=activation,
-                layer_norm=layer_norm,
+                layer_norm=layer_norm
             )
 
         self.independent = independent
@@ -204,11 +208,11 @@ class GraphNet(SatModel):
             if self.independent:
                 return self.node_mlp(x)
 
-            row, col = edge_index
+            tgt, src = edge_index  # Warning: Row must be the edge target here, not the source.
             if self.e2v_agg == "sum":
-                out = scatter_add(edge_attr, row, dim=0, dim_size=x.size(0))
+                out = scatter_add(edge_attr, tgt, dim=0, dim_size=x.size(0))
             elif self.e2v_agg == "mean":
-                out = scatter_mean(edge_attr, row, dim=0, dim_size=x.size(0))
+                out = scatter_mean(edge_attr, tgt, dim=0, dim_size=x.size(0))
             out = torch.cat([x, out, u[v_indices]], dim=1)
             return self.node_mlp(out)
 
@@ -221,7 +225,7 @@ class GraphNet(SatModel):
                     scatter_mean(x, v_indices, dim=0),
                     scatter_mean(edge_attr, e_indices, dim=0),
                 ],
-                dim=1,
+                dim=1
             )
             return self.global_mlp(out)
 
@@ -248,6 +252,7 @@ class EncoderCoreDecoder(SatModel):
             hidden_size=64,
             activation=ReLU,
             independent_block_layers=1,
+            layer_norm=True
     ):
         super().__init__(save_name)
         # all dims are tuples with (v,e) feature sizes
@@ -257,7 +262,7 @@ class EncoderCoreDecoder(SatModel):
         self.core_out_dims = core_out_dims
         self.dec_out_dims = dec_out_dims
 
-        self.layer_norm = True
+        self.layer_norm = layer_norm
 
         self.encoder = None
         if encoder_out_dims is not None:
@@ -268,7 +273,7 @@ class EncoderCoreDecoder(SatModel):
                 n_hidden=independent_block_layers,
                 hidden_size=hidden_size,
                 activation=activation,
-                layer_norm=self.layer_norm,
+                layer_norm=self.layer_norm
             )
 
         core_in_dims = in_dims if self.encoder is None else encoder_out_dims
@@ -277,16 +282,17 @@ class EncoderCoreDecoder(SatModel):
             (
                 core_in_dims[0] + core_out_dims[0],
                 core_in_dims[1] + core_out_dims[1],
-                core_in_dims[2] + core_out_dims[2],
+                core_in_dims[2] + core_out_dims[2]
             ),
             core_out_dims,
             e2v_agg=e2v_agg,
             n_hidden=n_hidden,
             hidden_size=hidden_size,
             activation=activation,
-            layer_norm=self.layer_norm,
+            layer_norm=self.layer_norm
         )
 
+        self.decoder = None
         if dec_out_dims is not None:
             self.decoder = GraphNet(
                 core_out_dims,
@@ -295,7 +301,7 @@ class EncoderCoreDecoder(SatModel):
                 n_hidden=independent_block_layers,
                 hidden_size=hidden_size,
                 activation=activation,
-                layer_norm=self.layer_norm,
+                layer_norm=self.layer_norm
             )
 
         pre_out_dims = core_out_dims if self.decoder is None else dec_out_dims
@@ -314,7 +320,7 @@ class EncoderCoreDecoder(SatModel):
         return (
             torch.zeros((n_v, self.core_out_dims[0]), device=device),
             torch.zeros((n_e, self.core_out_dims[1]), device=device),
-            torch.zeros((n_u, self.core_out_dims[2]), device=device),
+            torch.zeros((n_u, self.core_out_dims[2]), device=device)
         )
 
     def forward(self, x, edge_index, edge_attr, u, v_indices=None, e_indices=None):
@@ -341,7 +347,7 @@ class EncoderCoreDecoder(SatModel):
                 torch.cat([latent0[1], latent[1]], dim=1),
                 torch.cat([latent0[2], latent[2]], dim=1),
                 v_indices,
-                e_indices,
+                e_indices
             )
 
         if self.decoder is not None:

@@ -14,8 +14,9 @@
 
 import os
 from collections import defaultdict
+from os import path
 
-import gym, minisat  # you need the latter to run __init__.py and register the environment.
+import gym
 
 from gqsat.agents import MiniSATAgent
 from gqsat.utils import build_argparser
@@ -23,9 +24,7 @@ from gqsat.utils import build_argparser
 DEBUG_ROLLOUTS = 10  # if --debug flag is present, run this many of rollouts, not the whole problem folder
 
 
-def main():
-    parser = build_argparser()
-    args = parser.parse_args()
+def add_metadata(args):
     # key is the name of the problem file, value is a list with two values
     # [minisat_steps_no_restarts, minisat_steps_with_restarts]
     results = defaultdict(list)
@@ -36,7 +35,7 @@ def main():
             args=args,
             problems_paths=args.eval_problems_paths,
             test_mode=True,
-            with_restarts=with_restarts,
+            with_restarts=with_restarts
         )
         agent = MiniSATAgent()
         print(f"Testing agent {agent}... with_restarts is set to {with_restarts}")
@@ -58,10 +57,9 @@ def main():
     return results, args
 
 
-if __name__ == "__main__":
-    from os import path
-
-    results, args = main()
+# needed to create METADATA for evaluation during an execution
+def create_metadata(args):
+    results, args = add_metadata(args)
     for pdir in args.eval_problems_paths.split(":"):
         with open(os.path.join(pdir, "METADATA"), "w") as f:
             for el in sorted(results.keys()):
@@ -69,3 +67,11 @@ if __name__ == "__main__":
                 if path.realpath(pdir) == path.realpath(cur_dir):
                     # no restarts/with restarts
                     f.write(f"{pname},{results[el][0]},{results[el][1]}\n")
+
+
+if __name__ == "__main__":
+    # parse args
+    parser = build_argparser()
+    args = parser.parse_args()
+
+    create_metadata(args)
