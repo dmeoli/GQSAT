@@ -531,7 +531,7 @@ def evaluate(agent, args, include_train_set=False):
 
     st_time = time.time()
     # print("Starting evaluation. Fasten your seat belts!")
-    print("sec to solve\tepisode #\tscore")
+    print("sec to solve\tepisode\tscore")
 
     total_iters_ours = 0
     total_iters_minisat = 0
