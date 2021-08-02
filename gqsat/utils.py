@@ -192,7 +192,7 @@ def build_argparser():
         "--buffer-size",
         type=int,
         default=10000,
-        help="Memory Replay size."
+        help="Memory replay size."
     )
     parser.add_argument(
         "--history-len",
