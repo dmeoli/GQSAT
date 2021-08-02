@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from torch import nn
-from torch_scatter import scatter_max
 import torch
-from torch.optim.lr_scheduler import StepLR
 from minisat.minisat.gym.MiniSATEnv import VAR_ID_IDX
+from torch import nn
+from torch.optim.lr_scheduler import StepLR
+from torch_scatter import scatter_max
 
 
 class GraphLearner:

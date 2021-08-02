@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python3 dqn.py \
-  --logdir ./log \
+python3 main.py \
+  --logdir log \
   --env-name sat-v0 \
-  --train-problems-paths ../data/uniform-random-3-sat/train/uf50-218 \
-  --eval-problems-paths ../data/uniform-random-3-sat/val/uf50-218 \
+  --train-problems-paths PATH_TO_TRAIN_DATA \
+  --eval-problems-paths PATH_TO_VAL_DATA \
   --lr 0.00002 \
   --bsize 64 \
   --buffer-size 20000 \
