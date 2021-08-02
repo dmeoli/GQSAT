@@ -53,7 +53,7 @@ GraphNetwork = {
 }
 
 main = {
-    "logdir": "./log",
+    "logdir": "log",
     "env_name": "sat_v0",
     "train_problems_paths": "../data/uniform-random-3-sat/train/uf50_218",
     "eval_problems_paths": "../data/uniform-random-3-sat/val/uf50_218",
