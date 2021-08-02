@@ -238,6 +238,7 @@ class GraphNet(SatModel):
 
 
 class EncoderCoreDecoder(SatModel):
+
     def __init__(
             self,
             in_dims,

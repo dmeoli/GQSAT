@@ -20,6 +20,7 @@ from torch_scatter import scatter_max
 
 
 class GraphLearner:
+
     def __init__(self, net, target, buffer, args):
         self.net = net
         self.target = target
