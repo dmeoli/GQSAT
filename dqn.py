@@ -27,7 +27,7 @@ from gqsat.agents import GraphAgent, MiniSATAgent
 from gqsat.buffer import ReplayGraphBuffer
 from gqsat.learners import GraphLearner
 from gqsat.models import EncoderCoreDecoder, SatModel
-from gqsat.utils import evaluate, make_env
+from gqsat.utils import evaluate, make_env, build_argparser
 
 
 def save_training_state(
@@ -527,3 +527,29 @@ class DQN:
         else:
             raise ValueError(f"agg {agg} is not recognized")
         return q
+
+
+if __name__ == "__main__":
+    parser = build_argparser()
+    args = parser.parse_args()
+    args.device = (
+        torch.device("cpu")
+        if args.no_cuda or not torch.cuda.is_available()
+        else torch.device("cuda")
+    )
+
+    if args.status_dict_path:
+        # training mode, resuming from the status dict
+
+        # load the train status dict
+        with open(args.status_dict_path, "r") as f:
+            train_status = yaml.load(f, Loader=yaml.Loader)
+        # swap the args
+        args = train_status["args"]
+
+        dqn = DQN(args, train_status)
+    else:
+        dqn = DQN(args)
+
+    # train
+    dqn.train()

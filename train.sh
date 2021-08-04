@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python3 main.py \
+python3 dqn.py \
   --logdir log \
   --env-name sat-v0 \
   --train-problems-paths PATH_TO_TRAIN_DATA \

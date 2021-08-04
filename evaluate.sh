@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-python3 main.py --evaluate \
+python3 evaluate.py \
   --logdir log \
   --env-name sat-v0 \
   --core-steps -1 \
