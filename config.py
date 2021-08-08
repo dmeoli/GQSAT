@@ -5,7 +5,7 @@ from itertools import chain
 
 DQN = {
     "batch_updates": 50000,
-    "lr": 2e-4,
+    "lr": 2e-5,
     "bsize": 64,
     "buffer_size": 20000,
     "max_cap_fill_buffer": 0,
