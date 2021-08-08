@@ -18,8 +18,8 @@ python3 evaluate.py \
   --core-steps -1 \
   --eps-final 0.0 \
   --eval-time-limit 100000000000000 \
-  --no_restarts \
-  --test_time_max_decisions_allowed 500 \
+  --no-restarts \
+  --test-time-max-decisions-allowed 500 \
   --eval-problems-paths PATH_TO_TEST_DATA \
   --model-dir MODEL_DIR \
   --model-checkpoint CHECKPOINT.chkp
