@@ -32,31 +32,31 @@ python3 dqn.py \
   --loss mse \
   --opt adam \
   --save-freq 500 \
-  --grad_clip 1 \
-  --grad_clip_norm_type 2 \
+  --grad-clip 1 \
+  --grad-clip-norm-type 2 \
   --eval-freq 1000 \
   --eval-time-limit 3600 \
   --core-steps 4 \
   --expert-exploration-prob 0.0 \
-  --priority_alpha 0.5 \
-  --priority_beta 0.5 \
+  --priority-alpha 0.5 \
+  --priority-beta 0.5 \
   --e2v-aggregator sum \
-  --n_hidden 1 \
-  --hidden_size 64 \
-  --decoder_v_out_size 32 \
-  --decoder_e_out_size 1 \
-  --decoder_g_out_size 1 \
-  --encoder_v_out_size 32 \
-  --encoder_e_out_size 32 \
-  --encoder_g_out_size 32 \
-  --core_v_out_size 64 \
-  --core_e_out_size 64 \
-  --core_g_out_size 32 \
+  --n-hidden 1 \
+  --hidden-size 64 \
+  --decoder-v-out-size 32 \
+  --decoder-e-out-size 1 \
+  --decoder-g-out-size 1 \
+  --encoder-v-out-size 32 \
+  --encoder-e-out-size 32 \
+  --encoder-g-out-size 32 \
+  --core-v-out-size 64 \
+  --core-e-out-size 64 \
+  --core-g-out-size 32 \
   --activation relu \
-  --penalty_size 0.1 \
-  --train_time_max_decisions_allowed 500 \
-  --test_time_max_decisions_allowed 500 \
-  --no_max_cap_fill_buffer \
-  --lr_scheduler_gamma 1 \
-  --lr_scheduler_frequency 3000 \
-  --independent_block_layers 0
+  --penalty-size 0.1 \
+  --train-time-max-decisions-allowed 500 \
+  --test-time-max-decisions-allowed 500 \
+  --no-max-cap-fill-buffer \
+  --lr-scheduler-gamma 1 \
+  --lr-scheduler-frequency 3000 \
+  --independent-block-layers 0
