@@ -27,7 +27,6 @@ import sys
 
 import torch
 import yaml
-from torch import nn
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU, LayerNorm
 from torch_geometric.nn.meta import MetaLayer
 from torch_scatter import scatter_mean, scatter_add
@@ -90,7 +89,7 @@ def get_mlp(
         out_size,
         n_hidden,
         hidden_size,
-        activation=nn.LeakyReLU,
+        activation=ReLU,
         activate_last=True,
         layer_norm=True
 ):
