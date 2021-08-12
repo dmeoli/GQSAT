@@ -4,22 +4,22 @@
 from itertools import chain
 
 DQN = {
-    "batch_updates": 50000,
+    "batch-updates": 50000,
     "lr": 2e-5,
     "bsize": 64,
-    "buffer_size": 20000,
+    "buffer-size": 20000,
     "max_cap_fill_buffer": 0,
-    "history_len": 1,
+    "history-len": 1,
     "priority_alpha": 0.5,
     "priority_beta": 0.5,
-    "eps_init": 1.0,
-    "eps_final": 0.01,
-    "eps_decay_steps": 30000,
-    "init_exploration_steps": 5000,
-    "expert_exploration_prob": 0.0,
+    "eps-init": 1.0,
+    "eps-final": 0.01,
+    "eps-decay-steps": 30000,
+    "init-exploration-steps": 5000,
+    "expert-exploration-prob": 0.0,
     "gamma": 0.99,
-    "step_freq": 4,
-    "target_update_freq": 10,
+    "step-freq": 4,
+    "target-update-freq": 10,
     "train_time_max_decisions_allowed": 500,
     "test_time_max_decisions_allowed": 500,
     "penalty_size": 0.1,
@@ -35,8 +35,8 @@ Optimization = {
 }
 
 GraphNetwork = {
-    "core_steps": 4,
-    "e2v_aggregator": sum,
+    "core-steps": 4,
+    "e2v-aggregator": sum,
     "n_hidden": 1,
     "hidden_size": 64,
     "decoder_v_out_size": 32,
@@ -53,13 +53,13 @@ GraphNetwork = {
 }
 
 main = {
-    "logdir": "log",
-    "env_name": "sat_v0",
-    "train_problems_paths": "../data/uniform-random-3-sat/train/uf50_218",
-    "eval_problems_paths": "../data/uniform-random-3-sat/val/uf50_218",
-    "eval_freq": 1000,
-    "eval_time_limit": 3600,
-    "save_freq": 500,
+    "logdir": "./log",
+    "env-name": "sat-v0",
+    "train-problems-paths": "../data/uniform-random-3-sat/train/uf50_218",
+    "eval-problems-paths": "../data/uniform-random-3-sat/val/uf50_218",
+    "eval-freq": 1000,
+    "eval-time-limit": 3600,
+    "save-freq": 500,
 }
 
 
