@@ -37,10 +37,10 @@ class ModifiedMetaLayer(MetaLayer):
     def forward(
             self, x, edge_index, edge_attr=None, u=None, v_indices=None, e_indices=None
     ):
-        tgt, src = edge_index
+        row, col = edge_index
 
         if self.edge_model is not None:
-            edge_attr = self.edge_model(x[tgt], x[src], edge_attr, u, e_indices)
+            edge_attr = self.edge_model(x[row], x[col], edge_attr, u, e_indices)
 
         if self.node_model is not None:
             x = self.node_model(x, edge_index, edge_attr, u, v_indices)
@@ -191,31 +191,36 @@ class GraphNet(SatModel):
 
         self.independent = independent
 
-        def edge_model(src, dest, edge_attr, u=None, e_indices=None):
+        def edge_model(src, target, edge_attr, u=None, e_indices=None):
             # source, target: [E, F_x], where E is the number of edges.
             # edge_attr: [E, F_e]
+            # u: [B, F_u], where B is the number of graphs.
             if self.independent:
                 return self.edge_mlp(edge_attr)
 
-            out = torch.cat([src, dest, edge_attr, u[e_indices]], 1)
+            out = torch.cat([src, target, edge_attr, u[e_indices]], 1)
             return self.edge_mlp(out)
 
         def node_model(x, edge_index, edge_attr, u=None, v_indices=None):
             # x: [N, F_x], where N is the number of nodes.
             # edge_index: [2, E] with max entry N - 1.
             # edge_attr: [E, F_e]
+            # u: [B, F_u]
             if self.independent:
                 return self.node_mlp(x)
 
-            tgt, src = edge_index  # Warning: Row must be the edge target here, not the source.
+            row, col = edge_index  # Warning: Row must be the edge target here, not the source.
             if self.e2v_agg == "sum":
-                out = scatter_add(edge_attr, tgt, dim=0, dim_size=x.size(0))
+                out = scatter_add(edge_attr, row, dim=0, dim_size=x.size(0))
             elif self.e2v_agg == "mean":
-                out = scatter_mean(edge_attr, tgt, dim=0, dim_size=x.size(0))
+                out = scatter_mean(edge_attr, row, dim=0, dim_size=x.size(0))
             out = torch.cat([x, out, u[v_indices]], dim=1)
             return self.node_mlp(out)
 
         def global_model(x, edge_attr, u, v_indices, e_indices):
+            # x: [N, F_x], where N is the number of nodes.
+            # edge_attr: [E, F_e]
+            # u: [B, F_u]
             if self.independent:
                 return self.global_mlp(u)
             out = torch.cat(
