@@ -20,7 +20,7 @@ import torch
 import yaml
 
 from gqsat.agents import GraphAgent
-from gqsat.models import SatModel
+from gqsat.models import SATModel
 from gqsat.utils import build_eval_argparser, evaluate
 
 if __name__ == "__main__":
@@ -39,7 +39,7 @@ if __name__ == "__main__":
         if args.no_cuda or not torch.cuda.is_available()
         else torch.device("cuda")
     )
-    net = SatModel.load_from_yaml(os.path.join(args.model_dir, "model.yaml")).to(
+    net = SATModel.load_from_yaml(os.path.join(args.model_dir, "model.yaml")).to(
         args.device
     )
 

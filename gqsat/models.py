@@ -51,7 +51,7 @@ class ModifiedMetaLayer(MetaLayer):
         return x, edge_attr, u
 
 
-class SatModel(torch.nn.Module):
+class SATModel(torch.nn.Module):
 
     def __init__(self, save_name=None):
         super().__init__()
@@ -111,7 +111,7 @@ def get_mlp(
     return Seq(*arch)
 
 
-class GraphNet(SatModel):
+class GraphNet(SATModel):
 
     def __init__(
             self,
@@ -126,114 +126,128 @@ class GraphNet(SatModel):
             layer_norm=True
     ):
         super().__init__(save_name)
-        self.e2v_agg = e2v_agg
         if e2v_agg not in ["sum", "mean"]:
             raise ValueError("Unknown aggregation function.")
 
-        v_in = in_dims[0]
-        e_in = in_dims[1]
-        u_in = in_dims[2]
+        v_in = in_dims[0]  # n_node_features_in
+        e_in = in_dims[1]  # n_edge_features_in
+        u_in = in_dims[2]  # n_global_features_in
 
-        v_out = out_dims[0]
-        e_out = out_dims[1]
-        u_out = out_dims[2]
+        v_out = out_dims[0]  # n_node_features_out
+        e_out = out_dims[1]  # n_edge_features_out
+        u_out = out_dims[2]  # n_global_features_out
 
-        if independent:
-            self.edge_mlp = get_mlp(
-                e_in,
-                e_out,
-                n_hidden,
-                hidden_size,
-                activation=activation,
-                layer_norm=layer_norm
-            )
-            self.node_mlp = get_mlp(
-                v_in,
-                v_out,
-                n_hidden,
-                hidden_size,
-                activation=activation,
-                layer_norm=layer_norm
-            )
-            self.global_mlp = get_mlp(
-                u_in,
-                u_out,
-                n_hidden,
-                hidden_size,
-                activation=activation,
-                layer_norm=layer_norm
-            )
-        else:
-            self.edge_mlp = get_mlp(
-                e_in + 2 * v_in + u_in,
-                e_out,
-                n_hidden,
-                hidden_size,
-                activation=activation,
-                layer_norm=layer_norm
-            )
-            self.node_mlp = get_mlp(
-                v_in + e_out + u_in,
-                v_out,
-                n_hidden,
-                hidden_size,
-                activation=activation,
-                layer_norm=layer_norm
-            )
-            self.global_mlp = get_mlp(
-                u_in + v_out + e_out,
-                u_out,
-                n_hidden,
-                hidden_size,
-                activation=activation,
-                layer_norm=layer_norm
-            )
+        class EdgeModel(torch.nn.Module):
+            def __init__(self):
+                super(EdgeModel, self).__init__()
 
-        self.independent = independent
+                if independent:
+                    self.edge_mlp = get_mlp(
+                        e_in,  # n_edge_features_in
+                        e_out,  # n_edge_features_out
+                        n_hidden,
+                        hidden_size,
+                        activation=activation,
+                        layer_norm=layer_norm
+                    )
+                else:
+                    self.edge_mlp = get_mlp(
+                        e_in + 2 * v_in + u_in,  # n_edge_features_in + 2 * n_node_features_in + n_global_features_in
+                        e_out,
+                        n_hidden,
+                        hidden_size,
+                        activation=activation,
+                        layer_norm=layer_norm
+                    )
 
-        def edge_model(src, target, edge_attr, u=None, e_indices=None):
-            # source, target: [E, F_x], where E is the number of edges.
-            # edge_attr: [E, F_e]
-            # u: [B, F_u], where B is the number of graphs.
-            if self.independent:
-                return self.edge_mlp(edge_attr)
+            def forward(self, src, target, edge_attr, u=None, e_indices=None):  # e_indices aka batch
+                # source, target: [E, F_x], where E is the number of edges.
+                # edge_attr: [E, F_e]
+                # u: [B, F_u], where B is the number of graphs.
+                # e_indices: [E] with max entry B - 1.
+                if independent:
+                    return self.edge_mlp(edge_attr)
 
-            out = torch.cat([src, target, edge_attr, u[e_indices]], 1)
-            return self.edge_mlp(out)
+                out = torch.cat([src, target, edge_attr, u[e_indices]], 1)
+                return self.edge_mlp(out)
 
-        def node_model(x, edge_index, edge_attr, u=None, v_indices=None):
-            # x: [N, F_x], where N is the number of nodes.
-            # edge_index: [2, E] with max entry N - 1.
-            # edge_attr: [E, F_e]
-            # u: [B, F_u]
-            if self.independent:
-                return self.node_mlp(x)
+        class NodeModel(torch.nn.Module):
+            def __init__(self):
+                super(NodeModel, self).__init__()
 
-            row, col = edge_index  # Warning: Row must be the edge target here, not the source.
-            if self.e2v_agg == "sum":
-                out = scatter_add(edge_attr, row, dim=0, dim_size=x.size(0))
-            elif self.e2v_agg == "mean":
-                out = scatter_mean(edge_attr, row, dim=0, dim_size=x.size(0))
-            out = torch.cat([x, out, u[v_indices]], dim=1)
-            return self.node_mlp(out)
+                if independent:
+                    self.node_mlp = get_mlp(
+                        v_in,  # n_node_features_in
+                        v_out,  # n_node_features_out
+                        n_hidden,
+                        hidden_size,
+                        activation=activation,
+                        layer_norm=layer_norm
+                    )
+                else:
+                    self.node_mlp = get_mlp(
+                        v_in + e_out + u_in,  # n_node_features_in + n_edge_features_out + n_global_features_in
+                        v_out,  # n_node_features_out
+                        n_hidden,
+                        hidden_size,
+                        activation=activation,
+                        layer_norm=layer_norm
+                    )
 
-        def global_model(x, edge_attr, u, v_indices, e_indices):
-            # x: [N, F_x], where N is the number of nodes.
-            # edge_attr: [E, F_e]
-            # u: [B, F_u]
-            if self.independent:
-                return self.global_mlp(u)
-            out = torch.cat(
-                [
-                    u,
-                    scatter_mean(x, v_indices, dim=0),
-                    scatter_mean(edge_attr, e_indices, dim=0),
-                ],
-                dim=1
-            )
-            return self.global_mlp(out)
+            def forward(self, x, edge_index, edge_attr, u=None, v_indices=None):  # v_indices aka batch
+                # x: [N, F_x], where N is the number of nodes.
+                # edge_index: [2, E] with max entry N - 1.
+                # edge_attr: [E, F_e]
+                # u: [B, F_u], where B is the number of graphs.
+                # v_indices: [N] with max entry B - 1.
+                if independent:
+                    return self.node_mlp(x)
 
-        self.op = ModifiedMetaLayer(edge_model, node_model, global_model)
+                row, col = edge_index  # Warning: Row must be the edge target here, not the source.
+                if e2v_agg == "sum":
+                    out = scatter_add(edge_attr, row, dim=0, dim_size=x.size(0))
+                elif e2v_agg == "mean":
+                    out = scatter_mean(edge_attr, row, dim=0, dim_size=x.size(0))
+                out = torch.cat([x, out, u[v_indices]], dim=1)
+                return self.node_mlp(out)
+
+        class GlobalModel(torch.nn.Module):
+
+            def __init__(self):
+                super(GlobalModel, self).__init__()
+
+                if independent:
+                    self.global_mlp = get_mlp(
+                        u_in,  # n_global_features_in
+                        u_out,  # n_global_features_out
+                        n_hidden,
+                        hidden_size,
+                        activation=activation,
+                        layer_norm=layer_norm
+                    )
+                else:
+                    self.global_mlp = get_mlp(
+                        u_in + v_out + e_out,  # n_global_features_in + n_node_features_out + n_edge_features_out
+                        u_out,  # n_global_features_out
+                        n_hidden,
+                        hidden_size,
+                        activation=activation,
+                        layer_norm=layer_norm
+                    )
+
+            def forward(self, x, edge_attr, u, v_indices, e_indices):  # e_indices aka batch
+                # x: [N, F_x], where N is the number of nodes.
+                # edge_attr: [E, F_e]
+                # u: [B, F_u], where B is the number of graphs.
+                # e_indices: [E] with max entry B - 1.
+                if independent:
+                    return self.global_mlp(u)
+                out = torch.cat([u,
+                                 scatter_mean(x, v_indices, dim=0),
+                                 scatter_mean(edge_attr, e_indices, dim=0)], dim=1)
+                return self.global_mlp(out)
+
+        self.op = ModifiedMetaLayer(EdgeModel(), NodeModel(), GlobalModel())
 
     def forward(
             self, x, edge_index, edge_attr=None, u=None, v_indices=None, e_indices=None
@@ -241,7 +255,31 @@ class GraphNet(SatModel):
         return self.op(x, edge_index, edge_attr, u, v_indices, e_indices)
 
 
-class EncoderCoreDecoder(SatModel):
+class EncoderCoreDecoder(SATModel):
+    """
+    Full encode-process-decode model.
+    - An "Encoder" graph net, which independently encodes the edge, node, and
+      global attributes (does not compute relations etc.).
+    - A "Core" graph net, which performs N rounds of processing (message-passing)
+      steps. The input to the Core is the concatenation of the Encoder's output
+      and the previous output of the Core (labeled "Hidden(t)" below, where "t" is
+      the processing step).
+    - A "Decoder" graph net, which independently decodes the edge, node, and
+      global attributes (does not compute relations etc.), on each
+      message-passing step.
+
+                        Hidden(t)   Hidden(t+1)
+                           |            ^
+              *---------*  |  *------*  |  *---------*
+              |         |  |  |      |  |  |         |
+    Input --->| Encoder |  *->| Core |--*->| Decoder |---> Output(t)
+              |         |---->|      |     |         |
+              *---------*     *------*     *---------*
+
+    The model is trained by supervised learning. Input graphs are procedurally
+    generated, and output graphs have the same structure with the nodes and edges
+    of the shortest path labeled (using 2-element 1-hot vectors).
+    """
 
     def __init__(
             self,

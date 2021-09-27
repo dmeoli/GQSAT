@@ -26,7 +26,7 @@ from tensorboardX import SummaryWriter
 from gqsat.agents import GraphAgent, MiniSATAgent
 from gqsat.buffer import ReplayGraphBuffer
 from gqsat.learners import GraphLearner
-from gqsat.models import EncoderCoreDecoder, SatModel
+from gqsat.models import EncoderCoreDecoder, SATModel
 from gqsat.utils import evaluate, make_env, build_argparser
 
 
@@ -130,12 +130,12 @@ class DQN:
 
         self.eval_resume_signal = train_status["in_eval_mode"]
         # load the model
-        net = SatModel.load_from_yaml(os.path.join(args.logdir, "model.yaml")).to(
+        net = SATModel.load_from_yaml(os.path.join(args.logdir, "model.yaml")).to(
             args.device
         )
         net.load_state_dict(torch.load(train_status["latest_model_name"]))
 
-        target_net = SatModel.load_from_yaml(
+        target_net = SATModel.load_from_yaml(
             os.path.join(args.logdir, "model.yaml")
         ).to(args.device)
         target_net.load_state_dict(net.state_dict())
@@ -190,7 +190,7 @@ class DQN:
         self.env = make_env(args.train_problems_paths, args, test_mode=False)
         if args.model_dir is not None:
             # load an existing model and continue training
-            net = SatModel.load_from_yaml(
+            net = SATModel.load_from_yaml(
                 os.path.join(args.model_dir, "model.yaml")
             ).to(args.device)
             net.load_state_dict(
@@ -255,7 +255,7 @@ class DQN:
             else torch.device("cuda")
         )
 
-        net = SatModel.load_from_yaml(os.path.join(args.model_dir, "model.yaml")).to(
+        net = SATModel.load_from_yaml(os.path.join(args.model_dir, "model.yaml")).to(
             args.device
         )
 
