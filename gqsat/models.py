@@ -138,6 +138,7 @@ class GraphNet(SATModel):
         u_out = out_dims[2]  # n_global_features_out
 
         class EdgeModel(torch.nn.Module):
+
             def __init__(self):
                 super(EdgeModel, self).__init__()
 
@@ -160,8 +161,8 @@ class GraphNet(SATModel):
                         layer_norm=layer_norm
                     )
 
-            def forward(self, src, target, edge_attr, u=None, e_indices=None):  # e_indices aka batch
-                # source, target: [E, F_x], where E is the number of edges.
+            def forward(self, src, target, edge_attr, u=None, e_indices=None):
+                # src, target: [E, F_x], where E is the number of edges.
                 # edge_attr: [E, F_e]
                 # u: [B, F_u], where B is the number of graphs.
                 # e_indices: [E] with max entry B - 1.
@@ -172,6 +173,7 @@ class GraphNet(SATModel):
                 return self.edge_mlp(out)
 
         class NodeModel(torch.nn.Module):
+
             def __init__(self):
                 super(NodeModel, self).__init__()
 
@@ -194,7 +196,7 @@ class GraphNet(SATModel):
                         layer_norm=layer_norm
                     )
 
-            def forward(self, x, edge_index, edge_attr, u=None, v_indices=None):  # v_indices aka batch
+            def forward(self, x, edge_index, edge_attr, u=None, v_indices=None):
                 # x: [N, F_x], where N is the number of nodes.
                 # edge_index: [2, E] with max entry N - 1.
                 # edge_attr: [E, F_e]
@@ -235,13 +237,14 @@ class GraphNet(SATModel):
                         layer_norm=layer_norm
                     )
 
-            def forward(self, x, edge_attr, u, v_indices, e_indices):  # e_indices aka batch
+            def forward(self, x, edge_attr, u, v_indices, e_indices):
                 # x: [N, F_x], where N is the number of nodes.
                 # edge_attr: [E, F_e]
                 # u: [B, F_u], where B is the number of graphs.
                 # e_indices: [E] with max entry B - 1.
                 if independent:
                     return self.global_mlp(u)
+
                 out = torch.cat([u,
                                  scatter_mean(x, v_indices, dim=0),
                                  scatter_mean(edge_attr, e_indices, dim=0)], dim=1)
