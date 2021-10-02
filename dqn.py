@@ -26,7 +26,7 @@ from tensorboardX import SummaryWriter
 from gqsat.agents import GraphAgent, MiniSATAgent
 from gqsat.buffer import ReplayGraphBuffer
 from gqsat.learners import GraphLearner
-from gqsat.models import EncoderCoreDecoder, SATModel
+from gqsat.models import EncodeProcessDecode, SATModel
 from gqsat.utils import evaluate, make_env, build_argparser
 
 
@@ -198,7 +198,7 @@ class DQN:
             )
         else:
             # learning from scratch
-            net = EncoderCoreDecoder(
+            net = EncodeProcessDecode(
                 (self.env.vertex_in_size, self.env.edge_in_size, self.env.global_in_size),
                 core_out_dims=(
                     args.core_v_out_size,

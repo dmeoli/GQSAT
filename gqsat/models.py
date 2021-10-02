@@ -119,15 +119,15 @@ class GraphNet(SATModel):
             out_dims,
             independent=False,
             save_name=None,
-            e2v_agg="sum",
+            e2v_agg='sum',
             n_hidden=1,
             hidden_size=64,
             activation=ReLU,
             layer_norm=True
     ):
         super().__init__(save_name)
-        if e2v_agg not in ["sum", "mean"]:
-            raise ValueError("Unknown aggregation function.")
+        if e2v_agg not in ['sum', 'mean']:
+            raise ValueError('unknown aggregation function {}'.format(e2v_agg))
 
         v_in = in_dims[0]  # n_node_features_in
         e_in = in_dims[1]  # n_edge_features_in
@@ -169,7 +169,7 @@ class GraphNet(SATModel):
                 if independent:
                     return self.edge_mlp(edge_attr)
 
-                out = torch.cat([src, target, edge_attr, u[e_indices]], 1)
+                out = torch.cat([src, target, edge_attr, u[e_indices]], dim=1)
                 return self.edge_mlp(out)
 
         class NodeModel(torch.nn.Module):
@@ -206,9 +206,9 @@ class GraphNet(SATModel):
                     return self.node_mlp(x)
 
                 row, col = edge_index  # Warning: Row must be the edge target here, not the source.
-                if e2v_agg == "sum":
+                if e2v_agg == 'sum':
                     out = scatter_add(edge_attr, row, dim=0, dim_size=x.size(0))
-                elif e2v_agg == "mean":
+                elif e2v_agg == 'mean':
                     out = scatter_mean(edge_attr, row, dim=0, dim_size=x.size(0))
                 out = torch.cat([x, out, u[v_indices]], dim=1)
                 return self.node_mlp(out)
@@ -258,9 +258,9 @@ class GraphNet(SATModel):
         return self.op(x, edge_index, edge_attr, u, v_indices, e_indices)
 
 
-class EncoderCoreDecoder(SATModel):
+class EncodeProcessDecode(SATModel):
     """
-    Full encode-process-decode model.
+    Full Encode-Process-Decode model.
     - An "Encoder" graph net, which independently encodes the edge, node, and
       global attributes (does not compute relations etc.).
     - A "Core" graph net, which performs N rounds of processing (message-passing)
@@ -293,7 +293,7 @@ class EncoderCoreDecoder(SATModel):
             encoder_out_dims=None,
             dec_out_dims=None,
             save_name=None,
-            e2v_agg="sum",
+            e2v_agg='sum',
             n_hidden=1,
             hidden_size=64,
             activation=ReLU,
@@ -312,6 +312,13 @@ class EncoderCoreDecoder(SATModel):
 
         self.encoder = None
         if encoder_out_dims is not None:
+            """
+            A graph block that applies models to the graph elements *independently*.
+            The inputs and outputs are graphs. The corresponding models are applied to
+            each element of the graph (edges, nodes and globals) in parallel and
+            independently of the other elements. 
+            It can be used to encode or decode the elements of a graph.
+            """
             self.encoder = GraphNet(
                 in_dims,
                 encoder_out_dims,
@@ -324,6 +331,10 @@ class EncoderCoreDecoder(SATModel):
 
         core_in_dims = in_dims if self.encoder is None else encoder_out_dims
 
+        """
+        General graph network. 
+        First apply edge block, then node block, and finally, the global block.
+        """
         self.core = GraphNet(
             (
                 core_in_dims[0] + core_out_dims[0],
@@ -340,6 +351,13 @@ class EncoderCoreDecoder(SATModel):
 
         self.decoder = None
         if dec_out_dims is not None:
+            """
+            A graph block that applies models to the graph elements *independently*.
+            The inputs and outputs are graphs. The corresponding models are applied to
+            each element of the graph (edges, nodes and globals) in parallel and
+            independently of the other elements. 
+            It can be used to encode or decode the elements of a graph.
+            """
             self.decoder = GraphNet(
                 core_out_dims,
                 dec_out_dims,
