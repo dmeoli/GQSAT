@@ -26,4 +26,4 @@ call_args:
   - 2
   - null
   - null
-class_name: EncoderCoreDecoder
+class_name: EncodeProcessDecode
