@@ -48,7 +48,7 @@ class GraphLearner:
         self.device = args.device
 
     def get_qs(self, states):
-        vout, eout, _ = self.net(
+        v_out, e_out, _ = self.net(
             x=states[0],
             edge_index=states[2],
             edge_attr=states[1],
@@ -56,10 +56,10 @@ class GraphLearner:
             e_indices=states[5],
             u=states[6]
         )
-        return vout[states[0][:, VAR_ID_IDX] == 1], states[3]
+        return v_out[states[0][:, VAR_ID_IDX] == 1], states[3]
 
     def get_target_qs(self, states):
-        vout, eout, _ = self.target(
+        v_out, e_out, _ = self.target(
             x=states[0],
             edge_index=states[2],
             edge_attr=states[1],
@@ -67,7 +67,7 @@ class GraphLearner:
             e_indices=states[5],
             u=states[6]
         )
-        return vout[states[0][:, VAR_ID_IDX] == 1].detach(), states[3]
+        return v_out[states[0][:, VAR_ID_IDX] == 1].detach(), states[3]
 
     def step(self):
         s, a, r, s_next, nonterminals = self.buffer.sample(self.bsize)
