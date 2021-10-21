@@ -213,23 +213,56 @@ class GraphNet(SATModel):
                     heads=heads,
                     concat=True,
                     dropout=dropout),
-                 'mlp_x, edge_index, mlp_edge_attr -> gat_x, edge_attr'),
-                (activation(), 'gat_x -> gat_x'),
+                 'mlp_x, edge_index, mlp_edge_attr -> gat_x'),
+                activation(inplace=True),
                 # add `LayerNorm` before embeddings concatenation across different
                 # layers, i.e., (mlp_x, gat_x), to provide a normalized output as
                 # done by edge/node mlp(s), i.e., mlp_x
-                (LayerNorm(v_out) if layer_norm else lambda gat_x: gat_x,
-                 'gat_x -> gat_x'),
+                (LayerNorm(v_out) if layer_norm else lambda gat_x: gat_x),
                 # After that edge/node mlp(s) and gat generates an embedding for each
                 # hidden layer, the aggregator function optimally combines these hidden
                 # embeddings to learn the optimal abstraction of input information.
                 # In the case of an LSTM layer coupled with an attention mechanism, the
                 # aggregator computes a convex combination of hidden embeddings.
                 (JumpingKnowledge(mode='lstm', channels=v_out, num_layers=2),
-                 '(mlp_x, gat_x) -> x'),
-                (lambda x, edge_attr: (x, edge_attr),
-                 'x, edge_attr -> x, edge_attr')
+                 '(mlp_x, gat_x) -> x')
             ])
+
+            # self.attention_model = Sequential('x, edge_index, edge_attr', [
+            #     (EdgeGATConv(
+            #         in_channels=v_in,  # out_node_features
+            #         out_channels=hidden_size,  # out_node_features
+            #         edge_dim=e_in,  # out_edge_features
+            #         # no self-connections since the SAT representation is a bipartite graph
+            #         add_self_loops=False,
+            #         heads=heads,
+            #         concat=True,
+            #         dropout=dropout),
+            #      'x, edge_index, edge_attr -> x1, edge_attr'),
+            #     (activation(), 'x1 -> x1'),
+            #     (EdgeGATConv(
+            #         in_channels=hidden_size,  # out_node_features
+            #         out_channels=v_out,  # out_node_features
+            #         edge_dim=e_in,  # out_edge_features
+            #         # no self-connections since the SAT representation is a bipartite graph
+            #         add_self_loops=False,
+            #         heads=heads,
+            #         concat=True,
+            #         dropout=dropout),
+            #      'x1, edge_index, edge_attr -> x2, edge_attr'),
+            #     (activation(), 'x2 -> x2'),
+            #     # After that edge/node mlp(s) and gat generates an embedding for each
+            #     # hidden layer, the aggregator function optimally combines these hidden
+            #     # embeddings to learn the optimal abstraction of input information.
+            #     # In the case of an LSTM layer coupled with an attention mechanism, the
+            #     # aggregator computes a convex combination of hidden embeddings.
+            #     (JumpingKnowledge(mode='lstm', channels=v_out, num_layers=2),
+            #      '(x1, x2) -> x'),
+            #     (LayerNorm(v_out) if layer_norm else lambda x: x,
+            #      'x -> x'),
+            #     (lambda x, edge_attr: (x, edge_attr),
+            #      'x, edge_attr -> x, edge_attr')
+            # ])
 
         class EdgeModel(torch.nn.Module):
 

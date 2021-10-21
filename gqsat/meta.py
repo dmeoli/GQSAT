@@ -43,7 +43,7 @@ class ModifiedMetaLayer(MetaLayer):
         # apply `attention_model` using the updated (x, edge_attr) before passing through
         # `global_model` in order to extract some extra node/edge high level features
         if self.attention_model:
-            x, edge_attr = self.attention_model(x, edge_index, edge_attr)
+            x = self.attention_model(x, edge_index, edge_attr)
 
         if self.global_model is not None:
             u = self.global_model(x, edge_attr, u, v_indices, e_indices)

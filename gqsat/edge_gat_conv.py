@@ -263,21 +263,19 @@ class EdgeGATConv(MessagePassing):
 
         if self.concat:
             out = out.view(-1, self.heads * self.out_channels)
-            edge_attr = edge_attr.view(-1, self.heads * self.out_channels)
         else:
             out = out.mean(dim=1)
-            edge_attr = edge_attr.mean(dim=1)
 
         if self.bias is not None:
             out += self.bias
 
         if isinstance(return_attention_weights, bool):
             if isinstance(edge_index, Tensor):
-                return out, edge_attr, (edge_index, alpha)
+                return out, (edge_index, alpha)
             elif isinstance(edge_index, SparseTensor):
-                return out, edge_attr, edge_index.set_value(alpha, layout='coo')
+                return out, edge_index.set_value(alpha, layout='coo')
         else:
-            return out, edge_attr
+            return out
 
     def message(self, x_j: Tensor, alpha_j: Tensor, alpha_i: OptTensor,
                 alpha_edge: OptTensor, index: Tensor, ptr: OptTensor,
