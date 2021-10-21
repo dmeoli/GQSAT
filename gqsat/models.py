@@ -6,7 +6,7 @@ import yaml
 from gqsat.edge_gat_conv import EdgeGATConv
 from gqsat.meta import ModifiedMetaLayer
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU, LayerNorm
-from torch_geometric.nn import Sequential, GATConv, global_mean_pool, global_add_pool, JumpingKnowledge
+from torch_geometric.nn import Sequential, JumpingKnowledge
 from torch_scatter import scatter_mean, scatter_add
 
 
@@ -258,10 +258,7 @@ class GraphNet(SATModel):
             #     # aggregator computes a convex combination of hidden embeddings.
             #     (JumpingKnowledge(mode='lstm', channels=v_out, num_layers=2),
             #      '(x1, x2) -> x'),
-            #     (LayerNorm(v_out) if layer_norm else lambda x: x,
-            #      'x -> x'),
-            #     (lambda x, edge_attr: (x, edge_attr),
-            #      'x, edge_attr -> x, edge_attr')
+            #     (LayerNorm(v_out) if layer_norm else lambda x: x)
             # ])
 
         class EdgeModel(torch.nn.Module):
