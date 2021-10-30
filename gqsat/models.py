@@ -3,10 +3,9 @@ import sys
 
 import torch
 import yaml
-from gqsat.edge_gat_conv import EdgeGATConv
 from gqsat.meta import ModifiedMetaLayer
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU, LayerNorm
-from torch_geometric.nn import Sequential
+from torch_geometric.nn import Sequential, GATConv as EdgeGATConv
 from torch_scatter import scatter_mean, scatter_add
 
 
@@ -187,7 +186,7 @@ class GraphNet(SATModel):
             activation=ReLU,
             layer_norm=True,
             use_attention=True,
-            heads=3,
+            heads=1
     ):
         super().__init__(save_name)
         if e2v_agg not in ['sum', 'mean']:
