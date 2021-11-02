@@ -186,7 +186,7 @@ class GraphNet(SATModel):
             activation=ReLU,
             layer_norm=True,
             use_attention=True,
-            heads=1
+            heads=3
     ):
         super().__init__(save_name)
         if e2v_agg not in ['sum', 'mean']:
