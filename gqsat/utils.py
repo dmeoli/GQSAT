@@ -383,6 +383,17 @@ def build_argparser():
     )
 
     parser.add_argument(
+        "--use_attention",
+        action="store_true",
+        help="Use the attention mechanism in the core graph net")
+    parser.add_argument(
+        "--heads",
+        type=int,
+        default=3,
+        help="Number of heads used in the GAT model"
+    )
+
+    parser.add_argument(
         "--lr_scheduler_gamma",
         type=float,
         default=1.0,

@@ -185,7 +185,7 @@ class GraphNet(SATModel):
             hidden_size=64,
             activation=ReLU,
             layer_norm=True,
-            use_attention=True,
+            use_attention=False,
             heads=3
     ):
         super().__init__(save_name)
@@ -199,29 +199,6 @@ class GraphNet(SATModel):
         v_out = out_dims[0]  # out_node_features
         e_out = out_dims[1]  # out_edge_features
         u_out = out_dims[2]  # out_global_features
-
-        if use_attention:
-            self.attention_model = Sequential('mlp_x, edge_index, mlp_edge_attr', [
-                (EdgeGATConv(
-                    in_channels=v_out,  # out_node_features
-                    out_channels=hidden_size, heads=heads, concat=True,  # heads * hidden_size
-                    edge_dim=e_out,  # out_edge_features
-                    # no self-connections since the SAT representation is a bipartite graph
-                    add_self_loops=False,
-                    aggr='add' if e2v_agg == 'sum' else e2v_agg),
-                 'mlp_x, edge_index, mlp_edge_attr -> gat_x'),
-                activation(inplace=True),
-                (EdgeGATConv(
-                    in_channels=heads * hidden_size,  # heads * hidden_size
-                    out_channels=v_out,  # out_node_features
-                    edge_dim=e_out,  # out_edge_features
-                    # no self-connections since the SAT representation is a bipartite graph
-                    add_self_loops=False,
-                    aggr='add' if e2v_agg == 'sum' else e2v_agg),
-                 'gat_x, edge_index, mlp_edge_attr -> gat_x'),
-                activation(inplace=True),
-                (LayerNorm(v_out) if layer_norm else lambda gat_x: gat_x)
-            ])
 
         class EdgeModel(torch.nn.Module):
 
@@ -299,8 +276,36 @@ class GraphNet(SATModel):
                                  scatter_mean(edge_attr, e_indices, dim=0)], dim=1)
                 return self.global_mlp(out)
 
-        self.op = ModifiedMetaLayer(EdgeModel(), NodeModel(), GlobalModel(),
-                                    attention_model=self.attention_model)
+        if use_attention:
+
+            self.attention_model = Sequential('mlp_x, edge_index, mlp_edge_attr', [
+                (EdgeGATConv(
+                    in_channels=v_out,  # out_node_features
+                    out_channels=hidden_size, heads=heads, concat=True,  # heads * hidden_size
+                    edge_dim=e_out,  # out_edge_features
+                    # no self-connections since the SAT representation is a bipartite graph
+                    add_self_loops=False,
+                    aggr='add' if e2v_agg == 'sum' else e2v_agg),
+                 'mlp_x, edge_index, mlp_edge_attr -> gat_x'),
+                activation(inplace=True),
+                (EdgeGATConv(
+                    in_channels=heads * hidden_size,  # heads * hidden_size
+                    out_channels=v_out,  # out_node_features
+                    edge_dim=e_out,  # out_edge_features
+                    # no self-connections since the SAT representation is a bipartite graph
+                    add_self_loops=False,
+                    aggr='add' if e2v_agg == 'sum' else e2v_agg),
+                 'gat_x, edge_index, mlp_edge_attr -> gat_x'),
+                activation(inplace=True),
+                (LayerNorm(v_out) if layer_norm else lambda gat_x: gat_x)
+            ])
+
+            self.op = ModifiedMetaLayer(EdgeModel(), NodeModel(), GlobalModel(),
+                                        attention_model=self.attention_model)
+
+        else:
+
+            self.op = ModifiedMetaLayer(EdgeModel(), NodeModel(), GlobalModel())
 
     def forward(self, x, edge_index, edge_attr=None, u=None, v_indices=None, e_indices=None):
         return self.op(x, edge_index, edge_attr, u, v_indices, e_indices)
@@ -345,7 +350,9 @@ class EncodeProcessDecode(SATModel):
             hidden_size=64,
             activation=ReLU,
             independent_block_layers=1,
-            layer_norm=True
+            layer_norm=True,
+            use_attention=False,
+            heads=3
     ):
         super().__init__(save_name)
         # all dims are tuples with (v,e) feature sizes
@@ -355,8 +362,6 @@ class EncodeProcessDecode(SATModel):
         self.core_out_dims = core_out_dims
         self.dec_out_dims = dec_out_dims
 
-        self.layer_norm = layer_norm
-
         self.encoder = None
         if encoder_out_dims is not None:
             self.encoder = IndependentGraphNet(
@@ -365,7 +370,7 @@ class EncodeProcessDecode(SATModel):
                 n_hidden=independent_block_layers,
                 hidden_size=hidden_size,
                 activation=activation,
-                layer_norm=self.layer_norm
+                layer_norm=layer_norm
             )
 
         core_in_dims = in_dims if self.encoder is None else encoder_out_dims
@@ -381,7 +386,9 @@ class EncodeProcessDecode(SATModel):
             n_hidden=n_hidden,
             hidden_size=hidden_size,
             activation=activation,
-            layer_norm=self.layer_norm
+            layer_norm=layer_norm,
+            use_attention=use_attention,
+            heads=heads
         )
 
         self.decoder = None
@@ -392,7 +399,7 @@ class EncodeProcessDecode(SATModel):
                 n_hidden=independent_block_layers,
                 hidden_size=hidden_size,
                 activation=activation,
-                layer_norm=self.layer_norm
+                layer_norm=layer_norm
             )
 
         pre_out_dims = core_out_dims if self.decoder is None else dec_out_dims
