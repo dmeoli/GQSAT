@@ -14,6 +14,7 @@ call_args:
   - 32
   - 32
   - 32
+  heads: 3
   hidden_size: 64
   in_dims: !!python/tuple
   - 2
@@ -26,4 +27,5 @@ call_args:
   - 2
   - null
   - null
+  use_attention: true
 class_name: EncodeProcessDecode
