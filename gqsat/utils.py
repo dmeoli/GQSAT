@@ -17,10 +17,13 @@ import os
 import sys
 import time
 
-import gym
+try:  # prefer the maintained gymnasium; fall back to legacy gym
+    import gymnasium as gym
+except ImportError:
+    import gym
 import numpy as np
 import torch
-from minisat.minisat.gym.MiniSATEnv import VAR_ID_IDX
+from minisat.minisat.gym.MiniSATEnv import VAR_ID_IDX, gym_sat_Env
 
 
 def add_common_options(parser):
@@ -502,8 +505,12 @@ def make_env(problems_paths, args, problems_list=None, test_mode=False):
         max_data_limit_per_set = args.test_max_data_limit_per_set
     if not test_mode and hasattr(args, "train_max_data_limit_per_set"):
         max_data_limit_per_set = args.train_max_data_limit_per_set
-    return gym.make(
-        args.env_name,
+    # Build the env directly instead of via gym.make: the custom signatures of
+    # gym_sat_Env.reset(max_decisions_cap=...) / step(decision, dummy=...) and its
+    # non-standard return tuples are incompatible with the env-checker / OrderEnforcing
+    # wrappers gym injects from 0.21 onwards. Direct construction is identical to what
+    # gym.make produced on the original (unwrapped) gym and works on any gym/gymnasium.
+    return gym_sat_Env(
         problems_paths=problems_paths,
         problems_list=problems_list,
         args=args,

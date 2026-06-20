@@ -6,7 +6,7 @@ import yaml
 from gqsat.meta import ModifiedMetaLayer
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU, LayerNorm
 from torch_geometric.nn import Sequential, GATConv as EdgeGATConv
-from torch_scatter import scatter_mean, scatter_add
+from torch_geometric.utils import scatter
 
 
 class SATModel(torch.nn.Module):
@@ -40,6 +40,37 @@ class SATModel(torch.nn.Module):
         with open(fname, "r") as f:
             res = yaml.load(f, Loader=yaml.Loader)
         return getattr(sys.modules[__name__], res["class_name"])(**res["call_args"])
+
+    @staticmethod
+    def reconcile_gat_lin_keys(model, state_dict):
+        """Bridge the GATConv linear-layer naming across PyG versions.
+
+        Older PyG stored the homogeneous GATConv linear as a shared
+        ``lin_src``/``lin_dst`` pair (identical weights); newer PyG uses a single
+        ``lin``. Remap the checkpoint keys in whichever direction the live model
+        expects, so checkpoints load with no missing/unexpected keys regardless of
+        the installed torch-geometric version. Lossless because lin_src == lin_dst.
+        """
+        model_keys = set(model.state_dict().keys())
+        out = {}
+        for k, v in state_dict.items():
+            if k.endswith("lin_src.weight") and k not in model_keys:
+                single = k.replace("lin_src.weight", "lin.weight")
+                if single in model_keys:           # new PyG: single lin
+                    out[single] = v
+                    continue
+            if k.endswith("lin_dst.weight") and k not in model_keys:
+                if k.replace("lin_dst.weight", "lin.weight") in model_keys:
+                    continue                        # redundant (== lin_src), drop
+            if k.endswith("lin.weight") and k not in model_keys:
+                src = k.replace("lin.weight", "lin_src.weight")
+                dst = k.replace("lin.weight", "lin_dst.weight")
+                if src in model_keys and dst in model_keys:   # old PyG: split lin
+                    out[src] = v
+                    out[dst] = v
+                    continue
+            out[k] = v
+        return out
 
 
 def get_mlp(
@@ -244,10 +275,10 @@ class GraphNet(SATModel):
                 row, col = edge_index  # source and target nodes in edge index
                 if e2v_agg == 'sum':
                     # global_add_pool(edge_attr, row, size=x.size(0))
-                    out = scatter_add(edge_attr, row, dim=0, dim_size=x.size(0))
+                    out = scatter(edge_attr, row, dim=0, dim_size=x.size(0), reduce='sum')
                 elif e2v_agg == 'mean':
                     # global_mean_pool(edge_attr, row, size=x.size(0))
-                    out = scatter_mean(edge_attr, row, dim=0, dim_size=x.size(0))
+                    out = scatter(edge_attr, row, dim=0, dim_size=x.size(0), reduce='mean')
                 out = torch.cat([x, out, u[v_indices]], dim=1)
                 return self.node_mlp(out)
 
@@ -272,8 +303,8 @@ class GraphNet(SATModel):
                 # v_indices: [N] with max entry B - 1.
                 # e_indices: [E] with max entry B - 1.
                 out = torch.cat([u,
-                                 scatter_mean(x, v_indices, dim=0),
-                                 scatter_mean(edge_attr, e_indices, dim=0)], dim=1)
+                                 scatter(x, v_indices, dim=0, dim_size=u.size(0), reduce='mean'),
+                                 scatter(edge_attr, e_indices, dim=0, dim_size=u.size(0), reduce='mean')], dim=1)
                 return self.global_mlp(out)
 
         if use_attention:

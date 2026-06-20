@@ -26,6 +26,15 @@ from gqsat.utils import build_eval_argparser, evaluate
 if __name__ == "__main__":
     parser = build_eval_argparser()
     eval_args = parser.parse_args()
+
+    # status.yaml (and the checkpoints) embed torch tensors saved on CUDA. When
+    # running without a GPU, PyYAML's reconstruction hits torch's _load_from_bytes,
+    # which ignores map_location, so force every storage to restore on CPU.
+    if eval_args.no_cuda or not torch.cuda.is_available():
+        import torch.serialization as _ts
+        _orig_restore = _ts.default_restore_location
+        _ts.default_restore_location = lambda storage, loc: _orig_restore(storage, "cpu")
+
     with open(os.path.join(eval_args.model_dir, "status.yaml"), "r") as f:
         train_status = yaml.load(f, Loader=yaml.Loader)
         args = train_status["args"]
@@ -48,9 +57,12 @@ if __name__ == "__main__":
         # -1 if use the same as for training
         net.steps = args.core_steps
 
-    net.load_state_dict(
-        torch.load(os.path.join(args.model_dir, args.model_checkpoint)), strict=False
+    state_dict = torch.load(
+        os.path.join(args.model_dir, args.model_checkpoint), map_location=args.device
     )
+    # bridge GATConv lin_src/lin_dst <-> lin naming across torch-geometric versions
+    state_dict = SATModel.reconcile_gat_lin_keys(net, state_dict)
+    net.load_state_dict(state_dict, strict=False)
 
     agent = GraphAgent(net, args)
 

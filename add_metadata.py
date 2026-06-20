@@ -16,10 +16,14 @@ import os
 from collections import defaultdict
 from os import path
 
-import gym
+try:  # prefer the maintained gymnasium; fall back to legacy gym
+    import gymnasium as gym
+except ImportError:
+    import gym
 
 from gqsat.agents import MiniSATAgent
 from gqsat.utils import build_argparser
+from minisat.minisat.gym.MiniSATEnv import gym_sat_Env
 
 DEBUG_ROLLOUTS = 10  # if --debug flag is present, run this many of rollouts, not the whole problem folder
 
@@ -30,8 +34,9 @@ def add_metadata(args):
     results = defaultdict(list)
 
     for with_restarts in [False, True]:
-        env = gym.make(
-            "sat-v0",
+        # direct construction (see make_env): avoids gym's env-checker wrappers that
+        # are incompatible with the custom step(dummy=...) / reset signatures.
+        env = gym_sat_Env(
             args=args,
             problems_paths=args.eval_problems_paths,
             test_mode=True,

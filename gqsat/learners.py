@@ -16,7 +16,7 @@ import torch
 from minisat.minisat.gym.MiniSATEnv import VAR_ID_IDX
 from torch import nn
 from torch.optim.lr_scheduler import StepLR
-from torch_scatter import scatter_max
+from torch_geometric.utils import scatter
 
 
 class GraphLearner:
@@ -83,7 +83,7 @@ class GraphLearner:
                 dtype=torch.long,
                 device=self.device
             ).flatten()
-            target_qs = scatter_max(target_qs.flatten(), idx_for_scatter, dim=0)[0]
+            target_qs = scatter(target_qs.flatten(), idx_for_scatter, dim=0, reduce='max')
             targets = r + nonterminals * self.gamma * target_qs
 
         self.net.train()
@@ -110,7 +110,7 @@ class GraphLearner:
 
         # I do not know a better solution for getting the lr from the scheduler.
         # This will fail for different lrs for different layers.
-        lr_for_the_update = self.lr_scheduler.get_lr()[0]
+        lr_for_the_update = self.lr_scheduler.get_last_lr()[0]
 
         self.lr_scheduler.step()
         return {

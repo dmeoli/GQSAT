@@ -478,8 +478,10 @@ class DQN:
                     obs = eval_env.reset(
                         max_decisions_cap=self.args.test_time_max_decisions_allowed
                     )
-                    # TODO: This is broken since eval_q_from_graph is different now
-                    q = self.eval_q_from_graph([obs], agg)
+                    # obs is already the parsed graph state from the env reset above,
+                    # so aggregate its Q-values directly (eval_q_from_graph rebuilds an
+                    # env from an adjacency matrix, which is not what we have here).
+                    q = self._aggregate_q(self.agent.forward([obs]), agg)
 
                     q_scores[eval_env.curr_problem] = q
 
@@ -516,19 +518,22 @@ class DQN:
                 q += r
             return q
 
-        q = self.agent.forward([obs])
+        return self._aggregate_q(self.agent.forward([obs]), agg)
+
+    @staticmethod
+    def _aggregate_q(q, agg):
+        """Aggregate the per-node Q-values of a single graph into one scalar."""
         if agg == "sum":
-            q = q.max(1).values.sum().cpu().item()
+            return q.max(1).values.sum().cpu().item()
         elif agg == "mean":
-            q = q.max(1).values.mean().cpu().item()
+            return q.max(1).values.mean().cpu().item()
         elif agg == "max":
-            q = q.flatten().max().cpu().item()
+            return q.flatten().max().cpu().item()
         elif agg == "expectation":
             flat_q = q.flatten()
-            q = torch.sum(torch.softmax(flat_q, dim=0) * flat_q).cpu().item()
+            return torch.sum(torch.softmax(flat_q, dim=0) * flat_q).cpu().item()
         else:
             raise ValueError(f"agg {agg} is not recognized")
-        return q
 
 
 if __name__ == "__main__":
