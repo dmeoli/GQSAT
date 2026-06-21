@@ -107,7 +107,11 @@ class DQN:
     """
 
     def __init__(self, args, train_status=None, eval=False):
-        self.writer = SummaryWriter()
+        # honour --logdir so checkpoints/status land where asked (e.g. on Drive, to
+        # survive Colab disconnects and allow --status_dict_path resume); fall back
+        # to the tensorboardX default timestamped dir only when no logdir is given.
+        logdir = getattr(args, "logdir", None) if args is not None else None
+        self.writer = SummaryWriter(logdir=logdir) if logdir else SummaryWriter()
         self.env = None
 
         if train_status is not None:
