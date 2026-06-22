@@ -30,7 +30,7 @@ SIZE = {"flat30-60": 90, "flat50-115": 150, "flat75-180": 225, "flat100-239": 30
         "flat125-301": 375, "flat150-360": 450, "flat175-417": 525, "flat200-479": 600,
         "uf50-218": 50, "uf100-430": 100, "uf250-1065": 250,
         "uuf50-218": 50, "uuf100-430": 100, "uuf250-1065": 250}
-COL = {"GAT-Q-SAT": "#d1495b", "Graph-Q-SAT": "#30638e"}
+COL = {"GAT-Q-SAT": "#4b2e83", "Graph-Q-SAT": "#b9a7d6"}  # deep violet vs light lilac
 
 
 def run_label(run_dir):
