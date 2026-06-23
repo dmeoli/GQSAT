@@ -395,6 +395,15 @@ def build_argparser():
         default=3,
         help="Number of heads used in the GAT model"
     )
+    parser.add_argument(
+        "--attention_type",
+        type=str,
+        default="gat",
+        choices=["gat", "graph_transformer"],
+        help="Attention block when --use_attention is set: 'gat' = GAT-Q-SAT "
+             "(edge-aware GATConv); 'graph_transformer' = the NeuroBack-inspired "
+             "GATv2 + Transformer-block successor (GTv2-Q-SAT)"
+    )
 
     parser.add_argument(
         "--lr_scheduler_gamma",

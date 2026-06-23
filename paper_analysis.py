@@ -30,15 +30,21 @@ SIZE = {"flat30-60": 90, "flat50-115": 150, "flat75-180": 225, "flat100-239": 30
         "flat125-301": 375, "flat150-360": 450, "flat175-417": 525, "flat200-479": 600,
         "uf50-218": 50, "uf100-430": 100, "uf250-1065": 250,
         "uuf50-218": 50, "uuf100-430": 100, "uuf250-1065": 250}
-COL = {"GAT-Q-SAT": "#4b2e83", "Graph-Q-SAT": "#b9a7d6"}  # deep violet vs light lilac
+COL = {"GAT-Q-SAT": "#7a4fb5", "Graph-Q-SAT": "#b9a7d6",  # mid + light lilac
+       "GTv2-Q-SAT": "#3a1d6e"}  # deepest violet (NeuroBack-inspired successor)
 
 
 def run_label(run_dir):
     """Return (model, train_family) or None."""
     try:
         with open(os.path.join(run_dir, "model.yaml")) as f:
-            attn = bool(yaml.load(f, Loader=yaml.Loader)["call_args"].get("use_attention"))
-        model = "GAT-Q-SAT" if attn else "Graph-Q-SAT"
+            call_args = yaml.load(f, Loader=yaml.Loader)["call_args"]
+        attn = bool(call_args.get("use_attention"))
+        atype = call_args.get("attention_type", "gat")
+        if attn:
+            model = "GTv2-Q-SAT" if atype == "graph_transformer" else "GAT-Q-SAT"
+        else:
+            model = "Graph-Q-SAT"
     except Exception:
         return None
     train = "random"

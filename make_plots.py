@@ -60,9 +60,10 @@ def mean_over_runs(agg, model, dataset, cap, idx):
 
 def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, start_one=False):
     plt.figure(figsize=(7, 4.3))
-    from matplotlib.colors import LinearSegmentedColormap
-    vmap = LinearSegmentedColormap.from_list("violet", ["#cdbfe6", "#4b2e83"])
-    n = len(datasets)
+    # one line per dataset: use a categorical palette (a violet gradient makes the
+    # per-dataset legend unreadable) + varied markers, so each curve is identifiable.
+    palette = plt.get_cmap("tab10").colors
+    markers = ["o", "s", "^", "D", "v", "P", "X", "*", "<", ">"]
     for i, d in enumerate(datasets):
         xs, ys = ([0], [1.0]) if start_one else ([], [])
         for c in CAPS:
@@ -71,8 +72,8 @@ def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, start_one=Fa
                 xs.append(c)
                 ys.append(v)
         if len(ys) > (1 if start_one else 0):
-            plt.plot(xs, ys, marker="o", markersize=3, linewidth=1.6, label=d,
-                     color=vmap(i / max(1, n - 1)))
+            plt.plot(xs, ys, marker=markers[i % len(markers)], markersize=4,
+                     linewidth=1.6, label=d, color=palette[i % len(palette)])
     plt.xscale("symlog")
     plt.xticks([0] + CAPS, ["0"] + [str(c) for c in CAPS])
     plt.xlabel("model decisions")
