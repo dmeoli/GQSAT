@@ -152,6 +152,12 @@ def build_eval_argparser():
         help="If >1, one GNN forward yields the top-k actions executed over the next "
              "steps without re-running the net (action-pool amortization)."
     )
+    parser.add_argument(
+        "--warmstart_release",
+        action="store_true",
+        help="Seed MiniSat's VSIDS activities from the root-state Q-values (one GNN "
+             "forward), then solve with pure VSIDS (Q-value warm-start)."
+    )
 
     add_common_options(parser)
     return parser

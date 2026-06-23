@@ -64,8 +64,9 @@ if __name__ == "__main__":
     state_dict = SATModel.reconcile_gat_lin_keys(net, state_dict)
     net.load_state_dict(state_dict, strict=False)
 
-    if getattr(args, "release_after", 0) > 0 or getattr(args, "action_pool_size", 1) > 1:
-        agent = RestrictedGraphAgent(net, args)  # early-release / action-pool tricks
+    if (getattr(args, "release_after", 0) > 0 or getattr(args, "action_pool_size", 1) > 1
+            or getattr(args, "warmstart_release", False)):
+        agent = RestrictedGraphAgent(net, args)  # early-release / pool / Q warm-start
     else:
         agent = GraphAgent(net, args)
 

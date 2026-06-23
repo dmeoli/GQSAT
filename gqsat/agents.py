@@ -113,11 +113,25 @@ class RestrictedGraphAgent(GraphAgent):
         super().__init__(net, args)
         self.release_after = int(getattr(args, "release_after", 0) or 0)
         self.pool_size = max(1, int(getattr(args, "action_pool_size", 1) or 1))
+        self.warmstart = bool(getattr(args, "warmstart_release", False))
         self.reset()
 
     def reset(self):
         self._decisions = 0
         self._pool = []  # cached original decision ids, best-first
+        self._warmed = False
+
+    def _apply_warmstart(self, hist_buffer, env):
+        """Seed MiniSat's VSIDS activities from the Q-values of the root state
+        (Shirokikh et al. 2023): activity(x) = -1 / max(Q(x,True), Q(x,False))."""
+        qs = self.forward(hist_buffer).cpu().numpy()       # (n_decidable, 2)
+        mapping = list(env.decision_to_var_mapping)
+        max_q = qs.max(axis=1)
+        orig_vars = [abs(mapping[2 * i]) - 1 for i in range(len(max_q))]
+        acts = np.zeros((max(orig_vars) + 1) if orig_vars else 0, dtype=np.float64)
+        for i, ov in enumerate(orig_vars):
+            acts[ov] = -1.0 / min(float(max_q[i]), -1e-6)   # >0, larger for higher Q
+        env.set_activities(acts)
 
     def _next_from_pool(self, mapping):
         """Best cached action whose variable is still decidable, as a current local
@@ -130,6 +144,12 @@ class RestrictedGraphAgent(GraphAgent):
         return None
 
     def act(self, hist_buffer, eps=0, env=None):
+        if self.warmstart:
+            if not self._warmed and env is not None:
+                self._apply_warmstart(hist_buffer, env)
+                self._warmed = True
+            return -1  # one Q-forward to seed activities, then pure VSIDS
+
         if self.release_after and self._decisions >= self.release_after:
             return -1  # hand control back to MiniSat's VSIDS
 

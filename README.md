@@ -77,7 +77,10 @@ python evaluate.py --env-name sat-v0 --core-steps -1 --eps-final 0.0 \
 # restricted heuristics (Shirokikh et al. 2023) — trade model decisions for speed:
 #   --release_after N    guide the first N decisions, then hand over to VSIDS
 #   --action_pool_size K one GNN forward → top-K actions executed without re-running
+#   --warmstart_release  seed MiniSat's VSIDS activities from root-state Q-values,
+#                        then solve with pure VSIDS (needs the C++ env rebuilt)
 python evaluate.py ... --release_after 5 --action_pool_size 4
+python evaluate.py ... --warmstart_release
 
 # tables + figures from the logs
 python aggregate_results.py && python make_plots.py && python paper_analysis.py
