@@ -129,13 +129,28 @@ def build_eval_argparser():
         "--core-steps",
         type=int,
         help="Number of message passing iterations. "
-             "\-1 for the same number as used for training",
+             "-1 for the same number as used for training",
         default=-1
     )
     parser.add_argument(
         "--eval-time-limit",
         type=int,
         help="Time limit for evaluation. If it takes more, return what it has and quit eval. In seconds."
+    )
+    # restricted heuristics (Shirokikh et al. 2023): trade model decisions for speed
+    parser.add_argument(
+        "--release_after",
+        type=int,
+        default=0,
+        help="If >0, the model guides only the first N decisions, then control is "
+             "released to MiniSat's VSIDS (early-release restricted heuristic)."
+    )
+    parser.add_argument(
+        "--action_pool_size",
+        type=int,
+        default=1,
+        help="If >1, one GNN forward yields the top-k actions executed over the next "
+             "steps without re-running the net (action-pool amortization)."
     )
 
     add_common_options(parser)
@@ -582,6 +597,8 @@ def evaluate(agent, args, include_train_set=False):
                     max_decisions_cap=args.test_time_max_decisions_allowed
                 )
                 done = eval_env.is_solved
+                if hasattr(agent, "reset"):
+                    agent.reset()  # restricted heuristics count decisions per problem
 
                 # solve problem using our model that we want to evaluate
                 while not done:
@@ -591,7 +608,10 @@ def evaluate(agent, args, include_train_set=False):
                     #     )
                     #     return res, eval_env.metadata, False
 
-                    action = agent.act([obs], eps=0)
+                    if getattr(agent, "wants_env", False):
+                        action = agent.act([obs], eps=0, env=eval_env)
+                    else:
+                        action = agent.act([obs], eps=0)
                     obs, _, done, _ = eval_env.step(action)
 
                 walltime[eval_env.curr_problem] = time.time() - p_st_time

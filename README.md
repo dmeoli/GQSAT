@@ -74,6 +74,11 @@ python evaluate.py --env-name sat-v0 --core-steps -1 --eps-final 0.0 \
     --eval-problems-paths ../data/graph-coloring/flat30-60 \
     --model-dir runs/<run> --model-checkpoint model_50000.chkp
 
+# restricted heuristics (Shirokikh et al. 2023) — trade model decisions for speed:
+#   --release_after N    guide the first N decisions, then hand over to VSIDS
+#   --action_pool_size K one GNN forward → top-K actions executed without re-running
+python evaluate.py ... --release_after 5 --action_pool_size 4
+
 # tables + figures from the logs
 python aggregate_results.py && python make_plots.py && python paper_analysis.py
 ```

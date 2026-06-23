@@ -19,7 +19,7 @@ import numpy as np
 import torch
 import yaml
 
-from gqsat.agents import GraphAgent
+from gqsat.agents import GraphAgent, RestrictedGraphAgent
 from gqsat.models import SATModel
 from gqsat.utils import build_eval_argparser, evaluate
 
@@ -64,7 +64,10 @@ if __name__ == "__main__":
     state_dict = SATModel.reconcile_gat_lin_keys(net, state_dict)
     net.load_state_dict(state_dict, strict=False)
 
-    agent = GraphAgent(net, args)
+    if getattr(args, "release_after", 0) > 0 or getattr(args, "action_pool_size", 1) > 1:
+        agent = RestrictedGraphAgent(net, args)  # early-release / action-pool tricks
+    else:
+        agent = GraphAgent(net, args)
 
     st_time = time.time()
     _, _, scores, eval_metadata, _ = evaluate(agent, args)

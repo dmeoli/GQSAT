@@ -84,3 +84,72 @@ class GraphAgent:
 
     def choose_actions(self, qs):
         return qs.flatten().argmax().item()
+
+
+class RestrictedGraphAgent(GraphAgent):
+    """Graph-Q-SAT restricted to the cold-start phase, with optional action pooling.
+
+    Two engineering tricks from Shirokikh et al. (2023), *Machine Learning for SAT:
+    Restricted Heuristics and New Graph Representations* (arXiv:2307.09141), aimed at
+    the wall-clock cost of running the GNN at every CDCL decision:
+
+    * **early release** (``release_after`` > 0): the model guides only the first
+      ``release_after`` decisions, then control is handed back to MiniSat's VSIDS
+      (action ``-1``). The learned heuristic matters most at the cold start, where
+      VSIDS activities are still uninformative; VSIDS is far cheaper afterwards.
+    * **action pool** (``action_pool_size`` > 1): one GNN forward yields the top-k
+      actions, executed over the next steps without re-running the net. Pooled
+      actions are cached as *original* decision ids and remapped to the rebuilt
+      graph each step via the env's ``decision_to_var_mapping``, skipping variables
+      that meanwhile got assigned.
+
+    Falls back to plain Graph-Q-SAT behaviour when ``release_after == 0`` and
+    ``action_pool_size == 1``.
+    """
+
+    wants_env = True  # the eval loop passes `env` to act() for the action pool
+
+    def __init__(self, net, args):
+        super().__init__(net, args)
+        self.release_after = int(getattr(args, "release_after", 0) or 0)
+        self.pool_size = max(1, int(getattr(args, "action_pool_size", 1) or 1))
+        self.reset()
+
+    def reset(self):
+        self._decisions = 0
+        self._pool = []  # cached original decision ids, best-first
+
+    def _next_from_pool(self, mapping):
+        """Best cached action whose variable is still decidable, as a current local
+        action index; None when the pool holds no valid action."""
+        inv = {orig: local for local, orig in enumerate(mapping)}
+        while self._pool:
+            orig = self._pool.pop(0)
+            if orig in inv:
+                return inv[orig]
+        return None
+
+    def act(self, hist_buffer, eps=0, env=None):
+        if self.release_after and self._decisions >= self.release_after:
+            return -1  # hand control back to MiniSat's VSIDS
+
+        mapping = list(env.decision_to_var_mapping) if env is not None else None
+
+        # reuse a still-valid pooled action without touching the GNN
+        if self.pool_size > 1 and mapping is not None and self._pool:
+            local = self._next_from_pool(mapping)
+            if local is not None:
+                self._decisions += 1
+                return local
+
+        flat = self.forward(hist_buffer).flatten()
+        if self.pool_size > 1 and mapping is not None:
+            order = torch.argsort(flat, descending=True).cpu().numpy()
+            top = order[: self.pool_size]
+            self._pool = [mapping[int(a)] for a in top]  # cache original ids
+            local = self._next_from_pool(mapping)
+            action = local if local is not None else int(top[0])
+        else:
+            action = int(flat.argmax().item())
+        self._decisions += 1
+        return action
