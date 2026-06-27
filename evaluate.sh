@@ -1,25 +1,21 @@
-# Copyright 2019-2020 Nvidia Corporation
+#!/usr/bin/env bash
+# Evaluate a trained Graph-Q-SAT-family model on a test set (prints MRIR).
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Usage:
+#   bash evaluate.sh <model_dir> <checkpoint> <test_path> [cap]
+#     model_dir  : directory holding model.yaml + the checkpoint
+#     checkpoint : e.g. model_50000.chkp
+#     test_path  : a directory of .cnf files (with a METADATA file)
+#     cap        : test-time decision budget (default 500)
+set -e
+
+MODEL_DIR="${1:?usage: evaluate.sh <model_dir> <checkpoint> <test_path> [cap]}"
+CHECKPOINT="${2:?usage: evaluate.sh <model_dir> <checkpoint> <test_path> [cap]}"
+TEST="${3:?usage: evaluate.sh <model_dir> <checkpoint> <test_path> [cap]}"
+CAP="${4:-500}"
 
 python3 evaluate.py \
-  --logdir log \
-  --env-name sat-v0 \
-  --core-steps -1 \
-  --eps-final 0.0 \
-  --eval-time-limit 100000000000000 \
-  --no_restarts \
-  --test_time_max_decisions_allowed 500 \
-  --eval-problems-paths PATH_TO_TEST_DATA \
-  --model-dir MODEL_DIR \
-  --model-checkpoint CHECKPOINT.chkp
+  --env-name sat-v0 --core-steps -1 --eps-final 0.0 --no_restarts \
+  --test_time_max_decisions_allowed "$CAP" \
+  --eval-problems-paths "$TEST" \
+  --model-dir "$MODEL_DIR" --model-checkpoint "$CHECKPOINT"
