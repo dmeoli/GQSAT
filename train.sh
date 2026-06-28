@@ -25,7 +25,6 @@ case "$VARIANT" in
 esac
 
 mkdir -p "$LOGDIR"
-touch "$LOGDIR/.config_ok"   # marks this run as using the correct published config
 
 RESUME=""
 [ -f "$LOGDIR/status.yaml" ] && RESUME="--status-dict-path $LOGDIR/status.yaml"
