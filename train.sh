@@ -24,9 +24,11 @@ case "$VARIANT" in
   *) echo "unknown variant '$VARIANT' (graphqsat|gatqsat|gtv2qsat)"; exit 1 ;;
 esac
 
+mkdir -p "$LOGDIR"
+touch "$LOGDIR/.config_ok"   # marks this run as using the correct published config
+
 RESUME=""
 [ -f "$LOGDIR/status.yaml" ] && RESUME="--status-dict-path $LOGDIR/status.yaml"
-mkdir -p "$LOGDIR"
 
 python3 dqn.py \
   --logdir "$LOGDIR" $RESUME --env-name sat-v0 \
