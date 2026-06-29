@@ -26,6 +26,16 @@ esac
 
 mkdir -p "$LOGDIR"
 
+# Discard a checkpoint left by an OLD, mis-configured run so we retrain correctly.
+# (Robust to stale Colab notebook cells: this script is always pulled fresh.)
+if [ -f "$LOGDIR/status.yaml" ] && ! { \
+      grep -qE '^[[:space:]]*train_time_max_decisions_allowed:[[:space:]]*500[[:space:]]*$' "$LOGDIR/status.yaml" && \
+      grep -qE '^[[:space:]]*grad_clip:[[:space:]]*0\.1[[:space:]]*$' "$LOGDIR/status.yaml" && \
+      grep -qE '^[[:space:]]*penalty_size:[[:space:]]*0\.1[[:space:]]*$' "$LOGDIR/status.yaml"; }; then
+    echo ">>> discarding mis-configured checkpoint in $LOGDIR (will retrain from scratch)"
+    rm -rf "$LOGDIR"; mkdir -p "$LOGDIR"
+fi
+
 RESUME=""
 [ -f "$LOGDIR/status.yaml" ] && RESUME="--status-dict-path $LOGDIR/status.yaml"
 
