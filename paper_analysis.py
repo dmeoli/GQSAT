@@ -126,6 +126,34 @@ def fig_thesis(data, out):
     plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
 
 
+def fig_time(data, out):
+    """Wall-clock companion to fig_thesis: median seconds-to-solve (cap 500) per
+    regime, GAT vs Graph. Fewer iterations (MRIR) does NOT mean less wall-clock ---
+    each model decision is a GNN forward, and attention makes it costlier still."""
+    regimes = [("coloring", FLAT, "colouring\n→ colouring"),
+               ("random", FLAT, "random\n→ colouring"),
+               ("random", RANDOM, "random\n→ random")]
+    cap = 500
+    gat, graph = [], []
+    for train, dss, _ in regimes:
+        g = [mean_sec(data, (train, "GAT-Q-SAT"), d, cap) for d in dss]
+        h = [mean_sec(data, (train, "Graph-Q-SAT"), d, cap) for d in dss]
+        gat.append(statistics.fmean([x for x in g if x is not None]))
+        graph.append(statistics.fmean([x for x in h if x is not None]))
+    x = range(len(regimes)); w = 0.38
+    plt.figure(figsize=(8, 4.5))
+    plt.bar([i - w/2 for i in x], graph, w, label="Graph-Q-SAT", color=COL["Graph-Q-SAT"])
+    plt.bar([i + w/2 for i in x], gat,  w, label="GAT-Q-SAT",   color=COL["GAT-Q-SAT"])
+    for i, (a, b) in enumerate(zip(graph, gat)):
+        plt.text(i - w/2, a, f"{a:.1f}", ha="center", va="bottom", fontsize=8)
+        plt.text(i + w/2, b, f"{b:.1f}", ha="center", va="bottom", fontsize=8)
+    plt.xticks(list(x), [r[2] for r in regimes], fontsize=9)
+    plt.ylabel("mean wall-clock sec to solve (cap 500)")
+    plt.title("Wall-clock cost: attention is slower per decision")
+    plt.legend(); plt.grid(axis="y", alpha=.3); plt.tight_layout()
+    plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
+
+
 def fig_curves(data, train, datasets, title, out):
     """MRIR vs decision-cap, GAT vs Graph, averaged over the datasets."""
     plt.figure(figsize=(7, 4.3))
@@ -188,6 +216,7 @@ def main():
     print("groups found:", {k: sum(len(c) for c in v.values()) for k, v in data.items()})
     od = "../img/paper"; os.makedirs(od, exist_ok=True)
     fig_thesis(data, f"{od}/thesis.png")
+    fig_time(data, f"{od}/time.png")
     fig_curves(data, "coloring", FLAT, "Trained & tested on graph colouring (in-distribution)",
                f"{od}/coloring_indist.png")
     fig_curves(data, "random", FLAT, "Random-trained, transfer to graph colouring",
