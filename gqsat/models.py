@@ -6,7 +6,6 @@ import yaml
 from gqsat.meta import ModifiedMetaLayer
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU, LayerNorm
 from torch_geometric.nn import Sequential, GATConv as EdgeGATConv
-from torch_geometric.nn.conv.gatv2_conv import GATv2Conv
 from torch_geometric.utils import scatter
 
 
@@ -99,41 +98,6 @@ def get_mlp(
             arch.append(LayerNorm(out_size))
 
     return Seq(*arch)
-
-
-class GraphTransformerAttn(torch.nn.Module):
-    """NeuroBack-inspired graph-transformer attention block (the GAT-Q-SAT successor).
-
-    Replaces GAT-Q-SAT's plain two-layer edge-aware ``GATConv`` with a single
-    pre-norm Transformer-style block built on ``GATv2Conv`` --- i.e. *dynamic*
-    edge-featured attention (Brody et al., 2022) instead of the static GATConv
-    scoring --- followed by a parallel feed-forward branch and a residual
-    connection, mirroring the GSA / GTBlock design of NeuroBack (Wang et al.,
-    ICLR 2024). Operates on the bipartite variable/clause graph (no self-loops).
-    """
-
-    def __init__(self, dim, edge_dim, heads=3, dropout=0.0, activation=ReLU,
-                 layer_norm=True):
-        super().__init__()
-        per_head = max(dim // heads, 1)
-        self.norm = LayerNorm(dim)
-        self.gat = GATv2Conv(
-            dim, per_head, heads=heads, concat=True, edge_dim=edge_dim,
-            # no self-connections since the SAT representation is a bipartite graph
-            add_self_loops=False, dropout=dropout, share_weights=False
-        )
-        gat_out = per_head * heads
-        self.proj = Lin(gat_out, dim) if gat_out != dim else None
-        self.ffn = Seq(Lin(dim, dim), activation(), Lin(dim, dim))
-        self.out_norm = LayerNorm(dim) if layer_norm else None
-
-    def forward(self, x, edge_index, edge_attr):
-        h = self.norm(x)                                  # pre-norm
-        a = self.gat(h, edge_index, edge_attr)            # dynamic edge-aware attention
-        if self.proj is not None:
-            a = self.proj(a)
-        x = x + a + self.ffn(h)                           # residual + parallel FFN (GTBlock)
-        return self.out_norm(x) if self.out_norm is not None else x
 
 
 class IndependentGraphNet(SATModel):
@@ -253,8 +217,7 @@ class GraphNet(SATModel):
             activation=ReLU,
             layer_norm=True,
             use_attention=False,
-            heads=3,
-            attention_type='gat'
+            heads=3
     ):
         super().__init__(save_name)
         if e2v_agg not in ['sum', 'mean']:
@@ -344,17 +307,7 @@ class GraphNet(SATModel):
                                  scatter(edge_attr, e_indices, dim=0, dim_size=u.size(0), reduce='mean')], dim=1)
                 return self.global_mlp(out)
 
-        if use_attention and attention_type == 'graph_transformer':
-
-            # GAT-Q-SAT successor: GATv2 + Transformer block (NeuroBack-inspired)
-            self.attention_model = GraphTransformerAttn(
-                v_out, e_out, heads=heads, activation=activation, layer_norm=layer_norm
-            )
-
-            self.op = ModifiedMetaLayer(EdgeModel(), NodeModel(), GlobalModel(),
-                                        attention_model=self.attention_model)
-
-        elif use_attention:
+        if use_attention:
 
             self.attention_model = Sequential('mlp_x, edge_index, mlp_edge_attr', [
                 (EdgeGATConv(
@@ -430,8 +383,7 @@ class EncodeProcessDecode(SATModel):
             independent_block_layers=1,
             layer_norm=True,
             use_attention=False,
-            heads=3,
-            attention_type='gat'
+            heads=3
     ):
         super().__init__(save_name)
         # all dims are tuples with (v,e) feature sizes
@@ -467,8 +419,7 @@ class EncodeProcessDecode(SATModel):
             activation=activation,
             layer_norm=layer_norm,
             use_attention=use_attention,
-            heads=heads,
-            attention_type=attention_type
+            heads=heads
         )
 
         self.decoder = None

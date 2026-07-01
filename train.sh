@@ -3,7 +3,7 @@
 #
 # Usage:
 #   bash train.sh <variant> <train_path> <val_path> [logdir]
-#     variant  : graphqsat | gatqsat | gtv2qsat
+#     variant  : graphqsat | gatqsat
 #
 # Hyperparameters below reproduce the original Graph-Q-SAT training exactly
 # (verified against the released checkpoints): in particular the per-episode
@@ -20,8 +20,7 @@ LOGDIR="${4:-runs/$VARIANT}"
 case "$VARIANT" in
   graphqsat) ATTN="" ;;
   gatqsat)   ATTN="--use_attention --heads 3" ;;
-  gtv2qsat)  ATTN="--use_attention --heads 3 --attention_type graph_transformer" ;;
-  *) echo "unknown variant '$VARIANT' (graphqsat|gatqsat|gtv2qsat)"; exit 1 ;;
+  *) echo "unknown variant '$VARIANT' (graphqsat|gatqsat)"; exit 1 ;;
 esac
 
 mkdir -p "$LOGDIR"

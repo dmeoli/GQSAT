@@ -1,4 +1,4 @@
-# GQSAT — Graph-Q-SAT · GAT-Q-SAT · GTv2-Q-SAT
+# GQSAT — Graph-Q-SAT · GAT-Q-SAT
 
 > Learning a SAT **branching heuristic** with value-based RL (DQN) over a graph
 > neural network on the bipartite CNF graph. Part of the
@@ -51,11 +51,6 @@ model iterations; `>1` beats MiniSat).
    core block (`--use_attention`). Helps on *structured* problems (graph
    colouring), in-distribution and under transfer, with the advantage **growing
    with problem size**; no help on uniform-random SAT.
-3. **GTv2-Q-SAT** — a NeuroBack-inspired successor (`--use_attention
-   --attention_type graph_transformer`): a pre-norm **Transformer block on
-   `GATv2Conv`** (dynamic edge-featured attention) + parallel FFN + residual,
-   replacing the static two-layer GATConv. See
-   [`../papers`](../papers) (Wang et al., *NeuroBack*, ICLR 2024).
 
 ## Usage
 
@@ -63,10 +58,9 @@ model iterations; `>1` beats MiniSat).
 # build the native env (only if the C++/SWIG changed)
 cd minisat && make python-wrap && cd ..
 
-# train (pick the variant via the attention flags)
+# train (pick the variant via the attention flag), or use `bash train.sh <variant> ...`
 python dqn.py --train-problems-paths ../data/graph-coloring/train ...           # Graph-Q-SAT
 python dqn.py ... --use_attention                                               # GAT-Q-SAT
-python dqn.py ... --use_attention --attention_type graph_transformer            # GTv2-Q-SAT
 
 # evaluate a checkpoint → runs/*.tsv  (add --no-cuda on CPU)
 python evaluate.py --env-name sat-v0 --core-steps -1 --eps-final 0.0 \
