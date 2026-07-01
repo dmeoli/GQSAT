@@ -149,6 +149,39 @@ def fig_time(data, out):
     plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
 
 
+def fig_mrir_time(data, out):
+    """Side-by-side: iteration reduction (MRIR) and wall-clock cost (sec), Graph vs
+    GAT, per regime --- the two together show that fewer iterations is not less time."""
+    regimes = [("coloring", FLAT, "col\n→col"),
+               ("random", FLAT, "rand\n→col"),
+               ("random", RANDOM, "rand\n→rand")]
+    cap = 500
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.3))
+    for ax, metric, ylabel, title in [
+            (axes[0], mean_mrir, "mean MRIR vs MiniSat (cap 500)",
+             "Iterations: attention helps on structure"),
+            (axes[1], mean_sec, "mean wall-clock sec to solve (cap 500)",
+             "Wall-clock: attention is slower per decision")]:
+        gat, graph = [], []
+        for train, dss, _ in regimes:
+            g = [metric(data, (train, "GAT-Q-SAT"), d, cap) for d in dss]
+            h = [metric(data, (train, "Graph-Q-SAT"), d, cap) for d in dss]
+            gat.append(statistics.fmean([x for x in g if x is not None]))
+            graph.append(statistics.fmean([x for x in h if x is not None]))
+        x = range(len(regimes)); w = 0.38
+        ax.bar([i - w/2 for i in x], graph, w, label="Graph-Q-SAT", color=COL["Graph-Q-SAT"])
+        ax.bar([i + w/2 for i in x], gat,  w, label="GAT-Q-SAT",   color=COL["GAT-Q-SAT"])
+        for i, (a, b) in enumerate(zip(graph, gat)):
+            ax.text(i - w/2, a, f"{a:.1f}", ha="center", va="bottom", fontsize=8)
+            ax.text(i + w/2, b, f"{b:.1f}", ha="center", va="bottom", fontsize=8)
+        if metric is mean_mrir:
+            ax.axhline(1.0, color="gray", lw=.8, ls="--")
+        ax.set_xticks(list(x)); ax.set_xticklabels([r[2] for r in regimes], fontsize=9)
+        ax.set_ylabel(ylabel); ax.set_title(title, fontsize=10); ax.grid(axis="y", alpha=.3)
+    axes[0].legend()
+    fig.tight_layout(); fig.savefig(out, dpi=130); plt.close(); print("wrote", out)
+
+
 def fig_curves(data, train, datasets, title, out):
     """MRIR vs decision-cap, GAT vs Graph, averaged over the datasets."""
     plt.figure(figsize=(7, 4.3))
@@ -212,6 +245,7 @@ def main():
     od = "../img/paper"; os.makedirs(od, exist_ok=True)
     fig_thesis(data, f"{od}/thesis.png")
     fig_time(data, f"{od}/time.png")
+    fig_mrir_time(data, f"{od}/mrir_time.png")
     fig_curves(data, "coloring", FLAT, "Trained & tested on graph colouring (in-distribution)",
                f"{od}/coloring_indist.png")
     fig_curves(data, "random", FLAT, "Random-trained, transfer to graph colouring",
