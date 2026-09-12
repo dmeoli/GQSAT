@@ -79,17 +79,19 @@ def main():
     plt.ylabel(f"median MRIR vs MiniSat (cap {CAP})")
     plt.title("Cross-domain transfer of the colouring-trained heuristic")
     plt.legend(); plt.grid(axis="y", alpha=.3); plt.tight_layout()
-    out = "../img/paper/transfer.png"
+    od = os.environ.get("PAPER_IMG_DIR", "../img/paper")
+    os.makedirs(od, exist_ok=True)
+    out = f"{od}/transfer.png"
     plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
 
-    with open("../img/paper/transfer_summary.md", "w") as f:
+    with open(f"{od}/transfer_summary.md", "w") as f:
         f.write("# Cross-domain transfer (median MRIR, colouring-trained, cap %d)\n\n" % CAP)
         f.write("| domain | Graph-Q-SAT | GAT-Q-SAT |\n|---|---|---|\n")
         for d in labels:
             g = results["Graph-Q-SAT"].get(d)
             a = results["GAT-Q-SAT"].get(d)
             f.write(f"| {d.replace(chr(10), ' ')} | {g} | {a} |\n")
-    print("wrote ../img/paper/transfer_summary.md")
+    print(f"wrote {od}/transfer_summary.md")
 
 
 if __name__ == "__main__":

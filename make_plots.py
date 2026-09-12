@@ -58,7 +58,24 @@ def mean_over_runs(agg, model, dataset, cap, idx):
     return statistics.fmean(vals) if vals else None
 
 
-def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, start_one=False):
+def shared_ylim(agg, models, datasets, idx, start_one=False, pad=0.06):
+    """Common y range over the models, so two panels can be read side by side."""
+    vals = [1.0] if start_one else []
+    for m in models:
+        for d in datasets:
+            for c in CAPS:
+                v = mean_over_runs(agg, m, d, c, idx)
+                if v is not None:
+                    vals.append(v)
+    if not vals:
+        return None
+    lo, hi = min(vals), max(vals)
+    span = (hi - lo) or 1.0
+    return lo - pad * span, hi + pad * span
+
+
+def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, start_one=False,
+                ylim=None):
     plt.figure(figsize=(7, 4.3))
     # one line per dataset: use a categorical palette (a violet gradient makes the
     # per-dataset legend unreadable) + varied markers, so each curve is identifiable.
@@ -79,6 +96,8 @@ def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, start_one=Fa
     plt.xlabel("model decisions")
     plt.ylabel(ylabel)
     plt.title(title)
+    if ylim is not None:
+        plt.ylim(*ylim)
     if not start_one:
         plt.axhline(1.0, color="gray", linewidth=0.8, linestyle="--")
     plt.legend(fontsize=7, ncol=2, loc="best")
@@ -99,24 +118,30 @@ def main():
         raise SystemExit("no result .tsv found")
     os.makedirs(args.out_dir, exist_ok=True)
 
-    for model in ("graphqsat", "gatqsat"):
+    MODELS = ("graphqsat", "gatqsat")
+    flat_mrir = shared_ylim(agg, MODELS, FLAT, 0, start_one=True)
+    flat_time = shared_ylim(agg, MODELS, FLAT, 1)
+    rand_mrir = shared_ylim(agg, MODELS, RANDOM, 0, start_one=True)
+
+    for model in MODELS:
         # MRIR ("iterations improvement") vs model decisions on graph colouring
         plot_curves(agg, model, FLAT, idx=0,
                     ylabel="iterations improvement (MRIR)",
                     title=f"{TITLE[model]} on graph colouring (flat)",
                     out_path=os.path.join(args.out_dir, f"{model}.png"),
-                    start_one=True)
+                    start_one=True, ylim=flat_mrir)
         # wall-clock time vs model decisions
         plot_curves(agg, model, FLAT, idx=1,
                     ylabel="median sec to solve",
                     title=f"{TITLE[model]} solving time (flat)",
-                    out_path=os.path.join(args.out_dir, f"{model}_time.png"))
+                    out_path=os.path.join(args.out_dir, f"{model}_time.png"),
+                    ylim=flat_time)
         # MRIR on random 3-SAT
         plot_curves(agg, model, RANDOM, idx=0,
                     ylabel="iterations improvement (MRIR)",
                     title=f"{TITLE[model]} on uniform-random 3-SAT",
                     out_path=os.path.join(args.out_dir, f"{model}_random.png"),
-                    start_one=True)
+                    start_one=True, ylim=rand_mrir)
 
 
 if __name__ == "__main__":

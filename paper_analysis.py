@@ -116,7 +116,7 @@ def fig_thesis(data, out):
     plt.axhline(1.0, color="gray", lw=.8, ls="--")
     plt.xticks(list(x), [r[2] for r in regimes], fontsize=9)
     plt.ylabel("mean MRIR vs MiniSat (cap 500)")
-    plt.title("Graph attention helps on structured problems, not on random SAT")
+    plt.title("Mean MRIR against MiniSat by regime (cap 500)")
     plt.legend(); plt.grid(axis="y", alpha=.3); plt.tight_layout()
     plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
 
@@ -144,7 +144,7 @@ def fig_time(data, out):
         plt.text(i + w/2, b, f"{b:.1f}", ha="center", va="bottom", fontsize=8)
     plt.xticks(list(x), [r[2] for r in regimes], fontsize=9)
     plt.ylabel("mean wall-clock sec to solve (cap 500)")
-    plt.title("Wall-clock cost: attention is slower per decision")
+    plt.title("Mean wall-clock seconds to solve (cap 500)")
     plt.legend(); plt.grid(axis="y", alpha=.3); plt.tight_layout()
     plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
 
@@ -159,9 +159,9 @@ def fig_mrir_time(data, out):
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.3))
     for ax, metric, ylabel, title in [
             (axes[0], mean_mrir, "mean MRIR vs MiniSat (cap 500)",
-             "Iterations: attention helps on structure"),
+             "Iterations (MRIR, cap 500)"),
             (axes[1], mean_sec, "mean wall-clock sec to solve (cap 500)",
-             "Wall-clock: attention is slower per decision")]:
+             "Wall-clock seconds to solve (cap 500)")]:
         gat, graph = [], []
         for train, dss, _ in regimes:
             g = [metric(data, (train, "GAT-Q-SAT"), d, cap) for d in dss]
@@ -242,7 +242,8 @@ def write_summary(data, out):
 def main():
     data = collect()
     print("groups found:", {k: sum(len(c) for c in v.values()) for k, v in data.items()})
-    od = "../img/paper"; os.makedirs(od, exist_ok=True)
+    od = os.environ.get("PAPER_IMG_DIR", "../img/paper")
+    os.makedirs(od, exist_ok=True)
     fig_thesis(data, f"{od}/thesis.png")
     fig_time(data, f"{od}/time.png")
     fig_mrir_time(data, f"{od}/mrir_time.png")

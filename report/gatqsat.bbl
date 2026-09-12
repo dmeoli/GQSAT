@@ -1,0 +1,86 @@
+\begin{thebibliography}{10}
+
+\bibitem{Battaglia2018}
+Peter~W. Battaglia, Jessica~B. Hamrick, Victor Bapst, et~al.
+\newblock Relational inductive biases, deep learning, and graph networks.
+\newblock {\em arXiv:1806.01261}, 2018.
+
+\bibitem{EenSorensson2003}
+Niklas E{\'e}n and Niklas S{\"o}rensson.
+\newblock An extensible {SAT}-solver.
+\newblock In {\em Theory and Applications of Satisfiability Testing (SAT)},
+  pages 502--518, 2003.
+
+\bibitem{FeyLenssen2019}
+Matthias Fey and Jan~E. Lenssen.
+\newblock Fast graph representation learning with {PyTorch} {Geometric}.
+\newblock In {\em ICLR Workshop on Representation Learning on Graphs and
+  Manifolds}, 2019.
+
+\bibitem{Gilmer2017}
+Justin Gilmer, Samuel~S. Schoenholz, Patrick~F. Riley, Oriol Vinyals, and
+  George~E. Dahl.
+\newblock Neural message passing for quantum chemistry.
+\newblock In {\em International Conference on Machine Learning}, 2017.
+
+\bibitem{HoosStutzle2000}
+Holger~H. Hoos and Thomas St{\"u}tzle.
+\newblock {SATLIB}: An online resource for research on {SAT}.
+\newblock In {\em SAT 2000}, pages 283--292. IOS Press, 2000.
+
+\bibitem{Kurin2020}
+Vitaly Kurin, Saad Godil, Shimon Whiteson, and Bryan Catanzaro.
+\newblock Can {Q}-learning with graph networks learn a generalizable branching
+  heuristic for a {SAT} solver?
+\newblock In {\em Advances in Neural Information Processing Systems 33}, 2020.
+
+\bibitem{Li2023}
+Zhaoyu Li, Jinpei Guo, and Xujie Si.
+\newblock {G4SATBench}: Benchmarking and advancing {SAT} solving with graph
+  neural networks.
+\newblock In {\em Advances in Neural Information Processing Systems 36}, 2023.
+
+\bibitem{Mnih2015}
+Volodymyr Mnih, Koray Kavukcuoglu, David Silver, et~al.
+\newblock Human-level control through deep reinforcement learning.
+\newblock {\em Nature}, 518:529--533, 2015.
+
+\bibitem{Mojzisek2025}
+David Moj{\v z}{\'\i}{\v s}ek, Jan H{\accent23 u}la, Ziwei Li, Chunlin Zhou,
+  and Mikol{\'a}{\v s} Janota.
+\newblock Neural approaches to {SAT} solving: Design choices and
+  interpretability.
+\newblock {\em arXiv:2504.01173}, 2025.
+
+\bibitem{SelsamBjorner2019}
+Daniel Selsam and Nikolaj Bj{\o}rner.
+\newblock Guiding high-performance {SAT} solvers with unsat-core predictions.
+\newblock In {\em Theory and Applications of Satisfiability Testing (SAT)},
+  2019.
+
+\bibitem{Selsam2019}
+Daniel Selsam, Matthew Lamm, Benedikt B{\"u}nz, Percy Liang, Leonardo de~Moura,
+  and David~L. Dill.
+\newblock Learning a {SAT} solver from single-bit supervision.
+\newblock In {\em International Conference on Learning Representations}, 2019.
+
+\bibitem{Shirokikh2023}
+Mikhail Shirokikh, Ilya Shenbin, Anton Alekseev, and Sergey Nikolenko.
+\newblock Machine learning for {SAT}: Restricted heuristics and new graph
+  representations.
+\newblock {\em arXiv:2307.09141}, 2023.
+
+\bibitem{Velickovic2018}
+Petar Veli{\v c}kovi{\'c}, Guillem Cucurull, Arantxa Casanova, Adriana Romero,
+  Pietro Li{\`o}, and Yoshua Bengio.
+\newblock Graph attention networks.
+\newblock In {\em International Conference on Learning Representations}, 2018.
+
+\bibitem{Wang2024}
+Wenxi Wang, Yang Hu, Mohit Tiwari, Sarfraz Khurshid, Kenneth~L. McMillan, and
+  Risto Miikkulainen.
+\newblock {NeuroBack}: Improving {CDCL} {SAT} solving using graph neural
+  networks.
+\newblock In {\em International Conference on Learning Representations}, 2024.
+
+\end{thebibliography}
