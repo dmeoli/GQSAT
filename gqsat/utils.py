@@ -569,7 +569,10 @@ def evaluate(agent, args, include_train_set=False):
 
     st_time = time.time()
     # print("Starting evaluation. Fasten your seat belts!")
-    print("sec to solve\tepisode\tscore")
+    # the two MiniSat baselines are logged next to the score, so that an
+    # evaluation can be read against either of them without being re-run
+    print("sec to solve\tepisode\tscore\tproblem\tmodel_iters"
+          "\tminisat_no_restarts\tminisat_with_restarts")
 
     total_iters_ours = 0
     total_iters_minisat = 0
@@ -618,10 +621,11 @@ def evaluate(agent, args, include_train_set=False):
                 # calculate interesting metrics and save them
                 sctr = 1 if eval_env.step_ctr == 0 else eval_env.step_ctr
                 ns = eval_env.normalized_score(sctr, eval_env.curr_problem)
-                # print(f"Evaluation episode {pr + 1} is over. Your score is {ns}.")
-                print(f"{pr + 1}\t{ns}")
-                total_iters_ours += sctr
                 pdir, pname = os.path.split(eval_env.curr_problem)
+                no_rst, with_rst = eval_env.metadata[pdir][pname]
+                # print(f"Evaluation episode {pr + 1} is over. Your score is {ns}.")
+                print(f"{pr + 1}\t{ns}\t{pname}\t{sctr}\t{no_rst}\t{with_rst}")
+                total_iters_ours += sctr
 
                 # get iterations for this problem
                 curr_iters_minisat[eval_env.curr_problem] = eval_env.metadata[pdir][pname][1]
