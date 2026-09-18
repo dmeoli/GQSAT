@@ -51,6 +51,18 @@ model_of() {  # run directory -> graphqsat | gatqsat
     if grep -aq "use_attention: true" "runs/$1/model.yaml"; then echo gatqsat; else echo graphqsat; fi
 }
 
+last_checkpoint() {  # run directory -> its last checkpoint, the one of the 2021 logs
+    ls "runs/$1" | grep -E '^model_[0-9]+\.chkp$' | sort -t_ -k2 -n | tail -1
+}
+
+n_problems() {  # dataset -> number of formulas to evaluate
+    ls "$(data_path "$1")" | grep -c '\.cnf$'
+}
+
+n_rows() {  # log -> number of evaluated problems (the header excluded)
+    [ -f "$1" ] && echo $(( $(wc -l < "$1") - 1 )) || echo 0
+}
+
 wait_for_memory() {  # the machine is shared: do not start if it is already tight
     local need="${MIN_FREE_MB:-2500}" avail
     [ "$need" -eq 0 ] && return 0
@@ -69,7 +81,9 @@ one() {  # run dataset cap
     local dir="runs/$run/reeval"
     [ -n "$OUT_ROOT" ] && dir="$OUT_ROOT/$run"
     out="$dir/$ds-$model-max$cap.tsv"
-    [ -s "$out" ] && return 0
+    # a log is done only when every problem is in it: a crashed evaluation
+    # leaves the header alone, or part of the rows
+    [ "$(n_rows "$out")" -ge "$(n_problems "$ds")" ] && return 0
     mkdir -p "$dir"
     wait_for_memory
     echo "[$(date +%H:%M:%S)] $run $ds cap $cap"
@@ -77,9 +91,14 @@ one() {  # run dataset cap
         --env-name sat-v0 --core-steps -1 --eps-final 0.0 --no_restarts $DEVICE_FLAG \
         --test_time_max_decisions_allowed "$cap" \
         --eval-problems-paths "$(data_path "$ds")" \
-        --model-dir "runs/$run" --model-checkpoint model_50000.chkp \
-        2>/dev/null | grep -E "^(sec to solve|[0-9])" > "$out.part" \
-        && mv "$out.part" "$out" || rm -f "$out.part"
+        --model-dir "runs/$run" --model-checkpoint "$(last_checkpoint "$run")" \
+        2>/dev/null | grep -E "^(sec to solve|[0-9])" > "$out.part"
+    if [ "$(n_rows "$out.part")" -ge "$(n_problems "$ds")" ]; then
+        mv "$out.part" "$out"
+    else
+        echo "[$(date +%H:%M:%S)] $run $ds cap $cap: incomplete, discarded" >&2
+        rm -f "$out.part"
+    fi
 }
 
 case "${1:?usage: reeval.sh <tables|colouring|transfer|random>}" in

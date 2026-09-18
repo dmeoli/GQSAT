@@ -18,10 +18,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# colouring-trained checkpoints (Dec08 = Graph-Q-SAT, Dec09 = GAT-Q-SAT on flat50-115)
+# colouring-trained runs (Dec08 = Graph-Q-SAT, Dec09 = GAT-Q-SAT on flat50-115),
+# each evaluated at its last checkpoint, as in the 2021 logs
 MODELS = [
-    ("Graph-Q-SAT", "runs/Dec08_08-39-57_e63e47f25457", "model_50000.chkp", "#b9a7d6"),
-    ("GAT-Q-SAT",   "runs/Dec09_12-16-16_d4e65e7af705", "model_50000.chkp", "#4b2e83"),
+    ("Graph-Q-SAT", "runs/Dec08_08-39-57_e63e47f25457", "#b9a7d6"),
+    ("GAT-Q-SAT",   "runs/Dec09_12-16-16_d4e65e7af705", "#4b2e83"),
 ]
 # (label, path) transfer domains; the model was trained on flat graph colouring
 DOMAINS = [
@@ -32,6 +33,13 @@ DOMAINS = [
 ]
 CAP = 200
 MEDIAN_RE = re.compile(r"median_relative_score:\s*([0-9.]+)")
+
+
+def last_checkpoint(run_dir):
+    """The checkpoint with the largest step in a run directory."""
+    steps = [int(m.group(1)) for f in os.listdir(run_dir)
+             if (m := re.fullmatch(r"model_(\d+)\.chkp", f))]
+    return f"model_{max(steps)}.chkp"
 
 
 def run_eval(run_dir, checkpoint, problems_path):
@@ -53,7 +61,8 @@ def run_eval(run_dir, checkpoint, problems_path):
 
 def main():
     results = {}  # model -> {domain_label: mrir}
-    for name, run_dir, ck, _ in MODELS:
+    for name, run_dir, _ in MODELS:
+        ck = last_checkpoint(run_dir)
         results[name] = {}
         for dlabel, dpath in DOMAINS:
             if not os.path.isfile(os.path.join(dpath, "METADATA")):
@@ -68,7 +77,7 @@ def main():
     labels = [d[0] for d in DOMAINS]
     x = range(len(labels)); w = 0.38
     plt.figure(figsize=(8, 4.5))
-    for i, (name, _, _, col) in enumerate(MODELS):
+    for i, (name, _, col) in enumerate(MODELS):
         ys = [results[name].get(d[0]) or 0 for d in DOMAINS]
         xs = [k + (i - 0.5) * w for k in x]
         plt.bar(xs, ys, w, label=name, color=col)
