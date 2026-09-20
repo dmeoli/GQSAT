@@ -5,8 +5,9 @@ Evaluates the *colouring-trained* checkpoints (no retraining) on a panel of
 structured domains they never saw, and reports the median MRIR per domain. The
 question: does the attention advantage transfer to unseen structured domains?
 
-Eval-only, runs locally on CPU. Produces ../img/paper/transfer.png and a summary.
-Run from the GQSAT root:  python3 transfer_study.py
+Eval-only. Produces transfer.png and a summary under PAPER_IMG_DIR (../img/paper
+by default). Run from the GQSAT root:  python3 transfer_study.py
+On Colab:  PAPER_IMG_DIR=/content/gdrive/MyDrive/neuroSAT_ckpts/transfer DEVICE_FLAG= python3 transfer_study.py
 """
 import os
 import re
@@ -32,6 +33,9 @@ DOMAINS = [
     ("planning",               "../data/planning"),
 ]
 CAP = 200
+# DEVICE_FLAG: --no-cuda on a machine without a GPU, which is the case locally,
+# empty to use the GPU, as on Colab; the same knob as reeval.sh.
+DEVICE_FLAG = os.environ.get("DEVICE_FLAG", "--no-cuda")
 MEDIAN_RE = re.compile(r"median_relative_score:\s*([0-9.]+)")
 
 
@@ -46,7 +50,7 @@ def run_eval(run_dir, checkpoint, problems_path):
     """Return the median MRIR of one checkpoint on one domain (None on failure)."""
     cmd = [
         sys.executable, "evaluate.py", "--env-name", "sat-v0", "--core-steps", "-1",
-        "--eps-final", "0.0", "--no_restarts", "--no-cuda",
+        "--eps-final", "0.0", "--no_restarts", *DEVICE_FLAG.split(),
         "--test_time_max_decisions_allowed", str(CAP),
         "--eval-problems-paths", problems_path,
         "--model-dir", run_dir, "--model-checkpoint", checkpoint,
