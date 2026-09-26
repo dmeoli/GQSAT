@@ -137,14 +137,18 @@ that use the edge embeddings computed by the block, and we compare the
 resulting model (GAT-Q-SAT) with the plain one. We make the comparison at
 matched training set and configuration, on graph colouring (the family on which
 Graph-Q-SAT was originally trained, and larger instances of it), on uniform
-random 3-SAT and, with no retraining, on four structured families that neither
-model has seen. We remark that the attention layers are added to the block, the
-sum aggregation of Graph-Q-SAT being kept; hence, what we measure is the effect
-of the added layers (and of the parameters that come with them). We use two
-training seeds per variant on graph colouring and one or two on the other
-families, which is enough to see the larger differences but not to put an
-error bar on the smaller ones (i.e., those of a few tenths of the measure used
-below). As in \cite{Kurin2020} the results are measured
+random 3-SAT and, with no retraining, on thirteen structured SATLIB families
+that neither model has seen, together with small-world colouring at nine levels
+of structure. Since the attention layers are added to the block (the sum
+aggregation of Graph-Q-SAT being kept), GAT-Q-SAT has about 60\% more
+parameters than the plain model; in order to separate the effect of the
+attention from that of the capacity we also train two controls, i.e.,
+Graph-Q-SAT with wider hidden layers and the same number of parameters as
+GAT-Q-SAT, and a model in which attention replaces the sum at the capacity of
+Graph-Q-SAT. We use three training seeds for each of the two main variants on
+graph colouring and two for each control, which is enough to see the larger
+differences but not always the smaller ones (i.e., those of a few tenths of the
+measure used below). As in \cite{Kurin2020} the results are measured
 in solver iterations, and the running time is reported separately. The note
 also documents a port of the original implementation to a current software
 stack (without which the experiments could not have been run), together with
@@ -329,11 +333,31 @@ computed on all the edges at each application of the block. Of course, the
 coefficients can only be of use where the neighbours of a node differ in a way
 that matters for the decision. On a uniform random formula at the phase
 transition one may expect them to learn little (if anything), and the added
-parameters to make the fit somewhat harder. Note also that, since the layers are added and the
-sum of \eqref{eq:gnblock} is kept, section~\ref{sec:results} compares the plain
-model with the same model plus a (larger) attention stage. Comparing two
-aggregation rules at the same capacity would require replacing the sum by the
-attention inside $\phi^v$, which we have not done.
+parameters to make the fit somewhat harder.
+
+\smallskip
+\noindent
+{\bf Controls.} Since the layers are added and the sum of \eqref{eq:gnblock} is
+kept, a difference between GAT-Q-SAT and Graph-Q-SAT may be due to the attention
+or simply to the larger network. We therefore train two further models with the
+same configuration. The first one (``wide'') is Graph-Q-SAT with hidden layers of
+104 units in place of 64, which gives 113504 parameters (against the 113256 of
+GAT-Q-SAT) and no attention. The second one (``attention aggregation'') keeps
+the block of \eqref{eq:gnblock} and replaces its sum by
+\begin{equation}\label{eq:attnagg}
+  \sum_{k:\, r_k = i} \bar\alpha_{ik}\, e_k' \, , \qquad
+  \bar\alpha_{ik} = \frac1K \sum_{h=1}^{K} \alpha^h_{ik} \, , \qquad
+  \alpha^h_{ik} = \frac{\exp s^h_{ik}}{\sum_{l:\, r_l = i} \exp s^h_{il}} \, , \qquad
+  s^h_{ik} = \mathrm{LeakyReLU}\big(\mathbf c_h^{\!\top} [\, v_i \,\|\, e_k' \,]\big) \, ,
+\end{equation}
+with $K = 3$ heads, whose coefficients are averaged so that $\phi^v$ receives an
+input of the same size as with the sum; this adds 483 parameters to the 71144
+of Graph-Q-SAT. The first control has the capacity of GAT-Q-SAT without its
+attention, and the second one has the attention (in a simpler form) without
+the added capacity. Note that a weighted mean such as \eqref{eq:attnagg} does not
+carry the degree of the node, which the sum does; this may matter on graphs
+whose degrees vary, and it is one of the reasons why the second control is not
+simply a smaller GAT-Q-SAT.
 
 %% ===========================================================================
 \section{Implementation}\label{sec:impl}
@@ -426,9 +450,11 @@ section~\ref{sec:transfer} we also divide by the stronger of the two.
 \noindent
 {\bf Runs.} Each run is trained once on one family, with the configuration of
 section~\ref{sec:problem}, and is evaluated at its last checkpoint. On graph
-colouring each variant has two runs trained on \code{flat50-115}, i.e., two
-seeds, one trained in 2021 on the original stack and one in 2026 on the ported
-one. On uniform random 3-SAT each variant has two runs trained on satisfiable
+colouring, Graph-Q-SAT and GAT-Q-SAT have three runs each trained on
+\code{flat50-115} (i.e., three seeds): one trained in 2021 on the original stack
+and two in 2026 on the ported one, the last with a fixed seed of the random
+number generators (the others were not seeded). The two controls of
+section~\ref{sec:gat} have two runs each, trained in 2026 with fixed seeds. On uniform random 3-SAT each variant has two runs trained on satisfiable
 formulas (one on \code{uf50-218}, one on \code{uf100-430}), whose results we
 average, and two trained on the unsatisfiable \code{uuf50-218} and
 \code{uuf100-430}, used only as a control in section~\ref{sec:random}. For a
@@ -447,7 +473,7 @@ times of section~\ref{sec:time} are, and we discuss their reliability there.
 
 Table~\ref{tab:numbers} reports the MRIR of the colouring-trained models on the
 eight graph-colouring families. Column ``seeds'' gives the MRIR of the run of
-2021 and of the one of 2026, ``mean'' their mean, and ``$\Delta$'' the
+2021 and of the two of 2026, ``mean'' their mean, and ``$\Delta$'' the
 difference of the means (positive when GAT-Q-SAT takes fewer decisions). Since
 the families range from 30 to 200 nodes, the largest test instances are four
 times the size of the training ones.
@@ -459,18 +485,19 @@ times the size of the training ones.
 \cmidrule(r){2-3}\cmidrule(r){4-5}
 family & seeds & mean & seeds & mean & $\Delta$ \\
 \midrule
-\code{flat30-60}   & 1.83 / \upd{--} & \upd{1.83} & 2.00 / \upd{--} & \upd{2.00} & \upd{$+0.17$} \\
-\code{flat50-115}  & 2.18 / \upd{--} & \upd{2.18} & 2.25 / \upd{--} & \upd{2.25} & \upd{$+0.07$} \\
-\code{flat75-180}  & 2.37 / \upd{--} & \upd{2.37} & 2.94 / \upd{--} & \upd{2.94} & \upd{$+0.58$} \\
-\code{flat100-239} & 2.64 / \upd{--} & \upd{2.64} & 2.76 / \upd{--} & \upd{2.76} & \upd{$+0.12$} \\
-\code{flat125-301} & 2.43 / \upd{--} & \upd{2.43} & 3.09 / \upd{--} & \upd{3.09} & \upd{$+0.66$} \\
-\code{flat150-360} & 1.74 / \upd{--} & \upd{1.74} & 3.40 / \upd{--} & \upd{3.40} & \upd{$+1.66$} \\
-\code{flat175-417} & 1.17 / \upd{--} & \upd{1.17} & 2.59 / \upd{--} & \upd{2.59} & \upd{$+1.42$} \\
-\code{flat200-479} & 1.05 / \upd{--} & \upd{1.05} & 2.64 / \upd{--} & \upd{2.64} & \upd{$+1.59$} \\
+\code{flat30-60}   & 1.83 / \upd{--} / \upd{--} & \upd{1.83} & 2.00 / \upd{--} / \upd{--} & \upd{2.00} & \upd{$+0.17$} \\
+\code{flat50-115}  & 2.18 / \upd{--} / \upd{--} & \upd{2.18} & 2.25 / \upd{--} / \upd{--} & \upd{2.25} & \upd{$+0.07$} \\
+\code{flat75-180}  & 2.37 / \upd{--} / \upd{--} & \upd{2.37} & 2.94 / \upd{--} / \upd{--} & \upd{2.94} & \upd{$+0.58$} \\
+\code{flat100-239} & 2.64 / \upd{--} / \upd{--} & \upd{2.64} & 2.76 / \upd{--} / \upd{--} & \upd{2.76} & \upd{$+0.12$} \\
+\code{flat125-301} & 2.43 / \upd{--} / \upd{--} & \upd{2.43} & 3.09 / \upd{--} / \upd{--} & \upd{3.09} & \upd{$+0.66$} \\
+\code{flat150-360} & 1.74 / \upd{--} / \upd{--} & \upd{1.74} & 3.40 / \upd{--} / \upd{--} & \upd{3.40} & \upd{$+1.66$} \\
+\code{flat175-417} & 1.17 / \upd{--} / \upd{--} & \upd{1.17} & 2.59 / \upd{--} / \upd{--} & \upd{2.59} & \upd{$+1.42$} \\
+\code{flat200-479} & 1.05 / \upd{--} / \upd{--} & \upd{1.05} & 2.64 / \upd{--} / \upd{--} & \upd{2.64} & \upd{$+1.59$} \\
 \bottomrule
 \end{tabular}
 \caption{Colouring-trained models on graph colouring: MRIR against MiniSat
-with restarts at cap $500$, per seed (2021 / 2026) and mean over the seeds.}
+with restarts at cap $500$, per seed (2021 / 2026 / 2026 with a fixed seed) and
+mean over the seeds.}
 \label{tab:numbers}
 \end{table}
 
@@ -482,10 +509,10 @@ is \upd{between $0.07$ and $0.58$} and it does not grow with the size (it is
 \upd{between $0.66$ and $1.66$}. This is mostly (but not only) due to the plain model, whose
 MRIR decreases from \upd{$2.64$} at 100 nodes to \upd{$1.05$} at 200 (i.e.,
 almost to parity with the reference solver), while that of the attention model
-stays \upd{between $2.6$ and $3.4$}. In other words, the two models are rather
+stays \upd{between $2.6$ and $3.4$}. In other words, the two models are quite
 close on instances of about the training size, and the attention model degrades
-much less when the instances grow. \upd{With the second seed the pattern is the same on all the families, although
-the size of the difference changes from seed to seed by up to $X$.}
+much less when the instances grow. \upd{With the other two seeds the pattern is the same on all the families,
+although the size of the difference changes from seed to seed by up to $X$.}
 
 \smallskip
 \noindent
@@ -498,7 +525,7 @@ then degrades as it is allowed more decisions, down to $0.77$ on
 decrease with the cap on any family.} On the larger instances, then, the
 decisions that the plain model takes after the first few tens make the search
 longer, and the ranking of Table~\ref{tab:numbers} does not seem to depend on
-the choice of the cap.
+the choice of the cap (at least above a few tens of decisions).
 
 \begin{figure}[h]
 \centering
@@ -507,9 +534,50 @@ the choice of the cap.
 \begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{gatqsat.png}\end{subfigure}
 \caption{Colouring-trained runs of 2021: MRIR against MiniSat with restarts as
 a function of the cap, on the eight graph-colouring families, for Graph-Q-SAT
-(left) and GAT-Q-SAT (right), on a common vertical scale.}
+(left) and GAT-Q-SAT (right), on a common log scale. The point at cap $0$ is
+MiniSat without restarts, i.e., the solver that the models drive, left alone.}
 \label{fig:flatpair}
 \end{figure}
+
+\subsection{Capacity and aggregation}\label{sec:controls}
+
+We now check whether the advantage of GAT-Q-SAT on graph colouring is due to
+the attention or to its larger network. Table~\ref{tab:controls} reports, on the
+same families and at the same cap as Table~\ref{tab:numbers}, the mean MRIR of
+the four colouring-trained variants: Graph-Q-SAT, the wide Graph-Q-SAT with the
+capacity of GAT-Q-SAT, the attention aggregation \eqref{eq:attnagg} with the
+capacity of Graph-Q-SAT, and GAT-Q-SAT (cf. section~\ref{sec:gat}); the two
+controls are the mean of two seeds, the other two of three.
+
+\begin{table}[h]\centering\small
+\begin{tabular}{lcccc}
+\toprule
+family & Graph-Q-SAT & wide & attention aggregation & GAT-Q-SAT \\
+\midrule
+\code{flat30-60}   & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\code{flat50-115}  & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\code{flat75-180}  & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\code{flat100-239} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\code{flat125-301} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\code{flat150-360} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\code{flat175-417} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\code{flat200-479} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\midrule
+parameters & 71144 & 113504 & 71627 & 113256 \\
+\bottomrule
+\end{tabular}
+\caption{Colouring-trained variants on graph colouring: MRIR against MiniSat with
+restarts at cap $500$, mean over the seeds (three for Graph-Q-SAT and GAT-Q-SAT,
+two for the controls).}
+\label{tab:controls}
+\end{table}
+
+\noindent
+\upd{[To be written from Table~\ref{tab:controls}: whether the wide model closes
+the gap (in which case the advantage is one of capacity), whether the attention
+aggregation reaches GAT-Q-SAT at a sixth of its added parameters, and on which
+families; the range of the differences and their size against the variation
+across the seeds.]}
 
 \subsection{A change of the training distribution}\label{sec:shift}
 
@@ -530,8 +598,9 @@ of the number of variables of the test instances.
 \includegraphics[width=0.78\textwidth]{thesis.png}
 \caption{MRIR at cap $500$, mean over the families: trained and tested on graph
 colouring (eight families), trained on satisfiable random 3-SAT and tested on
-graph colouring (eight families), and trained and tested on random 3-SAT (the
-six families of Table~\ref{tab:unsat}).}
+graph colouring (eight families), and trained on satisfiable random 3-SAT and
+tested on the satisfiable and on the unsatisfiable families of
+Table~\ref{tab:unsat}; log scale, bars start at parity.}
 \label{fig:thesis}
 \end{figure}
 
@@ -540,7 +609,8 @@ six families of Table~\ref{tab:unsat}).}
 \includegraphics[width=0.88\textwidth]{generalization.png}
 \caption{Models trained on satisfiable random 3-SAT: MRIR at cap $500$ as a
 function of the number of variables of the test instances, on graph colouring
-(left) and on random 3-SAT (right, satisfiable and unsatisfiable families).}
+(left, three variables per node) and on random 3-SAT (right, unsatisfiable
+families dashed), on a log scale.}
 \label{fig:gen}
 \end{figure}
 
@@ -561,42 +631,63 @@ instances.
 All the families above are random, either in the formula or in the graph.
 They say little about what a user of a learned heuristic would like to know,
 namely whether a heuristic trained on the instances at hand is of any use on
-different ones. We therefore evaluated the colouring-trained models of both
-seeds (with no retraining) on four SATLIB families of a different nature.
-These are
-small-world graph colouring \cite{Walsh1999} (a change of the topology of the
-graph within the same problem), the AIM instances \cite{Asahiro1996}
-(structured 3-SAT with at most one solution), quasigroup completion
-\cite{GomesSelman1997}, and planning \cite{KautzSelman1996} (blocks world and
-logistics). These families are ``small'' (60, 72, 11 and 8 instances
-respectively), and we evaluate them at a cap of $200$ to contain the cost of the
-largest planning and quasigroup instances. Figure~\ref{fig:transfer} reports
-the MRIR, divided by the stronger MiniSat run on each family (with restarts on
-small-world colouring and on quasigroups, without on planning, the two being
-equal on AIM).
+different ones. We therefore evaluated the colouring-trained models (all their
+seeds, with no retraining) on the structured families of SATLIB. We took all of
+them, with the exception of those whose instances exceed 2000 variables or
+150000 clauses (the size of the largest instances that we could evaluate on our
+hardware in reasonable time), and an instance enters the panel only if MiniSat,
+with and without restarts, solves it within 10 minutes (cf. the appendix). The resulting
+panel has thirteen families and \upd{$N$} instances: AIM \cite{Asahiro1996},
+\code{jnh}, \code{dubois}, \code{pret}, pigeon hole, parity, all interval
+series, inductive inference, circuit fault analysis, the Beijing set, towers of
+Hanoi, planning \cite{KautzSelman1996} and quasigroup completion
+\cite{GomesSelman1997}. Several of these families are rather ``small'' (from 2 to 50
+instances), and on some of them MiniSat needs very few decisions after its
+preprocessing (fewer than 10 on 46\% of the AIM instances, e.g.); we report the
+MRIR on all the instances, as in \cite{Kurin2020}, and we also check that the
+ranking does not change when those instances are left out. We evaluate at a cap
+of $200$ to contain the cost of the largest instances, and divide by the
+stronger MiniSat run on each family.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.70\textwidth]{transfer.png}
-\caption{Colouring-trained models on four families not seen in training: MRIR
-at cap $200$ against the stronger MiniSat run on each family, mean over the two
-seeds.}
+\includegraphics[width=\textwidth]{transfer.png}
+\caption{Colouring-trained models on thirteen SATLIB families not seen in
+training (number of instances in parentheses): MRIR at cap $200$ against the
+stronger MiniSat run on each family, mean over the seeds, on a log scale; bars
+start at parity.}
 \label{fig:transfer}
 \end{figure}
 
 \noindent
-\upd{On AIM ($1.49$),
-quasigroups ($1.08$) and planning ($1.14$) the attention model is above the
-reference solver, and the plain one only on AIM ($1.50$). On small-world colouring, which is the closest of the four to the
-training problem, both are below it ($0.58$ and $0.81$).} On AIM the two models
-are basically equivalent, while the advantage of the attention model on
-quasigroups and planning rests on 11 and 8 instances, and it should therefore be
-taken as an indication only. Our result on small-world colouring is somewhat
-unexpected, since a change of topology within the same problem hurts both models
-more than a change of problem does. We do not have an explanation for it. One
-may speculate that the models might be sensitive to the degree distribution of the
-graph, which is very different in the (almost regular) small-world graphs and in
-the random graphs of the \code{flat} families.
+\upd{[To be written from Figure~\ref{fig:transfer} and from the summary table:
+on how many families each variant is above the reference solver and above the
+other variants, by how much (as a range), the families where the ranking flips,
+the effect of leaving out the instances solved in fewer than 10 decisions, and
+the variation across the seeds; the families with fewer than 10 instances are
+commented as indications only.]}
+
+\smallskip
+\noindent
+Small-world colouring \cite{Walsh1999} allows a more controlled experiment,
+since it varies the structure of the graph within one problem. Its instances
+5-colour graphs on 100 vertices obtained from a ring lattice by rewiring each
+edge with probability $p$, and SATLIB provides nine levels, from $p = 1$ (a
+random graph) to $p = 2^{-8}$ (almost the lattice), plus the lattice itself.
+Figure~\ref{fig:sw} reports the MRIR of the colouring-trained models on 20
+instances per level (one for the lattice). \upd{[To be written from
+Figure~\ref{fig:sw}: whether the MRIR of the two models, and their difference,
+change with $p$, i.e., with the distance of the graphs from the random ones of
+the training family.]}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.70\textwidth]{transfer_sw.png}
+\caption{Colouring-trained models on small-world colouring: MRIR at cap $200$
+against the stronger MiniSat run, as a function of the rewiring probability of
+the graphs (log scale; 20 instances per level, one for the lattice).}
+\label{fig:sw}
+\end{figure}
 
 \FloatBarrier
 \subsection{Uniform random 3-SAT}\label{sec:random}
@@ -640,7 +731,8 @@ at cap $500$.}
 \caption{Models trained on satisfiable random 3-SAT (mean of the two runs): MRIR
 against MiniSat without restarts as a function of the cap, on the satisfiable
 (\code{uf}) and unsatisfiable (\code{uuf}) families, for Graph-Q-SAT (left) and
-GAT-Q-SAT (right), on a common vertical scale.}
+GAT-Q-SAT (right), on a common log scale; the unsatisfiable families are
+dashed.}
 \label{fig:randpair}
 \end{figure}
 
@@ -652,7 +744,7 @@ $1.62$), and the attention model is ahead at 100 ($1.69$ against $1.45$) and at
 do not separate them: either the plain model may have learned something about where
 the satisfying assignments of these formulas tend to be, which is of no use
 when there are none, or proving unsatisfiability leaves little room to the
-branching heuristic, so that the two models end up closer. In fact, the control
+branching heuristic, so that the two models end up somewhat closer. In fact, the control
 runs trained on unsatisfiable formulas improve the plain model (from $1.61$ to
 $1.96$ on \code{uuf50-218} and from $1.45$ to $1.56$ on \code{uuf100-430}) but
 not the attention one ($1.63$ and $1.50$). All in all, the regime in which the
@@ -739,23 +831,19 @@ more parameters and of a more expensive decision.
 
 \smallskip
 \noindent
-Several limitations should be kept in mind. First, the comparison involves two
-training seeds per variant on graph colouring and one or two on the other
-families. The transfer study rests on four ``small'' families, two of which
-have 11 and 8 instances; hence, differences of a few tenths of MRIR may well be within
-the variance of DQN training. Furthermore, since the attention layers are added to the
-block, the comparison does not separate the effect of the weighting of the
-neighbours from that of the added capacity, which may well account for part of
-the difference; replacing the sum of
-\eqref{eq:gnblock} by the attention, at a comparable number of parameters, would
-settle this point. On the instances used here neither model is competitive with
-MiniSat in running time. Also, the restricted heuristics that should reduce the
-cost of inference are implemented but have not been measured on instances large
-enough for them to matter. Finally, the poor transfer of both models to
-small-world colouring (the family closest to the training one) is not explained.
-It is perhaps the first thing that a larger panel of instances, e.g., that
-of \cite{Li2023}, should clarify; we hope to address some of these points in the
-future.
+Several limitations should be kept in mind. First, three training seeds per
+variant (two for the controls) are enough for the larger differences but not
+for those of a few tenths of MRIR, which may well be within the variance of DQN
+training. \upd{[Second, the conclusion drawn from the controls, with its
+limits.]} On the instances used here neither model is competitive with MiniSat
+in running time, and the restricted heuristics that should reduce the cost of
+inference are implemented but have not been measured on instances large enough
+for them to matter. Finally, several families of the transfer panel have fewer
+than 10 instances, and the largest instances of SATLIB (e.g., those of bounded
+model checking) are beyond the size that we could evaluate, which is perhaps
+the most serious limit of the panel; a panel of larger
+industrial instances, e.g., that of \cite{Li2023}, would be the natural next
+test, and we hope to address it in the future.
 
 %% ===========================================================================
 \section*{Acknowledgements}\label{sec:ack}
@@ -788,22 +876,35 @@ each (101 for \code{flat150-360}).
 
 \smallskip
 \noindent
-The four families of section~\ref{sec:transfer} are the following: (i)
-small-world colouring, 60 instances with 500 variables and 3100 clauses,
-obtained by 5-colouring graphs on 100 vertices whose rewiring parameter moves
-them from a ring lattice towards a random graph (the six least random levels of
-SATLIB, 10 instances each); (ii) AIM, 72 instances with 50, 100 and 200
-variables, 48 satisfiable with a single solution and 24 unsatisfiable; (iii)
-quasigroup completion, 11 instances with 343 to 729 variables and up to about
-$1.5\cdot 10^5$ clauses; (iv) planning, 8 instances with 48 to 1141 variables
-from the blocks-world and logistics encodings. None of them is used in
-training.
+The panel of section~\ref{sec:transfer} contains all the structured SATLIB
+families with at most 2000 variables and 150000 clauses per instance, namely
+AIM (72 instances with 50, 100 and 200 variables, 48 satisfiable with a single
+solution and 24 unsatisfiable), \code{jnh} (50, random with clauses of variable
+length), \code{dubois} (13, unsatisfiable), \code{pret} (8, unsatisfiable
+2-colouring), pigeon hole (5, unsatisfiable), parity learning (25: \code{par8},
+\code{par16} and the compressed \code{par32}), all interval series (4),
+inductive inference (41), circuit fault analysis (9: the \code{bf} and
+\code{ssa} instances within the limit), the Beijing set (8), towers of Hanoi
+(2), planning (8, blocks world and logistics) and quasigroup completion (20).
+The rule leaves out all of \code{bmc} and of the large graph colouring set
+\code{gcp}, the uncompressed \code{par32}, the largest blocks-world, logistics,
+quasigroup and circuit instances and most of the Beijing set; the large random
+formulas of \code{LRAN} are not structured, and are not used. The small-world
+set contains 20 instances for each of the nine SATLIB levels
+\code{sw100-8-lp0-c5} to \code{sw100-8-lp8-c5} (drawn with a fixed seed from the
+100 of each level; level $k$ has rewiring probability $2^{-k}$) and the single
+lattice instance \code{sw100-8-p0-c5}, all with 500 variables and 3100 clauses.
+None of these instances is used in training.
 
 \smallskip
 \noindent
 For each family the iterations of MiniSat with and without restarts are
 computed once, instance by instance, and stored with the family, so that the
-denominator of \eqref{eq:mrir} is the same for all the models. The evaluation
+denominator of \eqref{eq:mrir} is the same for all the models; for the families
+of section~\ref{sec:transfer} this is done by \code{make\_metadata.py}, which
+runs the two MiniSat configurations on each instance with a limit of 10 minutes
+and leaves out (listing it) any instance that is not solved within the limit
+(\upd{$X$} instances). The evaluation
 of a model on a family at a cap writes one line per instance, with the time, the
 iterations of the model and the two iterations of MiniSat. The logs of 2021,
 which are the only ones for the random families, record only the ratio against
