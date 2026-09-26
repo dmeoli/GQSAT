@@ -16,6 +16,9 @@
 #   colouring : the colouring-trained runs on the flat families, every cap
 #   transfer  : the random-trained runs on the flat families, cap 500
 #   random    : the random-trained runs on the random families, every cap
+#   seeds     : the colouring-trained pair retrained in 2026 on the current stack
+#               (a second seed of the 2021 pair), with what "tables" asks of it;
+#               the checkpoints are read from CKPT_ROOT, i.e. the Drive folder
 set -u
 
 PY="${PY:-../.venv/bin/python}"
@@ -33,6 +36,9 @@ FLAT="flat30-60 flat50-115 flat75-180 flat100-239 flat125-301 flat150-360 flat17
 RAND="uf50-218 uf100-430 uf250-1065 uuf50-218 uuf100-430 uuf250-1065"
 CAPS="10 50 100 300 500 1000"
 COLOURING_RUNS="Dec08_08-39-57_e63e47f25457 Dec09_12-16-16_d4e65e7af705"
+# second seed: same configuration, retrained in 2026, kept under CKPT_ROOT
+SEED_RUNS="gqsat_graphqsat gqsat_gatqsat"
+CKPT_ROOT="${CKPT_ROOT:-}"
 RANDOM_RUNS="Dec21_01-59-59_6bed2aa9b612 Dec21_14-55-50_5eccdc34d583 \
              Dec23_01-48-54_90582559eea7 Dec23_14-42-44_90582559eea7 \
              Nov12_14-06-54_c42e8ad320d8 Nov12_20-35-32_c42e8ad320d8 \
@@ -47,12 +53,16 @@ data_path() {  # dataset -> directory under ../data
     esac
 }
 
-model_of() {  # run directory -> graphqsat | gatqsat
-    if grep -aq "use_attention: true" "runs/$1/model.yaml"; then echo gatqsat; else echo graphqsat; fi
+run_dir() {  # run -> its directory: runs/<run> in the repository, else under CKPT_ROOT
+    if [ -d "runs/$1" ]; then echo "runs/$1"; else echo "${CKPT_ROOT:?CKPT_ROOT not set}/$1"; fi
 }
 
-last_checkpoint() {  # run directory -> its last checkpoint, the one of the 2021 logs
-    ls "runs/$1" | grep -E '^model_[0-9]+\.chkp$' | sort -t_ -k2 -n | tail -1
+model_of() {  # run -> graphqsat | gatqsat
+    if grep -aq "use_attention: true" "$(run_dir "$1")/model.yaml"; then echo gatqsat; else echo graphqsat; fi
+}
+
+last_checkpoint() {  # run -> its last checkpoint, the one of the 2021 logs
+    ls "$(run_dir "$1")" | grep -E '^model_[0-9]+\.chkp$' | sort -t_ -k2 -n | tail -1
 }
 
 n_problems() {  # dataset -> number of formulas to evaluate
@@ -91,7 +101,7 @@ one() {  # run dataset cap
         --env-name sat-v0 --core-steps -1 --eps-final 0.0 --no_restarts $DEVICE_FLAG \
         --test_time_max_decisions_allowed "$cap" \
         --eval-problems-paths "$(data_path "$ds")" \
-        --model-dir "runs/$run" --model-checkpoint "$(last_checkpoint "$run")" \
+        --model-dir "$(run_dir "$run")" --model-checkpoint "$(last_checkpoint "$run")" \
         2>/dev/null | grep -E "^(sec to solve|[0-9])" > "$out.part"
     if [ "$(n_rows "$out.part")" -ge "$(n_problems "$ds")" ]; then
         mv "$out.part" "$out"
@@ -101,7 +111,7 @@ one() {  # run dataset cap
     fi
 }
 
-case "${1:?usage: reeval.sh <tables|colouring|transfer|random>}" in
+case "${1:?usage: reeval.sh <tables|colouring|transfer|random|seeds>}" in
     tables)
         for r in $COLOURING_RUNS; do for d in $FLAT; do one "$r" "$d" 500; done; done
         for r in $COLOURING_RUNS; do for c in 50 1000; do one "$r" flat200-479 "$c"; done; done
@@ -111,6 +121,9 @@ case "${1:?usage: reeval.sh <tables|colouring|transfer|random>}" in
         done ;;
     colouring) for r in $COLOURING_RUNS; do for d in $FLAT; do for c in $CAPS; do one "$r" "$d" "$c"; done; done; done ;;
     transfer)  for r in $RANDOM_RUNS;    do for d in $FLAT; do one "$r" "$d" 500; done; done ;;
+    seeds)
+        for r in $SEED_RUNS; do for d in $FLAT; do one "$r" "$d" 500; done; done
+        for r in $SEED_RUNS; do for c in 50 1000; do one "$r" flat200-479 "$c"; done; done ;;
     random)    for r in $RANDOM_RUNS;    do for d in $RAND; do for c in $CAPS; do one "$r" "$d" "$c"; done; done; done ;;
     *) echo "unknown phase: $1" >&2; exit 1 ;;
 esac

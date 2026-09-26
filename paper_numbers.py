@@ -5,10 +5,13 @@ The numbers of the note, recomputed from the re-evaluation logs.
 A log written by the current evaluate.py carries, for every problem, the
 iterations of the model and both MiniSat baselines (with and without restarts),
 so the same run can be read against either of them, or against the stronger of
-the two, which is the comparison of Kurin et al.
+the two on each instance.  The note uses "family": MiniSat with restarts on
+graph colouring, where it is the stronger one and the one Kurin et al. compare
+with, and MiniSat without restarts on uniform random 3-SAT, where the restarts
+cost iterations (and whose 2021 logs only carry that baseline).
 
 Usage:
-  python paper_numbers.py [--baseline no_restarts|with_restarts|best] [--cap 500]
+  python paper_numbers.py [--baseline family|no_restarts|with_restarts|best] [--cap 500]
 """
 import argparse
 import csv
@@ -61,7 +64,14 @@ def scores(path, baseline):
 REEVAL_ROOT = None   # set by --reeval-root when the logs live outside the repo
 
 
+def resolve(baseline, dataset):
+    if baseline == "family":
+        return "with_restarts" if dataset.startswith("flat") else "no_restarts"
+    return baseline
+
+
 def cell(run, dataset, cap, baseline, model):
+    baseline = resolve(baseline, dataset)
     dirs = [os.path.join("runs", run, "reeval"), os.path.join("runs", run)]
     if REEVAL_ROOT:
         dirs.insert(0, os.path.join(REEVAL_ROOT, run))
@@ -89,8 +99,8 @@ def fmt(v, w=6, d=2):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--baseline", default="with_restarts",
-                    choices=["no_restarts", "with_restarts", "best"])
+    ap.add_argument("--baseline", default="family",
+                    choices=["family", "no_restarts", "with_restarts", "best"])
     ap.add_argument("--cap", type=int, default=500)
     ap.add_argument("--reeval-root", default=os.environ.get("OUT_ROOT"),
                     help="directory holding <run>/ subdirectories of re-evaluation logs")
