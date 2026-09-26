@@ -46,7 +46,7 @@ def mean_sec(data, key, dataset, cap):
 def fig_thesis(data, out):
     """THE money figure: mean MRIR (cap 500) per regime, GAT vs Graph."""
     regimes = [("coloring", FLAT, "Trained on colouring\n→ colouring"),
-               ("random", FLAT, "Trained on random\n→ colouring (transfer)"),
+               ("random", FLAT, "Trained on random\n→ colouring"),
                ("random", RANDOM, "Trained on random\n→ random")]
     cap = 500
     gat, graph = [], []

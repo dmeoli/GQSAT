@@ -1,9 +1,35 @@
 \begin{thebibliography}{10}
 
+\bibitem{Asahiro1996}
+Yuichi Asahiro, Kazuo Iwama, and Eiji Miyano.
+\newblock Random generation of test instances with controlled attributes.
+\newblock In {\em Cliques, Coloring, and Satisfiability}, volume~26 of {\em
+  DIMACS Series in Discrete Mathematics and Theoretical Computer Science},
+  pages 377--393. American Mathematical Society, 1996.
+
 \bibitem{Battaglia2018}
 Peter~W. Battaglia, Jessica~B. Hamrick, Victor Bapst, et~al.
 \newblock Relational inductive biases, deep learning, and graph networks.
 \newblock {\em arXiv:1806.01261}, 2018.
+
+\bibitem{Bengio2021}
+Yoshua Bengio, Andrea Lodi, and Antoine Prouvost.
+\newblock Machine learning for combinatorial optimization: A methodological
+  tour d'horizon.
+\newblock {\em European Journal of Operational Research}, 290(2):405--421,
+  2021.
+
+\bibitem{Brody2022}
+Shaked Brody, Uri Alon, and Eran Yahav.
+\newblock How attentive are graph attention networks?
+\newblock In {\em International Conference on Learning Representations}, 2022.
+
+\bibitem{CulbersonLuo1996}
+Joseph~C. Culberson and Feng Luo.
+\newblock Exploring the $k$-colorable landscape with iterated greedy.
+\newblock In {\em Cliques, Coloring, and Satisfiability}, volume~26 of {\em
+  DIMACS Series in Discrete Mathematics and Theoretical Computer Science},
+  pages 245--284. American Mathematical Society, 1996.
 
 \bibitem{EenSorensson2003}
 Niklas E{\'e}n and Niklas S{\"o}rensson.
@@ -17,16 +43,51 @@ Matthias Fey and Jan~E. Lenssen.
 \newblock In {\em ICLR Workshop on Representation Learning on Graphs and
   Manifolds}, 2019.
 
+\bibitem{Gasse2019}
+Maxime Gasse, Didier Ch{\'e}telat, Nicola Ferroni, Laurent Charlin, and Andrea
+  Lodi.
+\newblock Exact combinatorial optimization with graph convolutional neural
+  networks.
+\newblock In {\em Advances in Neural Information Processing Systems 32}, pages
+  15554--15566, 2019.
+
 \bibitem{Gilmer2017}
 Justin Gilmer, Samuel~S. Schoenholz, Patrick~F. Riley, Oriol Vinyals, and
   George~E. Dahl.
 \newblock Neural message passing for quantum chemistry.
 \newblock In {\em International Conference on Machine Learning}, 2017.
 
+\bibitem{GomesSelman1997}
+Carla~P. Gomes and Bart Selman.
+\newblock Problem structure in the presence of perturbations.
+\newblock In {\em Proceedings of the Fourteenth National Conference on
+  Artificial Intelligence (AAAI)}, pages 221--226, 1997.
+
+\bibitem{Guo2023}
+Wenxuan Guo, Hui-Ling Zhen, Xijun Li, Wanqian Luo, Mingxuan Yuan, Yaohui Jin,
+  and Junchi Yan.
+\newblock Machine learning methods in solving the {B}oolean satisfiability
+  problem.
+\newblock {\em Machine Intelligence Research}, 20(5):640--655, 2023.
+
 \bibitem{HoosStutzle2000}
 Holger~H. Hoos and Thomas St{\"u}tzle.
 \newblock {SATLIB}: An online resource for research on {SAT}.
 \newblock In {\em SAT 2000}, pages 283--292. IOS Press, 2000.
+
+\bibitem{KautzSelman1996}
+Henry Kautz and Bart Selman.
+\newblock Pushing the envelope: Planning, propositional logic, and stochastic
+  search.
+\newblock In {\em Proceedings of the Thirteenth National Conference on
+  Artificial Intelligence (AAAI)}, pages 1194--1201, 1996.
+
+\bibitem{Khalil2016}
+Elias~B. Khalil, Pierre Le~Bodic, Le~Song, George~L. Nemhauser, and Bistra
+  Dilkina.
+\newblock Learning to branch in mixed integer programming.
+\newblock In {\em Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~30, 2016.
 
 \bibitem{Kurin2020}
 Vitaly Kurin, Saad Godil, Shimon Whiteson, and Bryan Catanzaro.
@@ -34,11 +95,45 @@ Vitaly Kurin, Saad Godil, Shimon Whiteson, and Bryan Catanzaro.
   heuristic for a {SAT} solver?
 \newblock In {\em Advances in Neural Information Processing Systems 33}, 2020.
 
+\bibitem{LagoudakisLittman2001}
+Michail~G. Lagoudakis and Michael~L. Littman.
+\newblock Learning to select branching rules in the {DPLL} procedure for
+  satisfiability.
+\newblock {\em Electronic Notes in Discrete Mathematics}, 9:344--359, 2001.
+
 \bibitem{Li2023}
 Zhaoyu Li, Jinpei Guo, and Xujie Si.
 \newblock {G4SATBench}: Benchmarking and advancing {SAT} solving with graph
   neural networks.
 \newblock In {\em Advances in Neural Information Processing Systems 36}, 2023.
+
+\bibitem{Liang2016}
+Jia~Hui Liang, Vijay Ganesh, Pascal Poupart, and Krzysztof Czarnecki.
+\newblock Learning rate based branching heuristic for {SAT} solvers.
+\newblock In {\em Theory and Applications of Satisfiability Testing (SAT)},
+  pages 123--140, 2016.
+
+\bibitem{Luby1993}
+Michael Luby, Alistair Sinclair, and David Zuckerman.
+\newblock Optimal speedup of {Las} {Vegas} algorithms.
+\newblock {\em Information Processing Letters}, 47(4):173--180, 1993.
+
+\bibitem{MarquesSilva2021}
+Jo{\~a}o Marques-Silva, In{\^e}s Lynce, and Sharad Malik.
+\newblock Conflict-driven clause learning {SAT} solvers.
+\newblock In {\em Handbook of Satisfiability}, Frontiers in Artificial
+  Intelligence and Applications, chapter~4. IOS Press, second edition, 2021.
+
+\bibitem{MarquesSilva1999}
+Jo{\~a}o~P. Marques-Silva and Karem~A. Sakallah.
+\newblock {GRASP}: A search algorithm for propositional satisfiability.
+\newblock {\em IEEE Transactions on Computers}, 48(5):506--521, 1999.
+
+\bibitem{Mitchell1992}
+David~G. Mitchell, Bart Selman, and Hector~J. Levesque.
+\newblock Hard and easy distributions of {SAT} problems.
+\newblock In {\em Proceedings of the Tenth National Conference on Artificial
+  Intelligence (AAAI)}, pages 459--465, 1992.
 
 \bibitem{Mnih2015}
 Volodymyr Mnih, Koray Kavukcuoglu, David Silver, et~al.
@@ -51,6 +146,18 @@ David Moj{\v z}{\'\i}{\v s}ek, Jan H{\accent23 u}la, Ziwei Li, Chunlin Zhou,
 \newblock Neural approaches to {SAT} solving: Design choices and
   interpretability.
 \newblock {\em arXiv:2504.01173}, 2025.
+
+\bibitem{Moskewicz2001}
+Matthew~W. Moskewicz, Conor~F. Madigan, Ying Zhao, Lintao Zhang, and Sharad
+  Malik.
+\newblock Chaff: Engineering an efficient {SAT} solver.
+\newblock In {\em Proceedings of the 38th Design Automation Conference (DAC)},
+  pages 530--535, 2001.
+
+\bibitem{Schaul2016}
+Tom Schaul, John Quan, Ioannis Antonoglou, and David Silver.
+\newblock Prioritized experience replay.
+\newblock In {\em International Conference on Learning Representations}, 2016.
 
 \bibitem{SelsamBjorner2019}
 Daniel Selsam and Nikolaj Bj{\o}rner.
@@ -70,11 +177,29 @@ Mikhail Shirokikh, Ilya Shenbin, Anton Alekseev, and Sergey Nikolenko.
   representations.
 \newblock {\em arXiv:2307.09141}, 2023.
 
+\bibitem{vanHasselt2016}
+Hado van Hasselt, Arthur Guez, and David Silver.
+\newblock Deep reinforcement learning with double {Q}-learning.
+\newblock In {\em Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~30, 2016.
+
 \bibitem{Velickovic2018}
 Petar Veli{\v c}kovi{\'c}, Guillem Cucurull, Arantxa Casanova, Adriana Romero,
   Pietro Li{\`o}, and Yoshua Bengio.
 \newblock Graph attention networks.
 \newblock In {\em International Conference on Learning Representations}, 2018.
+
+\bibitem{Walsh1999}
+Toby Walsh.
+\newblock Search in a small world.
+\newblock In {\em Proceedings of the Sixteenth International Joint Conference
+  on Artificial Intelligence (IJCAI)}, pages 1172--1177, 1999.
+
+\bibitem{WangRompf2018}
+Fei Wang and Tiark Rompf.
+\newblock From gameplay to symbolic reasoning: Learning {SAT} solver heuristics
+  in the style of {Alpha(Go) Zero}.
+\newblock {\em arXiv:1802.05340}, 2018.
 
 \bibitem{Wang2024}
 Wenxi Wang, Yang Hu, Mohit Tiwari, Sarfraz Khurshid, Kenneth~L. McMillan, and
@@ -82,5 +207,18 @@ Wenxi Wang, Yang Hu, Mohit Tiwari, Sarfraz Khurshid, Kenneth~L. McMillan, and
 \newblock {NeuroBack}: Improving {CDCL} {SAT} solving using graph neural
   networks.
 \newblock In {\em International Conference on Learning Representations}, 2024.
+
+\bibitem{YolcuPoczos2019}
+Emre Yolcu and Barnab{\'a}s P{\'o}czos.
+\newblock Learning local search heuristics for {B}oolean satisfiability.
+\newblock In {\em Advances in Neural Information Processing Systems 32}, pages
+  7990--8001, 2019.
+
+\bibitem{Zhang2020}
+Wenjie Zhang, Zeyu Sun, Qihao Zhu, Ge~Li, Shaowei Cai, Yingfei Xiong, and
+  Lu~Zhang.
+\newblock {NLocalSAT}: Boosting local search with solution prediction.
+\newblock In {\em Proceedings of the Twenty-Ninth International Joint
+  Conference on Artificial Intelligence (IJCAI)}, pages 1177--1183, 2020.
 
 \end{thebibliography}
