@@ -33,6 +33,30 @@ TRAIN = {"coloring": pn.COL, "random": pn.SAT}
 BASELINE = "family"
 
 
+def ratio_axis(ax, lo=None, hi=None):
+    """The MRIR is a ratio: a log2 axis puts 1/2 and 2 at the same distance
+    from parity, which is drawn as a dashed line."""
+    ax.set_yscale("log", base=2)
+    ticks = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8]
+    if lo is not None and hi is not None:
+        ax.set_ylim(lo, hi)
+        ticks = [t for t in ticks if lo <= t <= hi]
+    ax.set_yticks(ticks)
+    ax.set_yticklabels([f"{t:g}" for t in ticks])
+    ax.minorticks_off()
+    ax.axhline(1.0, color="gray", lw=.8, ls="--")
+
+
+def ratio_bars(ax, xs, vals, width, **kw):
+    """Bars that start at parity, going up for MRIR > 1 and down for MRIR < 1."""
+    heights = [(v - 1) if v is not None else 0 for v in vals]
+    ax.bar(xs, heights, width, bottom=1, **kw)
+    for x, v in zip(xs, vals):
+        if v is not None:
+            ax.text(x, v * (1.03 if v >= 1 else 0.97), f"{v:.2f}", ha="center",
+                    va="bottom" if v >= 1 else "top", fontsize=8)
+
+
 def mean_mrir(data, key, dataset, cap):
     train, model = key
     return pn.group(model, TRAIN[train], dataset, cap, BASELINE)
@@ -44,10 +68,13 @@ def mean_sec(data, key, dataset, cap):
 
 
 def fig_thesis(data, out):
-    """THE money figure: mean MRIR (cap 500) per regime, GAT vs Graph."""
-    regimes = [("coloring", FLAT, "Trained on colouring\n→ colouring"),
-               ("random", FLAT, "Trained on random\n→ colouring"),
-               ("random", RANDOM, "Trained on random\n→ random")]
+    """Mean MRIR (cap 500) per regime, GAT vs Graph, on a log2 axis."""
+    SAT_R = [d for d in RANDOM if d.startswith("uf")]
+    UNSAT_R = [d for d in RANDOM if d.startswith("uuf")]
+    regimes = [("coloring", FLAT, "colouring-trained\n→ colouring"),
+               ("random", FLAT, "random-trained\n→ colouring"),
+               ("random", SAT_R, "random-trained\n→ satisfiable random"),
+               ("random", UNSAT_R, "random-trained\n→ unsatisfiable random")]
     cap = 500
     gat, graph = [], []
     for train, dss, _ in regimes:
@@ -56,18 +83,14 @@ def fig_thesis(data, out):
         gat.append(statistics.fmean([x for x in g if x is not None]))
         graph.append(statistics.fmean([x for x in h if x is not None]))
     x = range(len(regimes)); w = 0.38
-    plt.figure(figsize=(8, 4.5))
-    plt.bar([i - w/2 for i in x], graph, w, label="Graph-Q-SAT", color=COL["Graph-Q-SAT"])
-    plt.bar([i + w/2 for i in x], gat,  w, label="GAT-Q-SAT",   color=COL["GAT-Q-SAT"])
-    for i, (a, b) in enumerate(zip(graph, gat)):
-        plt.text(i - w/2, a + .02, f"{a:.2f}", ha="center", fontsize=8)
-        plt.text(i + w/2, b + .02, f"{b:.2f}", ha="center", fontsize=8)
-    plt.axhline(1.0, color="gray", lw=.8, ls="--")
-    plt.xticks(list(x), [r[2] for r in regimes], fontsize=9)
-    plt.ylabel("mean MRIR vs MiniSat (cap 500)")
-    plt.title("Mean MRIR against MiniSat by regime (cap 500)")
-    plt.legend(); plt.grid(axis="y", alpha=.3); plt.tight_layout()
-    plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
+    fig, ax = plt.subplots(figsize=(9, 4.5))
+    ratio_bars(ax, [i - w/2 for i in x], graph, w, label="Graph-Q-SAT", color=COL["Graph-Q-SAT"])
+    ratio_bars(ax, [i + w/2 for i in x], gat, w, label="GAT-Q-SAT", color=COL["GAT-Q-SAT"])
+    ratio_axis(ax, 0.5, 4)
+    ax.set_xticks(list(x)); ax.set_xticklabels([r[2] for r in regimes], fontsize=9)
+    ax.set_ylabel("mean MRIR (cap 500, log scale)")
+    ax.legend(); ax.grid(axis="y", alpha=.3); fig.tight_layout()
+    fig.savefig(out, dpi=130); plt.close(fig); print("wrote", out)
 
 
 def fig_time(data, out):
@@ -132,41 +155,47 @@ def fig_mrir_time(data, out):
 
 
 def fig_curves(data, train, datasets, title, out):
-    """MRIR vs decision-cap, GAT vs Graph, averaged over the datasets."""
+    """MRIR vs decision-cap, GAT vs Graph, averaged over the datasets; cap 0 is
+    MiniSat without restarts against the baseline, read from the METADATA."""
     # only the 2021 colouring pair is evaluated at every cap
     runs = pn.CURVE_RUNS if train == "coloring" else None
-    plt.figure(figsize=(7, 4.3))
+    fig, ax = plt.subplots(figsize=(7, 4.3))
     for model in ("Graph-Q-SAT", "GAT-Q-SAT"):
-        xs, ys = [0], [1.0]
+        xs, ys = [0], [statistics.fmean(pn.cap0(d, BASELINE) for d in datasets)]
         for c in CAPS:
             vals = [pn.group(model, TRAIN[train], d, c, BASELINE, runs=runs) for d in datasets]
-            vals = [v for v in vals if v is not None]
-            if vals:
-                xs.append(c); ys.append(statistics.fmean(vals))
-        plt.plot(xs, ys, marker="o", lw=1.8, label=model, color=COL[model])
-    plt.xscale("symlog"); plt.xticks([0]+CAPS, ["0"]+[str(c) for c in CAPS])
-    plt.xlabel("model decisions"); plt.ylabel("mean MRIR vs MiniSat")
-    plt.title(title); plt.legend(); plt.grid(alpha=.3); plt.tight_layout()
-    plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
+            xs.append(c)
+            ys.append(statistics.fmean(vals) if all(v is not None for v in vals) else float("nan"))
+        ax.plot(xs, ys, marker="o", lw=1.8, label=model, color=COL[model])
+    ax.set_xscale("symlog", linthresh=10); ax.set_xticks([0]+CAPS)
+    ax.set_xticklabels(["0"]+[str(c) for c in CAPS])
+    ratio_axis(ax)
+    ax.set_xlabel("cap on the decisions of the model"); ax.set_ylabel("mean MRIR (log scale)")
+    ax.set_title(title); ax.legend(); ax.grid(alpha=.3); fig.tight_layout()
+    fig.savefig(out, dpi=130); plt.close(fig); print("wrote", out)
 
 
 def fig_generalization(data, out):
-    """Random-trained: MRIR vs problem size (cap 500), GAT vs Graph, colouring + random."""
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.3))
-    for ax, dss, name in [(axes[0], FLAT, "graph colouring (transfer)"),
-                          (axes[1], RANDOM, "uniform-random 3-SAT")]:
+    """Random-trained: MRIR (cap 500) against the size of the test instances, on
+    graph colouring and on random 3-SAT (satisfiable solid, unsatisfiable dashed)."""
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.3), sharey=True)
+    panels = [(axes[0], [("", FLAT, "-")], "graph colouring", "# variables (3 per node)"),
+              (axes[1], [(" (sat)", [d for d in RANDOM if d.startswith("uf")], "-"),
+                         (" (unsat)", [d for d in RANDOM if d.startswith("uuf")], "--")],
+               "uniform random 3-SAT", "# variables")]
+    for ax, series, name, xlabel in panels:
         for model in ("Graph-Q-SAT", "GAT-Q-SAT"):
-            pts = [(SIZE[d], mean_mrir(data, ("random", model), d, 500)) for d in dss]
-            pts = [(s, v) for s, v in pts if v is not None]
-            pts.sort()
-            if pts:
-                ax.plot([p[0] for p in pts], [p[1] for p in pts],
-                        marker="o", lw=1.8, label=model, color=COL[model])
-        ax.axhline(1.0, color="gray", lw=.8, ls="--")
-        ax.set_xlabel("# variables"); ax.set_title(name); ax.grid(alpha=.3)
-    axes[0].set_ylabel("mean MRIR vs MiniSat (cap 500)"); axes[0].legend()
-    fig.suptitle("Generalisation across problem size (random-trained models)")
-    fig.tight_layout(); fig.savefig(out, dpi=130); plt.close(); print("wrote", out)
+            for suffix, dss, ls in series:
+                pts = [(SIZE[d], mean_mrir(data, ("random", model), d, 500)) for d in dss]
+                pts = sorted((s_, v) for s_, v in pts if v is not None)
+                if pts:
+                    ax.plot([p[0] for p in pts], [p[1] for p in pts], marker="o", lw=1.8,
+                            ls=ls, label=model + suffix, color=COL[model])
+        ratio_axis(ax, 0.5, 6)
+        ax.set_xlabel(xlabel); ax.set_title(name); ax.grid(alpha=.3); ax.legend(fontsize=8)
+    axes[0].set_ylabel("MRIR (cap 500, log scale)")
+    fig.suptitle("Models trained on satisfiable random 3-SAT, against the size of the test instances")
+    fig.tight_layout(); fig.savefig(out, dpi=130); plt.close(fig); print("wrote", out)
 
 
 def write_summary(data, out):

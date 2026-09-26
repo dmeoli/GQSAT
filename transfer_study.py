@@ -1,21 +1,29 @@
 #!/usr/bin/env python3
-"""Cross-domain knowledge-transfer study for Graph-Q-SAT vs GAT-Q-SAT.
+"""Cross-domain transfer of the colouring-trained heuristics.
 
-Evaluates the *colouring-trained* checkpoints (no retraining) on a panel of
-structured domains they never saw, and reports the median MRIR per domain. The
-question: does the attention advantage transfer to unseen structured domains?
+Evaluates the models trained on graph colouring (flat50-115), with no
+retraining, on the structured SATLIB families of ../data (AIM, planning and
+those under ../data/satlib), and on the small-world colouring instances at
+the nine rewiring levels of SATLIB, from a random graph (p = 1) to a ring
+lattice (p = 0).
 
 Every evaluation writes one line per problem, with the iterations of the model
-and of both MiniSat baselines, as reeval.sh does; a log that is complete is not
-evaluated again, so the study can be stopped and resumed. The MRIR is then read
-from the logs with paper_numbers.py, against the stronger of the two MiniSat
-runs on each domain, and averaged over the seeds.
+and of both MiniSat baselines, as reeval.sh does; a complete log is not
+evaluated again, so the study can be stopped and resumed. The runs are those of
+paper_numbers.py, and the pair Graph-Q-SAT / GAT-Q-SAT (all its seeds) is
+evaluated before the two controls, so that an interrupted session leaves the
+main comparison complete. The MRIR is read from the logs with paper_numbers.py,
+against the stronger of the two MiniSat runs on each family, and averaged over
+the seeds.
 
-Produces transfer.png and a summary under PAPER_IMG_DIR (../img/paper by
-default). Run from the GQSAT root:  python3 transfer_study.py
-On Colab:  OUT_ROOT=<Drive>/transfer_logs CKPT_ROOT=<Drive> \
-           PAPER_IMG_DIR=<Drive>/transfer DEVICE_FLAG= python3 transfer_study.py
+Produces transfer.png, transfer_sw.png and transfer_summary.md under
+PAPER_IMG_DIR (../img/paper by default). Run from the GQSAT root:
+    python3 transfer_study.py [--plot-only]
+On Colab:
+    OUT_ROOT=<Drive>/transfer_logs CKPT_ROOT=<Drive> PAPER_IMG_DIR=<Drive>/transfer \
+        DEVICE_FLAG= python3 transfer_study.py
 """
+import argparse
 import os
 import re
 import statistics
@@ -27,28 +35,31 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 import paper_numbers as pn
+from paper_analysis import COL as _COL, ratio_axis, ratio_bars
 
-# colouring-trained runs, both seeds (the 2021 pair in runs/, the 2026 pair under
-# CKPT_ROOT), each evaluated at its last checkpoint, as in the 2021 logs
-MODELS = [
-    ("Graph-Q-SAT", "graphqsat", ["Dec08_08-39-57_e63e47f25457", "gqsat_graphqsat"], "#b9a7d6"),
-    ("GAT-Q-SAT",   "gatqsat",   ["Dec09_12-16-16_d4e65e7af705", "gqsat_gatqsat"],   "#4b2e83"),
+COL = dict(_COL, **{"Graph-Q-SAT wide": "#8c8c8c", "Attention aggregation": "#e39b3a"})
+# (label, dataset) of the structured families, i.e. the directory under ../data
+# (aim, planning) or ../data/satlib; the order is the one of the figure
+FAMILIES = [
+    ("AIM", "aim"), ("jnh", "jnh"), ("dubois", "dubois"), ("pret", "pret"),
+    ("pigeon hole", "pigeon-hole"), ("parity", "parity"), ("ais", "ais"),
+    ("inductive\ninference", "inductive-inference"), ("circuit\nfaults", "circuit"),
+    ("Beijing", "beijing"), ("hanoi", "hanoi"), ("planning", "planning"),
+    ("quasigroup", "quasigroup"),
 ]
-# (label, dataset name of the logs, path) transfer domains; the models were
-# trained on flat graph colouring
-DOMAINS = [
-    ("small-world\ncolouring", "small-world", "../data/small-world-coloring/transfer_eval"),
-    ("AIM",                    "aim",         "../data/aim"),
-    ("quasigroup",             "quasigroup",  "../data/quasigroup"),
-    ("planning",               "planning",    "../data/planning"),
-]
+# the small-world levels: lpk has rewiring probability 2^-k, p0 is the lattice
+SW = [(f"sw-lp{k}", 2.0 ** -k) for k in range(9)] + [("sw-p0", 0.0)]
 CAP = 200
-# DEVICE_FLAG: --no-cuda on a machine without a GPU, which is the case locally,
-# empty to use the GPU, as on Colab; the same knobs as reeval.sh.
+MAIN = ["Graph-Q-SAT", "GAT-Q-SAT"]
+CONTROLS = ["Graph-Q-SAT wide", "Attention aggregation"]
 DEVICE_FLAG = os.environ.get("DEVICE_FLAG", "--no-cuda")
 OUT_ROOT = os.environ.get("OUT_ROOT", "runs")
 CKPT_ROOT = os.environ.get("CKPT_ROOT", "")
 ROW = re.compile(r"^(sec to solve|[0-9])")
+
+
+def runs_of(variant):
+    return [r for r, (v, t) in pn.RUNS.items() if v == variant and t in pn.COL]
 
 
 def run_dir(run):
@@ -58,7 +69,6 @@ def run_dir(run):
 
 
 def last_checkpoint(d):
-    """The checkpoint with the largest step in a run directory."""
     steps = [int(m.group(1)) for f in os.listdir(d)
              if (m := re.fullmatch(r"model_(\d+)\.chkp", f))]
     return f"model_{max(steps)}.chkp" if steps else None
@@ -80,15 +90,19 @@ def log_dir(run):
         else os.path.join("runs", run, "transfer")
 
 
-def run_eval(run, model, name, path):
-    """Write the per-problem log of one checkpoint on one domain, unless done."""
-    out = os.path.join(log_dir(run), f"{name}-{model}-max{CAP}.tsv")
+def run_eval(run, variant, name):
+    """Write the per-problem log of one checkpoint on one family, unless done."""
+    path = pn.data_dir(name)
+    if n_rows(os.path.join(path, "METADATA")) + 1 < n_problems(path):
+        print(f"[skip] METADATA of {path} incomplete (run make_metadata.py first)")
+        return
+    out = os.path.join(log_dir(run), f"{name}-{pn.NAME[variant]}-max{CAP}.tsv")
     if n_rows(out) >= n_problems(path):
         return
     d = run_dir(run)
     ck = last_checkpoint(d) if os.path.isdir(d) else None
     if ck is None:
-        print(f"[skip] no checkpoint in {d}")
+        print(f"[skip] {run}: no checkpoint")
         return
     os.makedirs(log_dir(run), exist_ok=True)
     cmd = [
@@ -107,65 +121,92 @@ def run_eval(run, model, name, path):
         print(f"[incomplete, discarded] {run} {name}", file=sys.stderr)
 
 
-def main():
-    pn.REEVAL_ROOT = None if OUT_ROOT == "runs" else OUT_ROOT
-    for _, model, runs, _ in MODELS:
-        for run in runs:
-            for _, name, path in DOMAINS:
-                if not os.path.isfile(os.path.join(path, "METADATA")):
-                    print(f"[skip] no METADATA in {path}")
-                    continue
-                run_eval(run, model, name, path)
-
-    # the logs are read as paper_numbers.py reads the re-evaluation ones; the
-    # directory of the 2021 pair is runs/<run>/transfer when run locally
-    def per_run(run, model, name):
+def mrir(variant, name):
+    """(mean over the seeds, per-seed values) of the MRIR on one family."""
+    vals = []
+    for run in runs_of(variant):
         if OUT_ROOT == "runs":
-            p = os.path.join(log_dir(run), f"{name}-{model}-max{CAP}.tsv")
-            if not os.path.isfile(p):
-                return None
-            sc, _ = pn.scores(p, "stronger")
-            return statistics.median(sc) if sc else None
-        return pn.cell(run, name, CAP, "family", model)[0]
+            p = os.path.join(log_dir(run), f"{name}-{pn.NAME[variant]}-max{CAP}.tsv")
+            sc = pn.scores(p, "stronger")[0] if os.path.isfile(p) else None
+            v = statistics.median(sc) if sc else None
+        else:
+            v = pn.cell(run, name, CAP, "family", pn.NAME[variant])[0]
+        if v is not None:
+            vals.append(v)
+    return (statistics.fmean(vals) if vals else None), vals
 
-    results = {}  # variant -> {domain label: (mean over seeds, per-seed list)}
-    for variant, model, runs, _ in MODELS:
-        results[variant] = {}
-        for label, name, _ in DOMAINS:
-            vals = [v for v in (per_run(r, model, name) for r in runs) if v is not None]
-            results[variant][label] = (statistics.fmean(vals) if vals else None, vals)
-            print(f"{variant:12s} {name:12s} MRIR={results[variant][label]}", flush=True)
 
-    # grouped bar chart: domains on x, one bar per model
-    labels = [d[0] for d in DOMAINS]
-    x = range(len(labels)); w = 0.38
-    plt.figure(figsize=(8, 4.5))
-    for i, (variant, _, _, col) in enumerate(MODELS):
-        ys = [results[variant][d][0] or 0 for d in labels]
-        xs = [k + (i - 0.5) * w for k in x]
-        plt.bar(xs, ys, w, label=variant, color=col)
-        for xi, yv in zip(xs, ys):
-            plt.text(xi, yv + 0.02, f"{yv:.2f}", ha="center", fontsize=8)
-    plt.axhline(1.0, color="gray", lw=.8, ls="--")
-    plt.xticks(list(x), labels)
-    plt.ylabel(f"median MRIR vs MiniSat (cap {CAP})")
-    plt.title("Cross-domain transfer of the colouring-trained heuristic")
-    plt.legend(); plt.grid(axis="y", alpha=.3); plt.tight_layout()
+def trivial_share(name):
+    """Share of the instances that MiniSat solves in fewer than 10 decisions."""
+    rows = []
+    with open(os.path.join(pn.data_dir(name), "METADATA")) as f:
+        for line in f:
+            p = line.strip().split(",")
+            if len(p) >= 3:
+                rows.append(max(float(p[1]), float(p[2])))
+    return sum(r < 10 for r in rows) / len(rows) if rows else None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--plot-only", action="store_true", help="read the logs, evaluate nothing")
+    a = ap.parse_args()
+    pn.REEVAL_ROOT = None if OUT_ROOT == "runs" else OUT_ROOT
+    names = [n for _, n in FAMILIES] + [n for n, _ in SW]
+    if not a.plot_only:
+        for group in (MAIN, CONTROLS):
+            for variant in group:
+                for run in runs_of(variant):
+                    for name in names:
+                        run_eval(run, variant, name)
+
+    variants = [v for v in MAIN + CONTROLS if any(mrir(v, n)[0] for n in names)]
     od = os.environ.get("PAPER_IMG_DIR", "../img/paper")
     os.makedirs(od, exist_ok=True)
-    out = f"{od}/transfer.png"
-    plt.savefig(out, dpi=130); plt.close(); print("wrote", out)
+
+    # the structured families: bars from parity on a log2 axis
+    fams = [(l, n) for l, n in FAMILIES if any(mrir(v, n)[0] for v in variants)]
+    w = 0.8 / max(len(variants), 1)
+    fig, ax = plt.subplots(figsize=(12, 4.8))
+    for i, v in enumerate(variants):
+        xs = [k + (i - (len(variants) - 1) / 2) * w for k in range(len(fams))]
+        ratio_bars(ax, xs, [mrir(v, n)[0] for _, n in fams], w, label=v, color=COL[v])
+    ratio_axis(ax, 0.25, 8)
+    ax.set_xticks(range(len(fams)))
+    ax.set_xticklabels([f"{l}\n({n_problems(pn.data_dir(n))})" for l, n in fams], fontsize=8)
+    ax.set_ylabel(f"MRIR (cap {CAP}, log scale)")
+    ax.legend(fontsize=8); ax.grid(axis="y", alpha=.3); fig.tight_layout()
+    fig.savefig(f"{od}/transfer.png", dpi=130); plt.close(fig); print("wrote", f"{od}/transfer.png")
+
+    # the small-world levels: MRIR against the rewiring probability
+    fig, ax = plt.subplots(figsize=(7, 4.3))
+    xs = [k for k in range(len(SW))]
+    for v in variants:
+        ys = [mrir(v, n)[0] for n, _ in SW]
+        ax.plot(xs, [y if y is not None else float("nan") for y in ys], marker="o",
+                lw=1.8, label=v, color=COL[v])
+    ratio_axis(ax)
+    ax.set_xticks(xs); ax.set_xticklabels(["1"] + [f"$2^{{-{k}}}$" for k in range(1, 9)] + ["0"])
+    ax.set_xlabel("rewiring probability (1: random graph, 0: ring lattice)")
+    ax.set_ylabel(f"MRIR (cap {CAP}, log scale)")
+    ax.legend(fontsize=8); ax.grid(alpha=.3); fig.tight_layout()
+    fig.savefig(f"{od}/transfer_sw.png", dpi=130); plt.close(fig); print("wrote", f"{od}/transfer_sw.png")
 
     with open(f"{od}/transfer_summary.md", "w") as f:
-        f.write("# Cross-domain transfer (median MRIR against the stronger MiniSat, "
-                "colouring-trained, cap %d, mean over the seeds [per seed])\n\n" % CAP)
-        f.write("| domain | Graph-Q-SAT | GAT-Q-SAT |\n|---|---|---|\n")
-        for d in labels:
+        f.write(f"# Transfer of the colouring-trained models (MRIR against the stronger "
+                f"MiniSat, cap {CAP}, mean over the seeds [per seed])\n\n")
+        f.write("| family | n | <10 decisions | " + " | ".join(variants) + " |\n")
+        f.write("|---|---|---|" + "---|" * len(variants) + "\n")
+        for label, n in fams + [(s, s) for s, _ in SW]:
+            if not os.path.isfile(os.path.join(pn.data_dir(n), "METADATA")):
+                continue
             cells = []
-            for variant in ("Graph-Q-SAT", "GAT-Q-SAT"):
-                m, vals = results[variant][d]
-                cells.append(f"{m:.2f} [{', '.join(f'{v:.2f}' for v in vals)}]" if m else "-")
-            f.write(f"| {d.replace(chr(10), ' ')} | {cells[0]} | {cells[1]} |\n")
+            for v in variants:
+                m, vals = mrir(v, n)
+                cells.append(f"{m:.2f} [{', '.join(f'{x:.2f}' for x in vals)}]" if m else "-")
+            ts = trivial_share(n)
+            f.write(f"| {label.replace(chr(10), ' ')} | {n_problems(pn.data_dir(n))} | "
+                    f"{'' if ts is None else f'{ts:.0%}'} | " + " | ".join(cells) + " |\n")
     print(f"wrote {od}/transfer_summary.md")
 
 

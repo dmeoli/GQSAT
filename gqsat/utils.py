@@ -296,7 +296,13 @@ def build_argparser():
     parser.add_argument(
         "--e2v-aggregator",
         default="sum",
-        help="Aggregation to use for e->v. Can be sum|mean"
+        help="Aggregation to use for e->v. Can be sum|mean|attention"
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Seed of python, numpy and torch (none: not seeded, as the 2021 runs)"
     )
 
     parser.add_argument(

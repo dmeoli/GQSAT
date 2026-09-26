@@ -540,6 +540,19 @@ class DQN:
             raise ValueError(f"agg {agg} is not recognized")
 
 
+def seed_everything(args):
+    """Seed python, numpy and torch when a seed is given (the runs of 2021 were
+    not seeded); a resumed run is seeded again, its random state being lost."""
+    seed = getattr(args, "seed", None)
+    if seed is None:
+        return
+    import random
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
 if __name__ == "__main__":
     parser = build_argparser()
     args = parser.parse_args()
@@ -558,8 +571,10 @@ if __name__ == "__main__":
         # swap the args
         args = train_status["args"]
 
+        seed_everything(args)
         dqn = DQN(args, train_status)
     else:
+        seed_everything(args)
         dqn = DQN(args)
 
     # train

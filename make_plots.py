@@ -36,53 +36,69 @@ def mean_over_runs(agg, model, dataset, cap, idx):
     return pn.group(variant, pn.SAT, dataset, cap, "family", idx)
 
 
-def shared_ylim(agg, models, datasets, idx, start_one=False, pad=0.06):
-    """Common y range over the models, so two panels can be read side by side."""
-    vals = [1.0] if start_one else []
+def point(agg, model, dataset, cap, idx, ratio):
+    """One point of a curve; cap 0 is MiniSat without restarts, left alone,
+    whose MRIR against the baseline is read from the METADATA of the family."""
+    if cap == 0:
+        return pn.cap0(dataset, "family") if ratio else None
+    return mean_over_runs(agg, model, dataset, cap, idx)
+
+
+def shared_ylim(agg, models, datasets, idx, ratio=False, pad=0.06):
+    """Common y range over the models, so two panels can be read side by side
+    (in log space for the MRIR)."""
+    vals = []
     for m in models:
         for d in datasets:
-            for c in CAPS:
-                v = mean_over_runs(agg, m, d, c, idx)
+            for c in [0] + CAPS:
+                v = point(agg, m, d, c, idx, ratio)
                 if v is not None:
                     vals.append(v)
     if not vals:
         return None
+    if ratio:
+        lo, hi = min(vals + [1.0]), max(vals + [1.0])
+        return lo / (1 + pad), hi * (1 + pad)
     lo, hi = min(vals), max(vals)
     span = (hi - lo) or 1.0
-    return lo - pad * span, hi + pad * span
+    return max(0.0, lo - pad * span), hi + pad * span
 
 
-def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, start_one=False,
-                ylim=None):
-    plt.figure(figsize=(7, 4.3))
+def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, ratio=False,
+                ylim=None, dashed=()):
+    fig, ax = plt.subplots(figsize=(7, 4.3))
     # one line per dataset: use a categorical palette (a violet gradient makes the
-    # per-dataset legend unreadable) + varied markers, so each curve is identifiable.
+    # per-dataset legend unreadable) + varied markers, so each curve is identifiable;
+    # a cap with no log is a gap in the line, not a straight segment across it.
     palette = plt.get_cmap("tab10").colors
     markers = ["o", "s", "^", "D", "v", "P", "X", "*", "<", ">"]
     for i, d in enumerate(datasets):
-        xs, ys = ([0], [1.0]) if start_one else ([], [])
-        for c in CAPS:
-            v = mean_over_runs(agg, model, d, c, idx)
-            if v is not None:
-                xs.append(c)
-                ys.append(v)
-        if len(ys) > (1 if start_one else 0):
-            plt.plot(xs, ys, marker=markers[i % len(markers)], markersize=4,
-                     linewidth=1.6, label=d, color=palette[i % len(palette)])
-    plt.xscale("symlog")
-    plt.xticks([0] + CAPS, ["0"] + [str(c) for c in CAPS])
-    plt.xlabel("model decisions")
-    plt.ylabel(ylabel)
-    plt.title(title)
+        xs = [0] + CAPS if ratio else CAPS
+        ys = [point(agg, model, d, c, idx, ratio) for c in xs]
+        if all(y is None for y in (ys[1:] if ratio else ys)):
+            continue
+        ys = [float("nan") if y is None else y for y in ys]
+        ax.plot(xs, ys, marker=markers[i % len(markers)], markersize=4, linewidth=1.6,
+                ls="--" if d in dashed else "-", label=d, color=palette[i % len(palette)])
+    ax.set_xscale("symlog", linthresh=10)
+    ax.set_xticks(([0] if ratio else []) + CAPS)
+    ax.set_xticklabels((["0"] if ratio else []) + [str(c) for c in CAPS])
+    ax.set_xlabel("cap on the decisions of the model")
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    if ratio:
+        ax.set_yscale("log", base=2)
+        lo, hi = ylim if ylim else ax.get_ylim()
+        ticks = [t for t in (0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8) if lo <= t <= hi]
+        ax.set_yticks(ticks); ax.set_yticklabels([f"{t:g}" for t in ticks]); ax.minorticks_off()
+        ax.axhline(1.0, color="gray", linewidth=0.8, linestyle="--")
     if ylim is not None:
-        plt.ylim(*ylim)
-    if not start_one:
-        plt.axhline(1.0, color="gray", linewidth=0.8, linestyle="--")
-    plt.legend(fontsize=7, ncol=2, loc="best")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(out_path, dpi=130)
-    plt.close()
+        ax.set_ylim(*ylim)
+    ax.legend(fontsize=7, ncol=2, loc="best")
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=130)
+    plt.close(fig)
     print("wrote", out_path)
 
 
@@ -96,30 +112,27 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     MODELS = ("graphqsat", "gatqsat")
-    flat_mrir = shared_ylim(agg, MODELS, FLAT, 0, start_one=True)
+    UNSAT = [d for d in RANDOM if d.startswith("uuf")]
+    flat_mrir = shared_ylim(agg, MODELS, FLAT, 0, ratio=True)
     flat_time = shared_ylim(agg, MODELS, FLAT, 1)
-    rand_mrir = shared_ylim(agg, MODELS, RANDOM, 0, start_one=True)
+    rand_mrir = shared_ylim(agg, MODELS, RANDOM, 0, ratio=True)
 
     for model in MODELS:
-        # MRIR ("iterations improvement") vs model decisions on graph colouring
-        plot_curves(agg, model, FLAT, idx=0,
-                    ylabel="iterations improvement (MRIR)",
-                    title=f"{TITLE[model]} on graph colouring (flat)",
+        # MRIR against the cap on graph colouring
+        plot_curves(agg, model, FLAT, idx=0, ylabel="MRIR (log scale)",
+                    title=f"{TITLE[model]} on graph colouring",
                     out_path=os.path.join(args.out_dir, f"{model}.png"),
-                    start_one=True, ylim=flat_mrir)
-        # wall-clock time vs model decisions
-        plot_curves(agg, model, FLAT, idx=1,
-                    ylabel="median sec to solve",
-                    title=f"{TITLE[model]} solving time (flat)",
+                    ratio=True, ylim=flat_mrir)
+        # wall-clock time against the cap
+        plot_curves(agg, model, FLAT, idx=1, ylabel="median seconds per instance",
+                    title=f"{TITLE[model]} solving time on graph colouring",
                     out_path=os.path.join(args.out_dir, f"{model}_time.png"),
                     ylim=flat_time)
-        # MRIR on random 3-SAT
-        plot_curves(agg, model, RANDOM, idx=0,
-                    ylabel="iterations improvement (MRIR)",
-                    title=f"{TITLE[model]} on uniform-random 3-SAT",
+        # MRIR on random 3-SAT, unsatisfiable families dashed
+        plot_curves(agg, model, RANDOM, idx=0, ylabel="MRIR (log scale)",
+                    title=f"{TITLE[model]} on uniform random 3-SAT",
                     out_path=os.path.join(args.out_dir, f"{model}_random.png"),
-                    start_one=True, ylim=rand_mrir)
-
+                    ratio=True, ylim=rand_mrir, dashed=UNSAT)
 
 if __name__ == "__main__":
     main()

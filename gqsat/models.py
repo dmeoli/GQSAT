@@ -6,7 +6,7 @@ import yaml
 from gqsat.meta import ModifiedMetaLayer
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU, LayerNorm
 from torch_geometric.nn import Sequential, GATConv as EdgeGATConv
-from torch_geometric.utils import scatter
+from torch_geometric.utils import scatter, softmax
 
 
 class SATModel(torch.nn.Module):
@@ -220,7 +220,7 @@ class GraphNet(SATModel):
             heads=3
     ):
         super().__init__(save_name)
-        if e2v_agg not in ['sum', 'mean']:
+        if e2v_agg not in ['sum', 'mean', 'attention']:
             raise ValueError('unknown aggregation function {}'.format(e2v_agg))
 
         v_in = in_dims[0]  # in_node_features
@@ -264,6 +264,13 @@ class GraphNet(SATModel):
                     activation=activation,
                     layer_norm=layer_norm
                 )
+                if e2v_agg == 'attention':
+                    # attention in place of the sum: one score per incoming edge and
+                    # head, from the receiving node and the updated edge, softmax-ed
+                    # over the edges of the node; the heads are averaged, so that
+                    # phi^v sees an input of the same size as with the sum
+                    self.att = Lin(v_in + e_out, heads)
+                    self.att_act = torch.nn.LeakyReLU(0.2)
 
             def forward(self, x, edge_index, edge_attr, u=None, v_indices=None):
                 # x: node feature matrix of shape [N, F_x], where N is the number of nodes
@@ -279,6 +286,11 @@ class GraphNet(SATModel):
                 elif e2v_agg == 'mean':
                     # global_mean_pool(edge_attr, row, size=x.size(0))
                     out = scatter(edge_attr, row, dim=0, dim_size=x.size(0), reduce='mean')
+                elif e2v_agg == 'attention':
+                    score = self.att_act(self.att(torch.cat([x[row], edge_attr], dim=1)))  # [E, H]
+                    alpha = softmax(score, row, num_nodes=x.size(0))                       # [E, H]
+                    msg = (alpha.unsqueeze(-1) * edge_attr.unsqueeze(1)).mean(dim=1)      # [E, F_e]
+                    out = scatter(msg, row, dim=0, dim_size=x.size(0), reduce='sum')
                 out = torch.cat([x, out, u[v_indices]], dim=1)
                 return self.node_mlp(out)
 
@@ -316,7 +328,7 @@ class GraphNet(SATModel):
                     edge_dim=e_out,  # out_edge_features
                     # no self-connections since the SAT representation is a bipartite graph
                     add_self_loops=False,
-                    aggr='add' if e2v_agg == 'sum' else e2v_agg),
+                    aggr='add' if e2v_agg in ('sum', 'attention') else e2v_agg),
                  'mlp_x, edge_index, mlp_edge_attr -> gat_x'),
                 activation(inplace=True),
                 (EdgeGATConv(
@@ -325,7 +337,7 @@ class GraphNet(SATModel):
                     edge_dim=e_out,  # out_edge_features
                     # no self-connections since the SAT representation is a bipartite graph
                     add_self_loops=False,
-                    aggr='add' if e2v_agg == 'sum' else e2v_agg),
+                    aggr='add' if e2v_agg in ('sum', 'attention') else e2v_agg),
                  'gat_x, edge_index, mlp_edge_attr -> gat_x'),
                 activation(inplace=True),
                 (LayerNorm(v_out) if layer_norm else lambda gat_x: gat_x)

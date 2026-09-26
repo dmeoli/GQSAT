@@ -2,8 +2,15 @@
 # Train a Graph-Q-SAT-family model with the published configuration.
 #
 # Usage:
-#   bash train.sh <variant> <train_path> <val_path> [logdir]
-#     variant  : graphqsat | gatqsat
+#   [SEED=<n>] bash train.sh <variant> <train_path> <val_path> [logdir]
+#     variant  : graphqsat | gatqsat | graphwide | attnagg
+#       graphqsat : Graph-Q-SAT, the published configuration
+#       gatqsat   : two GAT layers added to the core block (113256 parameters)
+#       graphwide : Graph-Q-SAT with hidden layers of 104 units (113504
+#                   parameters), i.e. the capacity of gatqsat with no attention
+#       attnagg   : attention in place of the sum over the incoming edges of a
+#                   node (3 heads, averaged; 71627 parameters against 71144)
+#     SEED     : seed of python, numpy and torch (unset: not seeded)
 #
 # Hyperparameters below reproduce the original Graph-Q-SAT training exactly
 # (verified against the released checkpoints): in particular the per-episode
@@ -17,11 +24,16 @@ TRAIN="${2:?usage: train.sh <variant> <train_path> <val_path> [logdir]}"
 VAL="${3:?usage: train.sh <variant> <train_path> <val_path> [logdir]}"
 LOGDIR="${4:-runs/$VARIANT}"
 
+AGG=sum; HIDDEN=64
 case "$VARIANT" in
   graphqsat) ATTN="" ;;
   gatqsat)   ATTN="--use_attention --heads 3" ;;
-  *) echo "unknown variant '$VARIANT' (graphqsat|gatqsat)"; exit 1 ;;
+  graphwide) ATTN=""; HIDDEN=104 ;;
+  attnagg)   ATTN="--heads 3"; AGG=attention ;;
+  *) echo "unknown variant '$VARIANT' (graphqsat|gatqsat|graphwide|attnagg)"; exit 1 ;;
 esac
+SEEDARG=""
+[ -n "${SEED:-}" ] && SEEDARG="--seed $SEED"
 
 mkdir -p "$LOGDIR"
 
@@ -42,7 +54,7 @@ python3 dqn.py \
   --logdir "$LOGDIR" $RESUME --env-name sat-v0 \
   --train-problems-paths "$TRAIN" \
   --eval-problems-paths "$VAL" \
-  $ATTN \
+  $ATTN $SEEDARG \
   --lr 0.00002 --bsize 64 --buffer-size 20000 \
   --eps-init 1.0 --eps-final 0.01 --eps-decay-steps 30000 --gamma 0.99 \
   --batch-updates 50000 --history-len 1 --init-exploration-steps 5000 \
@@ -50,7 +62,7 @@ python3 dqn.py \
   --save-freq 500 --grad_clip 0.1 --grad_clip_norm_type 2 \
   --eval-freq 1000 --eval-time-limit 3600 --core-steps 4 \
   --expert-exploration-prob 0.0 --priority_alpha 0.5 --priority_beta 0.5 \
-  --e2v-aggregator sum --n_hidden 1 --hidden_size 64 \
+  --e2v-aggregator $AGG --n_hidden 1 --hidden_size $HIDDEN \
   --decoder_v_out_size 32 --decoder_e_out_size 1 --decoder_g_out_size 1 \
   --encoder_v_out_size 32 --encoder_e_out_size 32 --encoder_g_out_size 32 \
   --core_v_out_size 64 --core_e_out_size 64 --core_g_out_size 32 \

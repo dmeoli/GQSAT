@@ -16,8 +16,9 @@
 #   colouring : the colouring-trained runs on the flat families, every cap
 #   transfer  : the random-trained runs on the flat families, cap 500
 #   random    : the random-trained runs on the random families, every cap
-#   seeds     : the colouring-trained pair retrained in 2026 on the current stack
-#               (a second seed of the 2021 pair), with what "tables" asks of it;
+#   seeds     : the colouring-trained runs of 2026 (the pair retrained on the
+#               current stack, the third seed, the two controls of train.sh),
+#               with what "tables" asks of them; runs not trained yet are skipped;
 #               the checkpoints are read from CKPT_ROOT, i.e. the Drive folder
 #   aa        : the timing noise, i.e. the colouring pair on flat200-479 at cap 500
 #               evaluated again into OUT_ROOT/aa, to be compared with the log of
@@ -40,7 +41,8 @@ RAND="uf50-218 uf100-430 uf250-1065 uuf50-218 uuf100-430 uuf250-1065"
 CAPS="10 50 100 300 500 1000"
 COLOURING_RUNS="Dec08_08-39-57_e63e47f25457 Dec09_12-16-16_d4e65e7af705"
 # second seed: same configuration, retrained in 2026, kept under CKPT_ROOT
-SEED_RUNS="gqsat_graphqsat gqsat_gatqsat"
+SEED_RUNS="gqsat_graphqsat gqsat_gatqsat gqsat_graphqsat_s3 gqsat_gatqsat_s3 \
+           gqsat_graphwide_s1 gqsat_graphwide_s2 gqsat_attnagg_s1 gqsat_attnagg_s2"
 CKPT_ROOT="${CKPT_ROOT:-}"
 RANDOM_RUNS="Dec21_01-59-59_6bed2aa9b612 Dec21_14-55-50_5eccdc34d583 \
              Dec23_01-48-54_90582559eea7 Dec23_14-42-44_90582559eea7 \
@@ -60,8 +62,12 @@ run_dir() {  # run -> its directory: runs/<run> in the repository, else under CK
     if [ -d "runs/$1" ]; then echo "runs/$1"; else echo "${CKPT_ROOT:?CKPT_ROOT not set}/$1"; fi
 }
 
-model_of() {  # run -> graphqsat | gatqsat
-    if grep -aq "use_attention: true" "$(run_dir "$1")/model.yaml"; then echo gatqsat; else echo graphqsat; fi
+model_of() {  # run -> graphqsat | gatqsat | graphwide | attnagg
+    local y; y="$(run_dir "$1")/model.yaml"
+    if grep -aq "use_attention: true" "$y"; then echo gatqsat
+    elif grep -aq "e2v_agg: attention" "$y"; then echo attnagg
+    elif grep -aqE "hidden_size: 104$" "$y"; then echo graphwide
+    else echo graphqsat; fi
 }
 
 last_checkpoint() {  # run -> its last checkpoint, the one of the 2021 logs
@@ -90,6 +96,10 @@ wait_for_memory() {  # the machine is shared: do not start if it is already tigh
 one() {  # run dataset cap
     local run="$1" ds="$2" cap="$3"
     local model out
+    # a run of the list that has not been trained (yet) is skipped
+    if [ ! -f "$(run_dir "$run")/model.yaml" ] || [ -z "$(last_checkpoint "$run")" ]; then
+        echo "[$(date +%H:%M:%S)] $run: no checkpoint, skipped"; return 0
+    fi
     model="$(model_of "$run")"
     local dir="runs/$run/reeval"
     [ -n "$OUT_ROOT" ] && dir="$OUT_ROOT/$run"
