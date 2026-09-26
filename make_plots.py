@@ -1,26 +1,22 @@
 #!/usr/bin/env python3
-"""Generate the result figures locally from runs/*/*.tsv (replacing the old,
-never-updating Google Sheets). Reproduces the README plots --- MRIR ("iterations
-improvement") vs the number of model decisions (the cap), one line per dataset ---
-and adds wall-clock-time figures from the "sec to solve" column.
+"""The per-family figures: MRIR ("iterations improvement") and wall-clock
+seconds against the number of model decisions (the cap), one line per dataset,
+for each model, on the graph-colouring and on the random families.
 
-Outputs PNGs under ../img/ (and is pure matplotlib/stdlib). Run from GQSAT root:
+The logs, the runs and the baseline are those of paper_numbers.py. Outputs PNGs
+under ../img/ (pure matplotlib/stdlib). Run from the GQSAT root:
 
-    python3 make_plots.py
+    python3 make_plots.py [--reeval-root DIR] [--out-dir DIR]
 """
 import argparse
-import csv
-import glob
 import os
-import re
-import statistics
-from collections import defaultdict
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-FNAME_RE = re.compile(r"^(?P<dataset>.+)-(?P<model>gatqsat|graphqsat)-max(?P<cap>\d+)\.tsv$")
+import paper_numbers as pn
+
 CAPS = [10, 50, 100, 300, 500, 1000]
 
 FLAT = ["flat30-60", "flat50-115", "flat75-180", "flat100-239",
@@ -29,33 +25,15 @@ RANDOM = ["uf50-218", "uf100-430", "uf250-1065", "uuf50-218", "uuf100-430", "uuf
 TITLE = {"gatqsat": "GAT-Q-SAT", "graphqsat": "Graph-Q-SAT"}
 
 
-def collect(runs_dir):
-    """(model, dataset, cap) -> list of per-run (median_score, median_sec)."""
-    agg = defaultdict(list)
-    for path in glob.glob(os.path.join(runs_dir, "*", "*.tsv")):
-        m = FNAME_RE.match(os.path.basename(path))
-        if not m:
-            continue
-        scores, secs = [], []
-        with open(path, newline="") as f:
-            for row in csv.DictReader(f, delimiter="\t"):
-                try:
-                    s = float(row["score"])
-                    t = float(row["sec to solve"])
-                except (ValueError, KeyError, TypeError):
-                    continue
-                if s == s:
-                    scores.append(s)
-                    secs.append(t)
-        if scores:
-            agg[(m["model"], m["dataset"], int(m["cap"]))].append(
-                (statistics.median(scores), statistics.median(secs)))
-    return agg
-
-
 def mean_over_runs(agg, model, dataset, cap, idx):
-    vals = [v[idx] for v in agg.get((model, dataset, cap), [])]
-    return statistics.fmean(vals) if vals else None
+    """Mean over the runs of the per-run median (idx 0 the MRIR, 1 the seconds),
+    with the runs and the baseline of paper_numbers.py: the 2021 colouring pair on
+    the flat families (the only one evaluated at every cap), the runs trained on
+    satisfiable random 3-SAT on the random families."""
+    variant = TITLE[model]
+    if dataset.startswith("flat"):
+        return pn.group(variant, pn.COL, dataset, cap, "family", idx, runs=pn.CURVE_RUNS)
+    return pn.group(variant, pn.SAT, dataset, cap, "family", idx)
 
 
 def shared_ylim(agg, models, datasets, idx, start_one=False, pad=0.06):
@@ -110,12 +88,11 @@ def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, start_one=Fa
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--runs-dir", default="runs")
+    ap.add_argument("--reeval-root", default=os.environ.get("OUT_ROOT"))
     ap.add_argument("--out-dir", default="../img")
     args = ap.parse_args()
-    agg = collect(args.runs_dir)
-    if not agg:
-        raise SystemExit("no result .tsv found")
+    pn.REEVAL_ROOT = args.reeval_root
+    agg = None
     os.makedirs(args.out_dir, exist_ok=True)
 
     MODELS = ("graphqsat", "gatqsat")

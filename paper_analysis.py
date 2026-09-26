@@ -1,97 +1,46 @@
 #!/usr/bin/env python3
 """Train-set-aware analysis of the Graph-Q-SAT / GAT-Q-SAT runs for the report.
 
-Each run is labelled by (model, train-family) from its model.yaml/status.yaml:
-  * model        = GAT-Q-SAT (use_attention) | Graph-Q-SAT
-  * train-family = coloring (flat*) | random (uniform 3-SAT)
-Runs are then grouped so every comparison is a clean attention on/off ablation at a
-FIXED training set. Produces the paper figures under ../img/paper/ and a summary.
+The runs, their grouping and the baseline are those of paper_numbers.py, so the
+bars and the curves drawn here are the numbers of the tables: the colouring
+group is the pair trained on flat50-115 (both seeds), the random group the runs
+trained on satisfiable uniform random 3-SAT (the four trained on unsatisfiable
+formulas are a control and are not pooled with them), and the MRIR is read
+against MiniSat with restarts on colouring and without on random 3-SAT.
 
-Pure matplotlib/stdlib + yaml. Run from the GQSAT root:  python3 paper_analysis.py
+Pure matplotlib/stdlib. Run from the GQSAT root:
+    python3 paper_analysis.py [--reeval-root DIR]      (or OUT_ROOT=DIR)
 """
-import csv
-import glob
+import argparse
 import os
-import re
 import statistics
-from collections import defaultdict
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import yaml
 
-FNAME = re.compile(r"^(?P<dataset>.+)-(?P<model>gatqsat|graphqsat)-max(?P<cap>\d+)\.tsv$")
+import paper_numbers as pn
+
 CAPS = [10, 50, 100, 300, 500, 1000]
-FLAT = ["flat30-60", "flat50-115", "flat75-180", "flat100-239",
-        "flat125-301", "flat150-360", "flat175-417", "flat200-479"]
-RANDOM = ["uf50-218", "uf100-430", "uf250-1065", "uuf50-218", "uuf100-430", "uuf250-1065"]
+FLAT = pn.FLAT_ALL
+RANDOM = pn.RAND
 SIZE = {"flat30-60": 90, "flat50-115": 150, "flat75-180": 225, "flat100-239": 300,
         "flat125-301": 375, "flat150-360": 450, "flat175-417": 525, "flat200-479": 600,
         "uf50-218": 50, "uf100-430": 100, "uf250-1065": 250,
         "uuf50-218": 50, "uuf100-430": 100, "uuf250-1065": 250}
 COL = {"GAT-Q-SAT": "#4b2e83", "Graph-Q-SAT": "#b9a7d6"}  # deep violet vs light lilac
-
-
-def run_label(run_dir):
-    """Return (model, train_family) or None."""
-    try:
-        with open(os.path.join(run_dir, "model.yaml")) as f:
-            call_args = yaml.load(f, Loader=yaml.Loader)["call_args"]
-        attn = bool(call_args.get("use_attention"))
-        model = "GAT-Q-SAT" if attn else "Graph-Q-SAT"
-    except Exception:
-        return None
-    train = "random"
-    try:
-        txt = open(os.path.join(run_dir, "status.yaml"), errors="ignore").read()
-        m = re.search(r"train_problems_paths[^\n]*", txt)
-        if m and ("flat" in m.group(0) or "graph-coloring" in m.group(0)):
-            train = "coloring"
-    except Exception:
-        pass
-    return model, train
-
-
-def parse_tsv(path):
-    scores, secs = [], []
-    with open(path, newline="") as f:
-        for row in csv.DictReader(f, delimiter="\t"):
-            try:
-                s, t = float(row["score"]), float(row["sec to solve"])
-            except (ValueError, KeyError, TypeError):
-                continue
-            if s == s:
-                scores.append(s); secs.append(t)
-    return (statistics.median(scores), statistics.median(secs)) if scores else None
-
-
-def collect():
-    """data[(train, model)][dataset][cap] = list over runs of (median_score, median_sec)."""
-    data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    for run in glob.glob("runs/*/"):
-        lab = run_label(run)
-        if lab is None:
-            continue
-        model, train = lab
-        for path in glob.glob(os.path.join(run, "*.tsv")):
-            m = FNAME.match(os.path.basename(path))
-            if not m:
-                continue
-            r = parse_tsv(path)
-            if r:
-                data[(train, model)][m["dataset"]][int(m["cap"])].append(r)
-    return data
+TRAIN = {"coloring": pn.COL, "random": pn.SAT}
+BASELINE = "family"
 
 
 def mean_mrir(data, key, dataset, cap):
-    vals = [v[0] for v in data.get(key, {}).get(dataset, {}).get(cap, [])]
-    return statistics.fmean(vals) if vals else None
+    train, model = key
+    return pn.group(model, TRAIN[train], dataset, cap, BASELINE)
 
 
 def mean_sec(data, key, dataset, cap):
-    vals = [v[1] for v in data.get(key, {}).get(dataset, {}).get(cap, [])]
-    return statistics.fmean(vals) if vals else None
+    train, model = key
+    return pn.group(model, TRAIN[train], dataset, cap, BASELINE, idx=1)
 
 
 def fig_thesis(data, out):
@@ -184,11 +133,13 @@ def fig_mrir_time(data, out):
 
 def fig_curves(data, train, datasets, title, out):
     """MRIR vs decision-cap, GAT vs Graph, averaged over the datasets."""
+    # only the 2021 colouring pair is evaluated at every cap
+    runs = pn.CURVE_RUNS if train == "coloring" else None
     plt.figure(figsize=(7, 4.3))
     for model in ("Graph-Q-SAT", "GAT-Q-SAT"):
         xs, ys = [0], [1.0]
         for c in CAPS:
-            vals = [mean_mrir(data, (train, model), d, c) for d in datasets]
+            vals = [pn.group(model, TRAIN[train], d, c, BASELINE, runs=runs) for d in datasets]
             vals = [v for v in vals if v is not None]
             if vals:
                 xs.append(c); ys.append(statistics.fmean(vals))
@@ -240,8 +191,10 @@ def write_summary(data, out):
 
 
 def main():
-    data = collect()
-    print("groups found:", {k: sum(len(c) for c in v.values()) for k, v in data.items()})
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--reeval-root", default=os.environ.get("OUT_ROOT"))
+    pn.REEVAL_ROOT = ap.parse_args().reeval_root
+    data = None
     od = os.environ.get("PAPER_IMG_DIR", "../img/paper")
     os.makedirs(od, exist_ok=True)
     fig_thesis(data, f"{od}/thesis.png")
@@ -249,8 +202,6 @@ def main():
     fig_mrir_time(data, f"{od}/mrir_time.png")
     fig_curves(data, "coloring", FLAT, "Trained & tested on graph colouring (in-distribution)",
                f"{od}/coloring_indist.png")
-    fig_curves(data, "random", FLAT, "Random-trained, transfer to graph colouring",
-               f"{od}/random_transfer.png")
     fig_curves(data, "random", RANDOM, "Trained & tested on uniform-random 3-SAT",
                f"{od}/random_indist.png")
     fig_generalization(data, f"{od}/generalization.png")

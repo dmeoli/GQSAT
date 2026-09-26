@@ -96,13 +96,16 @@ python evaluate.py --env-name sat-v0 --core-steps -1 --eps-final 0.0 \
 python evaluate.py ... --release_after 5 --action_pool_size 4
 python evaluate.py ... --warmstart_release
 
-# re-evaluate the released checkpoints, logging both MiniSat baselines
-bash reeval.sh tables                      # cap 500 everywhere; then `colouring`, `transfer`
-python paper_numbers.py --baseline with_restarts   # or no_restarts, or best
+# re-evaluate the trained checkpoints, logging both MiniSat baselines per problem
+bash reeval.sh tables     # cap 500 everywhere; also `seeds`, `aa`, `colouring`, `transfer`, `random`
+python paper_numbers.py   # the note: with restarts on colouring, without on random 3-SAT
+python paper_numbers.py --baseline no_restarts     # or with_restarts, best, stronger
 
-# tables + figures from the logs (PAPER_IMG_DIR to write them next to the note)
-python aggregate_results.py && python make_plots.py && python paper_analysis.py
-PAPER_IMG_DIR=report/img python paper_analysis.py && PAPER_IMG_DIR=report/img python transfer_study.py
+# tables + figures from the same logs (OUT_ROOT: where the logs are; PAPER_IMG_DIR
+# and --out-dir to write the figures next to the note)
+OUT_ROOT=<logs> python make_plots.py --out-dir report/img
+OUT_ROOT=<logs> PAPER_IMG_DIR=report/img python paper_analysis.py
+OUT_ROOT=<logs> CKPT_ROOT=<checkpoints> PAPER_IMG_DIR=report/img python transfer_study.py
 ```
 
 ## Cite

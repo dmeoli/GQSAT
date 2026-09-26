@@ -19,6 +19,9 @@
 #   seeds     : the colouring-trained pair retrained in 2026 on the current stack
 #               (a second seed of the 2021 pair), with what "tables" asks of it;
 #               the checkpoints are read from CKPT_ROOT, i.e. the Drive folder
+#   aa        : the timing noise, i.e. the colouring pair on flat200-479 at cap 500
+#               evaluated again into OUT_ROOT/aa, to be compared with the log of
+#               the same evaluation in OUT_ROOT (same model, same instances)
 set -u
 
 PY="${PY:-../.venv/bin/python}"
@@ -111,7 +114,7 @@ one() {  # run dataset cap
     fi
 }
 
-case "${1:?usage: reeval.sh <tables|colouring|transfer|random|seeds>}" in
+case "${1:?usage: reeval.sh <tables|colouring|transfer|random|seeds|aa>}" in
     tables)
         for r in $COLOURING_RUNS; do for d in $FLAT; do one "$r" "$d" 500; done; done
         for r in $COLOURING_RUNS; do for c in 50 1000; do one "$r" flat200-479 "$c"; done; done
@@ -124,6 +127,10 @@ case "${1:?usage: reeval.sh <tables|colouring|transfer|random|seeds>}" in
     seeds)
         for r in $SEED_RUNS; do for d in $FLAT; do one "$r" "$d" 500; done; done
         for r in $SEED_RUNS; do for c in 50 1000; do one "$r" flat200-479 "$c"; done; done ;;
+    aa)
+        [ -n "$OUT_ROOT" ] || { echo "aa needs OUT_ROOT" >&2; exit 1; }
+        OUT_ROOT="$OUT_ROOT/aa"
+        for r in $COLOURING_RUNS; do one "$r" flat200-479 500; done ;;
     random)    for r in $RANDOM_RUNS;    do for d in $RAND; do for c in $CAPS; do one "$r" "$d" "$c"; done; done; done ;;
     *) echo "unknown phase: $1" >&2; exit 1 ;;
 esac
