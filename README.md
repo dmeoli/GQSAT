@@ -108,6 +108,31 @@ OUT_ROOT=<logs> PAPER_IMG_DIR=report/img python paper_analysis.py
 OUT_ROOT=<logs> CKPT_ROOT=<checkpoints> PAPER_IMG_DIR=report/img python transfer_study.py
 ```
 
+### Weighted MaxSAT in the branch and bound of SMS++
+
+`smspp/` is a second environment (`--env-name maxsat-v0`): the branch and bound
+of [SMS++](https://gitlab.com/smspp/smspp-project) on weighted MaxSAT instances,
+whose relaxation in each node is OLL within a budget of calls of the SAT solver.
+A state is the graph of the residual formula of the node to branch on, with the
+rows of Graph-Q-SAT or, with `--bnb-features 1`, also the weights, the costs, the
+best solution and the cores; an action fixes a variable, and the reward is
+`-penalty` per node. A policy learned there, or here on MiniSat, is exported as
+a TorchScript module that the `GQSATBranchRule` of SMS++ reads (libtorch only).
+
+```sh
+# the environment, against an installed SATBlock of SMS++ and pybind11
+cmake -S smspp -B smspp/build -DCMAKE_PREFIX_PATH=<SMS++ install> \
+      -Dpybind11_DIR=$(python -m pybind11 --cmakedir) -DPYBIND11_FINDPYTHON=ON
+cmake --build smspp/build
+
+# the steps of the rule of the cores of SMS++, the reference of the score
+python smspp/make_metadata.py <train>:<eval>
+bash train_maxsat.sh gatqsat <train> <eval> runs/maxsat_gatqsat
+
+# a checkpoint as a TorchScript module for SMS++
+python smspp/export_torchscript.py runs/<run>/model.yaml runs/<run>/model_50000.chkp policy.pt
+```
+
 ## Cite
 
 ```bibtex

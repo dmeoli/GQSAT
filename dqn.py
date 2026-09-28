@@ -341,7 +341,8 @@ class DQN:
                         )
                         save_flag = True
                     if (
-                            self.args.env_name == "sat-v0" and not self.learner.step_ctr % self.args.eval_freq
+                            self.args.env_name in ("sat-v0", "maxsat-v0")
+                            and not self.learner.step_ctr % self.args.eval_freq
                     ) or self.eval_resume_signal:
                         _, _, scores, _, self.eval_resume_signal = evaluate(
                             self.agent, self.args, include_train_set=False

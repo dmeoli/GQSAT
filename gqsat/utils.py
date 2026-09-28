@@ -72,7 +72,24 @@ def add_common_options(parser):
         "--env-name",
         type=str,
         default="sat-v0",
-        help="Environment.")
+        help="Environment: sat-v0 (MiniSat) or maxsat-v0 (the branch and "
+             "bound of SMS++ on weighted MaxSAT, smspp/SMSppMaxSATEnv.py).")
+    parser.add_argument(
+        "--bnb-solver",
+        type=str,
+        default="CaDiCaLSATSolver",
+        help="maxsat-v0: the SATSolver of SMS++ in each node.")
+    parser.add_argument(
+        "--bnb-max-iter",
+        type=int,
+        default=20,
+        help="maxsat-v0: the calls of the SAT solver of OLL in each node.")
+    parser.add_argument(
+        "--bnb-features",
+        type=int,
+        default=1,
+        help="maxsat-v0: the rows of the vertices, 0 those of Graph-Q-SAT "
+             "(2 columns), 1 those of a weighted MaxSAT node (7 columns).")
     parser.add_argument(
         "--debug",
         action="store_true",
@@ -537,6 +554,16 @@ def make_env(problems_paths, args, problems_list=None, test_mode=False):
     # non-standard return tuples are incompatible with the env-checker / OrderEnforcing
     # wrappers gym injects from 0.21 onwards. Direct construction is identical to what
     # gym.make produced on the original (unwrapped) gym and works on any gym/gymnasium.
+    if getattr(args, "env_name", "sat-v0") == "maxsat-v0":
+        from smspp.SMSppMaxSATEnv import SMSppMaxSATEnv
+        return SMSppMaxSATEnv(
+            problems_paths=problems_paths,
+            args=args,
+            test_mode=test_mode,
+            max_cap_fill_buffer=False if test_mode else args.max_cap_fill_buffer,
+            penalty_size=args.penalty_size if hasattr(args, "penalty_size") else None,
+            max_data_limit_per_set=max_data_limit_per_set
+        )
     return gym_sat_Env(
         problems_paths=problems_paths,
         problems_list=problems_list,
