@@ -100,12 +100,12 @@ class SMSppMaxSATEnv:
         if dummy or self.step_ctr > self.max_decisions_cap:
             # past the cap the rule of the cores decides; with
             # max_cap_fill_buffer each of its steps is still a transition,
-            # otherwise it plays to the end, the reward being the total
-            if self.max_cap_fill_buffer or dummy:
-                state, r, done = self.bnb.step(-1)
-            else:
-                r, done = 0.0, False
+            # otherwise it plays to the end, the reward being the total and
+            # each of its steps counted in step_ctr, which the score reads
+            state, r, done = self.bnb.step(-1)
+            if not (self.max_cap_fill_buffer or dummy):
                 while not done:
+                    self.step_ctr += 1
                     state, rr, done = self.bnb.step(-1)
                     r += rr
         else:
