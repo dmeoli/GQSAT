@@ -8,8 +8,8 @@ Q-values of each vertex of one graph; the trace is checked against the
 network on graphs of sizes other than the traced one, so that no size is
 frozen in it. The integer attribute "features" of the module says which rows
 of the vertices it reads (0 those of Graph-Q-SAT, 1 those of a weighted
-MaxSAT node, see SATResidualGraph in SMS++), as given, or as the input
-size in model.yaml says.
+MaxSAT node, 2 those and the index of the variable, see SATResidualGraph in
+SMS++), as given, or as the input size in model.yaml says.
 
 usage: export_torchscript.py <model.yaml> <checkpoint> <out.pt> [features]
 Only torch and torch_geometric are needed, and only here: the module needs
@@ -66,9 +66,10 @@ def graph(nv, nc, k, ncol, seed):
 def main():
     with open(sys.argv[1]) as f:
         ncol = int(yaml.load(f, Loader=yaml.Loader)["call_args"]["in_dims"][0])
-    features = int(sys.argv[4]) if len(sys.argv) > 4 else (1 if ncol == 7
-                                                          else 0)
-    if ncol != (7 if features == 1 else 2):
+    columns = {0: 2, 1: 7, 2: 8}
+    features = int(sys.argv[4]) if len(sys.argv) > 4 else \
+        {v: k for k, v in columns.items()}.get(ncol, 0)
+    if ncol != columns.get(features):
         sys.exit(f"features {features} do not go with {ncol} input columns")
     net = SATModel.load_from_yaml(sys.argv[1])
     sd = torch.load(sys.argv[2], map_location="cpu")
