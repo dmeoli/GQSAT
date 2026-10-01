@@ -91,6 +91,13 @@ def add_common_options(parser):
         help="maxsat-v0: the rows of the vertices, 0 those of Graph-Q-SAT "
              "(2 columns), 1 those of a weighted MaxSAT node (7 columns).")
     parser.add_argument(
+        "--bnb-index-feature",
+        type=int,
+        default=0,
+        help="maxsat-v0: 1 adds to the rows of the vertices the index of the "
+             "variable over the number of variables (0 for a clause), by which "
+             "the rule of the cores breaks its ties.")
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Modify the flow of the script, i.e., run for less iterations"
@@ -182,6 +189,50 @@ def build_eval_argparser():
 
 def build_argparser():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--pretrain-bc-steps",
+        type=int,
+        default=0,
+        help="maxsat-v0: batch updates of a pretraining on the transitions the "
+             "rule of the cores of SMS++ plays, with the TD loss plus the large "
+             "margin loss of DQfD (Hester et al., AAAI 2018), before the DQN; 0 "
+             "for none")
+    parser.add_argument(
+        "--bc-demo-transitions",
+        type=int,
+        default=20000,
+        help="maxsat-v0: the transitions of the rule of the cores collected for "
+             "the pretraining (at most --buffer-size)")
+    parser.add_argument(
+        "--bc-margin",
+        type=float,
+        default=0.8,
+        help="the margin of the large margin loss, by which the Q of the action "
+             "of the rule must exceed those of the others")
+    parser.add_argument(
+        "--bc-expert-set",
+        type=int,
+        default=1,
+        help="1: the expert actions of the pretraining are all those the rule "
+             "of the cores may take, any variable of largest core score with "
+             "its value in the best solution first (the rule breaks the ties "
+             "by an index the graph does not show; needs --bnb-features 1); 0: "
+             "the action the rule took")
+    parser.add_argument(
+        "--bc-grad-clip",
+        type=float,
+        default=10.0,
+        help="the gradient clipping of the pretraining")
+    parser.add_argument(
+        "--bc-lr",
+        type=float,
+        default=None,
+        help="the learning rate of the pretraining, --lr if not given")
+    parser.add_argument(
+        "--bc-lambda",
+        type=float,
+        default=1.0,
+        help="the weight of the large margin loss against the TD loss")
     parser.add_argument(
         "--lr",
         type=float,

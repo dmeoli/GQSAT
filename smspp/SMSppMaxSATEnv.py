@@ -67,7 +67,9 @@ class SMSppMaxSATEnv:
         self.bnb = _smspp_env.BnBEnv(getattr(args, "bnb_solver",
                                              "CaDiCaLSATSolver"),
                                      getattr(args, "bnb_max_iter", 20),
-                                     self.features, self.penalty_size)
+                                     self.features, self.penalty_size,
+                                     bool(getattr(args, "bnb_index_feature",
+                                                  0)))
         self.vertex_in_size = self.bnb.n_col()
         self.edge_in_size = 2
         self.global_in_size = 1

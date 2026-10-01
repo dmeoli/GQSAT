@@ -27,10 +27,14 @@ class BnBEnv
 {
  public:
 
+  // with index_feature, each vertex row has one more column: the index of
+  // the x of a variable vertex over the number of x, 0 for a clause vertex,
+  // which is how the rule of the cores breaks the ties among the variables
+  // of largest score
   BnBEnv( const std::string & solver , int max_iter , int features ,
-          double penalty )
+          double penalty , bool index_feature )
    : f_solver( solver ) , f_max_iter( max_iter ) , f_features( features ) ,
-     f_penalty( penalty ) {}
+     f_penalty( penalty ) , f_index( index_feature ) {}
 
   ~BnBEnv() { clear(); }
 
@@ -85,12 +89,33 @@ class BnBEnv
                            f_done ) );
    }
 
+  // the action the rule of the cores would take at the current node, as
+  // 2 * i + p in the vertex order of the graph of state(): the variable of
+  // vertex i, set to true as the first child if p = 0 and to false if p = 1
+  long rule_action( void ) {
+   if( f_done )
+    throw( std::logic_error( "BnBEnv::rule_action: the enumeration is "
+                             "over" ) );
+   auto children = f_s->branch();
+   auto ch = static_cast< SATBlockChange * >( children[ 0 ] );
+   const auto var = ch->nms()[ 0 ];
+   const bool first_true = ch->values()[ 0 ] > 0.5;
+   for( auto c : children )
+    delete c;
+   for( long i = 0 ; i < f_g.n_var ; ++i )
+    if( f_g.var[ i ] == var )
+     return( 2 * i + ( first_true ? 0 : 1 ) );
+   throw( std::logic_error( "BnBEnv::rule_action: the variable " +
+                            std::to_string( var ) + " the rule chooses is "
+                            "not in the graph" ) );
+   }
+
   double incumbent( void ) const { return( f_incumbent ); }
   double root_lb( void ) const { return( f_lb ); }
   long nodes( void ) const { return( f_nodes ); }
   long n_var( void ) const { return( f_g.n_var ); }
   unsigned int n_col( void ) const {
-   return( SATResidualGraph::n_features( f_features ) );
+   return( SATResidualGraph::n_features( f_features ) + ( f_index ? 1 : 0 ) );
    }
 
  private:
@@ -174,13 +199,24 @@ class BnBEnv
   py::tuple state( void ) {
    const long nv = f_done ? 0 : f_g.n_var + f_g.n_clause;
    const long ne = f_done ? 0 : long( f_g.source.size() );
-   const long nc = SATResidualGraph::n_features( f_features );
+   const long ng = SATResidualGraph::n_features( f_features );
+   const long nc = ng + ( f_index ? 1 : 0 );
    py::array_t< float > v( { nv , nc } );
    py::array_t< float > e( { ne , 2L } );
    py::array_t< int64_t > conn( { 2L , ne } );
    py::array_t< float > u( { 1L , 1L } );
-   if( nv )
+   if( nv && ! f_index )
     std::copy( f_g.vertex.begin() , f_g.vertex.end() , v.mutable_data() );
+   else
+    if( nv ) {
+     const double n = f_sat->get_number_variables();
+     auto out = v.mutable_data();
+     for( long i = 0 ; i < nv ; ++i ) {
+      std::copy( f_g.vertex.begin() + i * ng ,
+                 f_g.vertex.begin() + ( i + 1 ) * ng , out + i * nc );
+      out[ i * nc + ng ] = i < f_g.n_var ? float( f_g.var[ i ] / n ) : 0;
+      }
+     }
    if( ne ) {
     std::copy( f_g.edge.begin() , f_g.edge.end() , e.mutable_data() );
     std::copy( f_g.source.begin() , f_g.source.end() , conn.mutable_data() );
@@ -208,6 +244,7 @@ class BnBEnv
   int f_max_iter;
   int f_features;
   double f_penalty;
+  bool f_index;
   std::unique_ptr< SATBlock > f_sat;
   SATSolver * f_s = nullptr;
   std::vector< Frame > f_stack;
@@ -222,12 +259,13 @@ PYBIND11_MODULE( _smspp_env , m )
 {
  m.doc() = "the branch and bound of SMS++ on a SATBlock, as an environment";
  py::class_< BnBEnv >( m , "BnBEnv" )
-  .def( py::init< const std::string & , int , int , double >() ,
+  .def( py::init< const std::string & , int , int , double , bool >() ,
         py::arg( "solver" ) = "CaDiCaLSATSolver" ,
         py::arg( "max_iter" ) = 20 , py::arg( "features" ) = 1 ,
-        py::arg( "penalty" ) = 0.1 )
+        py::arg( "penalty" ) = 0.1 , py::arg( "index_feature" ) = false )
   .def( "reset" , &BnBEnv::reset )
   .def( "step" , &BnBEnv::step )
+  .def( "rule_action" , &BnBEnv::rule_action )
   .def( "incumbent" , &BnBEnv::incumbent )
   .def( "root_lb" , &BnBEnv::root_lb )
   .def( "nodes" , &BnBEnv::nodes )

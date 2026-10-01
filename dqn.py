@@ -282,10 +282,56 @@ class DQN:
     def set_problems(self, adj_mat_list):
         self.env = make_env(None, self.args, adj_mat_list)
 
+    def pretrain_on_rule(self):
+        """Pretraining on the rule of the cores of SMS++ (maxsat-v0 only): the
+        transitions it plays fill the buffer, then --pretrain-bc-steps batch
+        updates minimise the TD loss plus the large margin one of DQfD on
+        them, and the training state is saved, so that a DQN can start from
+        it with --model-dir."""
+        n_demo = min(self.args.bc_demo_transitions, self.args.buffer_size - 1)
+        episodes = 0
+        while self.buffer.ctr < n_demo and not self.buffer.full:
+            obs = self.env.reset(
+                max_decisions_cap=self.args.train_time_max_decisions_allowed
+            )
+            done = self.env.is_solved
+            while not done:
+                action = self.env.bnb.rule_action()
+                next_obs, r, done, _ = self.env.step(action)
+                self.buffer.add_transition(obs, action, r, done)
+                obs = next_obs
+                self.n_trans += 1
+            episodes += 1
+        print(f"pretraining on {self.buffer.ctr} transitions of the rule of "
+              f"the cores in {episodes} episodes", flush=True)
+        lr = self.args.bc_lr if self.args.bc_lr is not None else self.args.lr
+        for g in self.learner.optimizer.param_groups:
+            g["lr"] = lr
+        for _ in range(self.args.pretrain_bc_steps):
+            info = self.learner.step(
+                margin=self.args.bc_margin, margin_weight=self.args.bc_lambda,
+                expert_set=bool(self.args.bc_expert_set),
+                grad_clip=self.args.bc_grad_clip)
+            if not self.learner.step_ctr % 100:
+                for k, v in info.items():
+                    self.writer.add_scalar("bc/" + k, v, self.learner.step_ctr)
+                print(f"bc step {self.learner.step_ctr} loss {info['loss']:.5f} "
+                      f"margin {info['margin_loss']:.5f} "
+                      f"acc {info['margin_acc']:.3f}", flush=True)
+        for g in self.learner.optimizer.param_groups:
+            g["lr"] = self.args.lr
+        save_training_state(self.agent.net, self.learner, self.ep, self.n_trans,
+                            self.best_eval_so_far, self.args)
+
     def train(self):
         """
         Training happens here.
         """
+        if getattr(self.args, "pretrain_bc_steps", 0) > 0 \
+                and self.learner.step_ctr == 0:
+            if self.args.env_name != "maxsat-v0":
+                raise ValueError("--pretrain-bc-steps needs --env-name maxsat-v0")
+            self.pretrain_on_rule()
         while self.learner.step_ctr < self.args.batch_updates:
 
             ret = 0
