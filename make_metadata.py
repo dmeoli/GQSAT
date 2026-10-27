@@ -84,6 +84,8 @@ def main():
     ap.add_argument("--mirror", default=None)
     a = ap.parse_args()
     for d in a.dirs:
+        if not os.path.isdir(d):  # e.g. the README.md that the glob also matches
+            continue
         mirror_in(d, a.mirror)
         done = {l.split(",")[0] for l in read_lines(os.path.join(d, "METADATA"))}
         skipped = set(read_lines(os.path.join(d, "EXCLUDED")))
