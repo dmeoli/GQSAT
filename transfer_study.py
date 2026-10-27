@@ -30,10 +30,9 @@ import statistics
 import subprocess
 import sys
 
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+import figstyle as fs
 import paper_numbers as pn
 from paper_analysis import COL as _COL, ratio_axis, ratio_bars
 
@@ -167,30 +166,30 @@ def main():
     # the structured families: bars from parity on a log2 axis
     fams = [(l, n) for l, n in FAMILIES if any(mrir(v, n)[0] for v in variants)]
     w = 0.8 / max(len(variants), 1)
-    fig, ax = plt.subplots(figsize=(12, 4.8))
+    fig, ax = plt.subplots(figsize=fs.FULL)
     for i, v in enumerate(variants):
         xs = [k + (i - (len(variants) - 1) / 2) * w for k in range(len(fams))]
         ratio_bars(ax, xs, [mrir(v, n)[0] for _, n in fams], w, label=v, color=COL[v])
     ratio_axis(ax, 0.25, 8)
     ax.set_xticks(range(len(fams)))
-    ax.set_xticklabels([f"{l}\n({n_problems(pn.data_dir(n))})" for l, n in fams], fontsize=8)
+    ax.set_xticklabels([f"{l}\n({n_problems(pn.data_dir(n))})" for l, n in fams], fontsize=6)
     ax.set_ylabel(f"MRIR (cap {CAP}, log scale)")
-    ax.legend(fontsize=8); ax.grid(axis="y", alpha=.3); fig.tight_layout()
-    fig.savefig(f"{od}/transfer.png", dpi=130); plt.close(fig); print("wrote", f"{od}/transfer.png")
+    ax.legend(); ax.grid(axis="y", alpha=.3); fig.tight_layout()
+    fig.savefig(f"{od}/transfer.png"); plt.close(fig); print("wrote", f"{od}/transfer.png")
 
     # the small-world levels: MRIR against the rewiring probability
-    fig, ax = plt.subplots(figsize=(7, 4.3))
+    fig, ax = plt.subplots(figsize=fs.SINGLE)
     xs = [k for k in range(len(SW))]
     for v in variants:
         ys = [mrir(v, n)[0] for n, _ in SW]
         ax.plot(xs, [y if y is not None else float("nan") for y in ys], marker="o",
-                lw=1.8, label=v, color=COL[v])
+                label=v, color=COL[v])
     ratio_axis(ax)
     ax.set_xticks(xs); ax.set_xticklabels(["1"] + [f"$2^{{-{k}}}$" for k in range(1, 9)] + ["0"])
     ax.set_xlabel("rewiring probability (1: random graph, 0: ring lattice)")
     ax.set_ylabel(f"MRIR (cap {CAP}, log scale)")
-    ax.legend(fontsize=8); ax.grid(alpha=.3); fig.tight_layout()
-    fig.savefig(f"{od}/transfer_sw.png", dpi=130); plt.close(fig); print("wrote", f"{od}/transfer_sw.png")
+    ax.legend(); ax.grid(alpha=.3); fig.tight_layout()
+    fig.savefig(f"{od}/transfer_sw.png"); plt.close(fig); print("wrote", f"{od}/transfer_sw.png")
 
     with open(f"{od}/transfer_summary.md", "w") as f:
         f.write(f"# Transfer of the colouring-trained models (MRIR against the stronger "

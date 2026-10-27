@@ -35,7 +35,7 @@
 \newcommand{\upd}[1]{#1}
 \emergencystretch=2em
 
-\title{Graph Attention in a Learned Branching Heuristic for {SAT}}
+\title{Graph Attention in a\\ Learned Branching Heuristic for {SAT}}
 \author{Donato Meoli\\
         Dipartimento di Informatica, Universit{\`a} di Pisa\\
         Largo B. Pontecorvo 3, 56127 Pisa -- Italy\\
@@ -294,12 +294,14 @@ Thus, the node embeddings are recomputed from those of their neighbours, with
 learned weights, before $u'$ is computed. Each layer maps the embeddings $h_i$
 of the nodes into
 \begin{equation}\label{eq:gat}
+  \begin{gathered}
   h_i^{+} = \mathop{\Big\|}_{k=1}^{K} \sum_{j \in \mathcal N_i} \alpha^k_{ij}\, W_k h_j + b \, ,
   \qquad
   \alpha^k_{ij} = \frac{\exp s^k_{ij}}{\sum_{l \in \mathcal N_i} \exp s^k_{il}} \, ,
-  \qquad
+  \\
   s^k_{ij} = \mathrm{LeakyReLU}\big(\mathbf a_k^{\!\top}
             [\,W_k h_i \,\|\, W_k h_j \,\|\, W^e_k e'_{ij}\,]\big) \, ,
+  \end{gathered}
 \end{equation}
 where $\mathcal N_i$ is the set of the neighbours of $i$ in the bipartite graph
 (with no self-loop), $\|$ denotes concatenation, and $e'_{ij}$ is the embedding
@@ -345,10 +347,13 @@ same configuration. The first one (``wide'') is Graph-Q-SAT with hidden layers o
 GAT-Q-SAT) and no attention. The second one (``attention aggregation'') keeps
 the block of \eqref{eq:gnblock} and replaces its sum by
 \begin{equation}\label{eq:attnagg}
+  \begin{gathered}
   \sum_{k:\, r_k = i} \bar\alpha_{ik}\, e_k' \, , \qquad
-  \bar\alpha_{ik} = \frac1K \sum_{h=1}^{K} \alpha^h_{ik} \, , \qquad
+  \bar\alpha_{ik} = \frac1K \sum_{h=1}^{K} \alpha^h_{ik} \, ,
+  \\
   \alpha^h_{ik} = \frac{\exp s^h_{ik}}{\sum_{l:\, r_l = i} \exp s^h_{il}} \, , \qquad
   s^h_{ik} = \mathrm{LeakyReLU}\big(\mathbf c_h^{\!\top} [\, v_i \,\|\, e_k' \,]\big) \, ,
+  \end{gathered}
 \end{equation}
 with $K = 3$ heads, whose coefficients are averaged so that $\phi^v$ receives an
 input of the same size as with the sum; this adds 483 parameters to the 71144
@@ -595,7 +600,7 @@ of the number of variables of the test instances.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.78\textwidth]{thesis.png}
+\includegraphics[width=\textwidth]{thesis.png}
 \caption{MRIR at cap $500$, mean over the families: trained and tested on graph
 colouring (eight families), trained on satisfiable random 3-SAT and tested on
 graph colouring (eight families), and trained on satisfiable random 3-SAT and
@@ -606,7 +611,7 @@ Table~\ref{tab:unsat}; log scale, bars start at parity.}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.88\textwidth]{generalization.png}
+\includegraphics[width=\textwidth]{generalization.png}
 \caption{Models trained on satisfiable random 3-SAT: MRIR at cap $500$ as a
 function of the number of variables of the test instances, on graph colouring
 (left, three variables per node) and on random 3-SAT (right, unsatisfiable
@@ -651,7 +656,9 @@ stronger MiniSat run on each family.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{transfer.png}
+%% the panel of four families of September; at \textwidth once transfer_study.py
+%% draws the thirteen families (figstyle.FULL)
+\includegraphics[width=0.75\textwidth]{transfer.png}
 \caption{Colouring-trained models on thirteen SATLIB families not seen in
 training (number of instances in parentheses): MRIR at cap $200$ against the
 stronger MiniSat run on each family, mean over the seeds, on a log scale; bars
@@ -682,7 +689,7 @@ the training family.]}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.70\textwidth]{transfer_sw.png}
+\includegraphics[width=0.75\textwidth]{transfer_sw.png}
 \caption{Colouring-trained models on small-world colouring: MRIR at cap $200$
 against the stronger MiniSat run, as a function of the rewiring probability of
 the graphs (log scale; 20 instances per level, one for the lattice).}
