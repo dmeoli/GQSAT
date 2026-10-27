@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The per-family figures: MRIR ("iterations improvement") and wall-clock
 seconds against the number of model decisions (the cap), one line per dataset,
-for each model, on the graph-colouring and on the random families.
+for each model, on the graph-coloring and on the random families.
 
 The logs, the runs and the baseline are those of paper_numbers.py. Outputs PNGs
 under ../img/ (pure matplotlib/stdlib). Run from the GQSAT root:
@@ -26,7 +26,7 @@ TITLE = {"gatqsat": "GAT-Q-SAT", "graphqsat": "Graph-Q-SAT"}
 
 def mean_over_runs(agg, model, dataset, cap, idx):
     """Mean over the runs of the per-run median (idx 0 the MRIR, 1 the seconds),
-    with the runs and the baseline of paper_numbers.py: the 2021 colouring pair on
+    with the runs and the baseline of paper_numbers.py: the 2021 coloring pair on
     the flat families (the only one evaluated at every cap), the runs trained on
     satisfiable random 3-SAT on the random families."""
     variant = TITLE[model]
@@ -121,7 +121,7 @@ def main():
     rand_mrir = shared_ylim(agg, MODELS, RANDOM, 0, ratio=True)
 
     for model in MODELS:
-        # MRIR against the cap on graph colouring
+        # MRIR against the cap on graph coloring
         plot_curves(agg, model, FLAT, idx=0, ylabel="MRIR (log scale)",
                     title=TITLE[model],
                     out_path=os.path.join(args.out_dir, f"{model}.png"),

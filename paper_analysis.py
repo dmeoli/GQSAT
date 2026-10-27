@@ -2,11 +2,11 @@
 """Train-set-aware analysis of the Graph-Q-SAT / GAT-Q-SAT runs for the report.
 
 The runs, their grouping and the baseline are those of paper_numbers.py, so the
-bars and the curves drawn here are the numbers of the tables: the colouring
+bars and the curves drawn here are the numbers of the tables: the coloring
 group is the pair trained on flat50-115 (both seeds), the random group the runs
 trained on satisfiable uniform random 3-SAT (the four trained on unsatisfiable
 formulas are a control and are not pooled with them), and the MRIR is read
-against MiniSat with restarts on colouring and without on random 3-SAT.
+against MiniSat with restarts on coloring and without on random 3-SAT.
 
 Pure matplotlib/stdlib. Run from the GQSAT root:
     python3 paper_analysis.py [--reeval-root DIR]      (or OUT_ROOT=DIR)
@@ -70,8 +70,8 @@ def fig_thesis(data, out):
     """Mean MRIR (cap 500) per regime, GAT vs Graph, on a log2 axis."""
     SAT_R = [d for d in RANDOM if d.startswith("uf")]
     UNSAT_R = [d for d in RANDOM if d.startswith("uuf")]
-    regimes = [("coloring", FLAT, "trained: colouring\ntested: colouring"),
-               ("random", FLAT, "trained: random\ntested: colouring"),
+    regimes = [("coloring", FLAT, "trained: coloring\ntested: coloring"),
+               ("random", FLAT, "trained: random\ntested: coloring"),
                ("random", SAT_R, "trained: random\ntested: random sat"),
                ("random", UNSAT_R, "trained: random\ntested: random unsat")]
     cap = 500
@@ -96,8 +96,8 @@ def fig_time(data, out):
     """Wall-clock companion to fig_thesis: median seconds-to-solve (cap 500) per
     regime, GAT vs Graph. Fewer iterations (MRIR) does NOT mean less wall-clock ---
     each model decision is a GNN forward, and attention makes it costlier still."""
-    regimes = [("coloring", FLAT, "colouring\n→ colouring"),
-               ("random", FLAT, "random\n→ colouring"),
+    regimes = [("coloring", FLAT, "coloring\n→ coloring"),
+               ("random", FLAT, "random\n→ coloring"),
                ("random", RANDOM, "random\n→ random")]
     cap = 500
     gat, graph = [], []
@@ -156,7 +156,7 @@ def fig_mrir_time(data, out):
 def fig_curves(data, train, datasets, title, out):
     """MRIR vs decision-cap, GAT vs Graph, averaged over the datasets; cap 0 is
     MiniSat without restarts against the baseline, read from the METADATA."""
-    # only the 2021 colouring pair is evaluated at every cap
+    # only the 2021 coloring pair is evaluated at every cap
     runs = pn.CURVE_RUNS if train == "coloring" else None
     fig, ax = plt.subplots(figsize=(7, 4.3))
     for model in ("Graph-Q-SAT", "GAT-Q-SAT"):
@@ -176,9 +176,9 @@ def fig_curves(data, train, datasets, title, out):
 
 def fig_generalization(data, out):
     """Random-trained: MRIR (cap 500) against the size of the test instances, on
-    graph colouring and on random 3-SAT (satisfiable solid, unsatisfiable dashed)."""
+    graph coloring and on random 3-SAT (satisfiable solid, unsatisfiable dashed)."""
     fig, axes = plt.subplots(1, 2, figsize=fs.FULL, sharey=True)
-    panels = [(axes[0], [("", FLAT, "-")], "graph colouring", "# variables (3 per node)"),
+    panels = [(axes[0], [("", FLAT, "-")], "graph coloring", "# variables (3 per node)"),
               (axes[1], [(" (sat)", [d for d in RANDOM if d.startswith("uf")], "-"),
                          (" (unsat)", [d for d in RANDOM if d.startswith("uuf")], "--")],
                "uniform random 3-SAT", "# variables")]
@@ -198,8 +198,8 @@ def fig_generalization(data, out):
 
 def write_summary(data, out):
     lines = ["# Experiment summary (mean MRIR over runs, cap 500)\n"]
-    for train, dss, name in [("coloring", FLAT, "Colouring-trained on colouring"),
-                             ("random", FLAT, "Random-trained on colouring (transfer)"),
+    for train, dss, name in [("coloring", FLAT, "Coloring-trained on coloring"),
+                             ("random", FLAT, "Random-trained on coloring (transfer)"),
                              ("random", RANDOM, "Random-trained on random")]:
         lines.append(f"\n## {name}\n")
         lines.append("| dataset | Graph-Q-SAT | GAT-Q-SAT | Δ (GAT−Graph) |")
@@ -227,7 +227,7 @@ def main():
     fig_thesis(data, f"{od}/thesis.png")
     fig_time(data, f"{od}/time.png")
     fig_mrir_time(data, f"{od}/mrir_time.png")
-    fig_curves(data, "coloring", FLAT, "Trained & tested on graph colouring (in-distribution)",
+    fig_curves(data, "coloring", FLAT, "Trained & tested on graph coloring (in-distribution)",
                f"{od}/coloring_indist.png")
     fig_curves(data, "random", RANDOM, "Trained & tested on uniform-random 3-SAT",
                f"{od}/random_indist.png")

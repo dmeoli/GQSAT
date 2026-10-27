@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Cross-domain transfer of the colouring-trained heuristics.
+"""Cross-domain transfer of the coloring-trained heuristics.
 
-Evaluates the models trained on graph colouring (flat50-115), with no
+Evaluates the models trained on graph coloring (flat50-115), with no
 retraining, on the structured SATLIB families of ../data (AIM, planning and
-those under ../data/satlib), and on the small-world colouring instances at
+those under ../data/satlib), and on the small-world coloring instances at
 the nine rewiring levels of SATLIB, from a random graph (p = 1) to a ring
 lattice (p = 0).
 
@@ -192,7 +192,7 @@ def main():
     fig.savefig(f"{od}/transfer_sw.png"); plt.close(fig); print("wrote", f"{od}/transfer_sw.png")
 
     with open(f"{od}/transfer_summary.md", "w") as f:
-        f.write(f"# Transfer of the colouring-trained models (MRIR against the stronger "
+        f.write(f"# Transfer of the coloring-trained models (MRIR against the stronger "
                 f"MiniSat, cap {CAP}, mean over the seeds [per seed])\n\n")
         f.write("| family | n | <10 decisions | " + " | ".join(variants) + " |\n")
         f.write("|---|---|---|" + "---|" * len(variants) + "\n")
