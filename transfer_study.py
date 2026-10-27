@@ -73,6 +73,23 @@ def last_checkpoint(d):
     return f"model_{max(steps)}.chkp" if steps else None
 
 
+def trained(run):
+    """True when the training of run is over: a run of the repository, or one on
+    Drive whose last checkpoint has reached the batch updates of its status.yaml;
+    a run still training is not evaluated, since its log would count as complete
+    and never be redone."""
+    if os.path.isdir(os.path.join("runs", run)):
+        return True
+    d = run_dir(run)
+    ck = last_checkpoint(d) if os.path.isdir(d) else None
+    try:
+        with open(os.path.join(d, "status.yaml")) as f:
+            n = int(re.search(r"^\s*batch_updates:\s*(\d+)", f.read(), re.M).group(1))
+    except (OSError, AttributeError):
+        return False
+    return ck is not None and int(re.search(r"\d+", ck).group()) >= n
+
+
 def n_problems(path):
     return sum(f.endswith(".cnf") for f in os.listdir(path))
 
@@ -102,6 +119,9 @@ def run_eval(run, variant, name):
     ck = last_checkpoint(d) if os.path.isdir(d) else None
     if ck is None:
         print(f"[skip] {run}: no checkpoint")
+        return
+    if not trained(run):
+        print(f"[skip] {run}: still training ({ck})")
         return
     os.makedirs(log_dir(run), exist_ok=True)
     cmd = [

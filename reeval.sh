@@ -18,7 +18,8 @@
 #   random    : the random-trained runs on the random families, every cap
 #   seeds     : the colouring-trained runs of 2026 (the pair retrained on the
 #               current stack, the third seed, the two controls of train.sh),
-#               with what "tables" asks of them; runs not trained yet are skipped;
+#               with what "tables" asks of them; runs not trained yet, or still
+#               training, are skipped;
 #               the checkpoints are read from CKPT_ROOT, i.e. the Drive folder
 #   aa        : the timing noise, i.e. the colouring pair on flat200-479 at cap 500
 #               evaluated again into OUT_ROOT/aa, to be compared with the log of
@@ -74,6 +75,18 @@ last_checkpoint() {  # run -> its last checkpoint, the one of the 2021 logs
     ls "$(run_dir "$1")" | grep -E '^model_[0-9]+\.chkp$' | sort -t_ -k2 -n | tail -1
 }
 
+trained() {  # run -> true when its training is over: a run of the repository, or
+              # one on Drive whose last checkpoint has reached the batch updates of
+              # its status.yaml (a run still training is not evaluated, since its
+              # log would count as complete and never be redone)
+    [ -d "runs/$1" ] && return 0
+    local d n s
+    d="$(run_dir "$1")"
+    n=$(grep -m1 -oE '^[[:space:]]*batch_updates:[[:space:]]*[0-9]+' "$d/status.yaml" 2>/dev/null | grep -oE '[0-9]+$')
+    s=$(last_checkpoint "$1" | grep -oE '[0-9]+')
+    [ -n "$n" ] && [ -n "$s" ] && [ "$s" -ge "$n" ]
+}
+
 n_problems() {  # dataset -> number of formulas to evaluate
     ls "$(data_path "$1")" | grep -c '\.cnf$'
 }
@@ -99,6 +112,9 @@ one() {  # run dataset cap
     # a run of the list that has not been trained (yet) is skipped
     if [ ! -f "$(run_dir "$run")/model.yaml" ] || [ -z "$(last_checkpoint "$run")" ]; then
         echo "[$(date +%H:%M:%S)] $run: no checkpoint, skipped"; return 0
+    fi
+    if ! trained "$run"; then
+        echo "[$(date +%H:%M:%S)] $run: still training ($(last_checkpoint "$run")), skipped"; return 0
     fi
     model="$(model_of "$run")"
     local dir="runs/$run/reeval"
