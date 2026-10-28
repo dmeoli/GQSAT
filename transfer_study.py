@@ -2,8 +2,8 @@
 """Cross-domain transfer of the coloring-trained heuristics.
 
 Evaluates the models trained on graph coloring (flat50-115), with no
-retraining, on the structured SATLIB families of ../data (AIM, planning and
-those under ../data/satlib), and on the small-world coloring instances at
+retraining, on the structured SATLIB families of data (AIM, planning and
+those under data/satlib), and on the small-world coloring instances at
 the nine rewiring levels of SATLIB, from a random graph (p = 1) to a ring
 lattice (p = 0).
 
@@ -36,8 +36,8 @@ import figstyle as fs
 import paper_numbers as pn
 from paper_analysis import ratio_axis, ratio_bars
 
-# (label, dataset) of the structured families, i.e. the directory under ../data
-# (aim, planning) or ../data/satlib; the order is the one of the figure
+# (label, dataset) of the structured families, i.e. the directory under data
+# (aim, planning) or data/satlib; the order is the one of the figure
 FAMILIES = [
     ("AIM", "aim"), ("jnh", "jnh"), ("dubois", "dubois"), ("pret", "pret"),
     ("pigeon hole", "pigeon-hole"), ("parity", "parity"), ("ais", "ais"),

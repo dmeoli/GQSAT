@@ -1,104 +1,75 @@
-# GQSAT: Graph-Q-SAT · GAT-Q-SAT
+# GQSAT: Graph-Q-SAT and GAT-Q-SAT
 
-> Learning a SAT **branching heuristic** with value-based RL (DQN) over a graph
-> neural network on the bipartite CNF graph. Part of the
-> [NeuroSAT](https://github.com/dmeoli/NeuroSAT) project.
+A port of [Graph-Q-SAT](https://github.com/NVIDIA/GraphQSat) (Kurin et al.,
+NeurIPS 2020) to the current releases of PyTorch and PyTorch Geometric, and
+GAT-Q-SAT, which adds two edge-featured graph attention layers to the core block
+of its network. Graph-Q-SAT learns the branching heuristic of MiniSat by Deep
+Q-Learning on the bipartite graph of the formula, and its quality is measured by
+the Median Relative Iteration Reduction (MRIR), i.e., the median over the
+instances of the iterations of MiniSat divided by those of the model (above 1
+the model takes fewer decisions than MiniSat). The note in [`report/`](report)
+compares the two models at matched training set, together with two controls
+that separate the effect of the attention from that of the added parameters.
 
-A modernised PyTorch / PyTorch-Geometric fork of Kurin et al.'s
-[Graph-Q-SAT](https://github.com/NVIDIA/GraphQSat), extended with an
-attention-based successor and with a study of attention on and off at matched
-training set.
-
-## What's inside
+## Contents
 
 | Path | Description |
 |---|---|
-| `gqsat/models.py` | the GNN: encode–process–decode `GraphNet`, with the optional `GATConv` attention in the core |
-| `gqsat/` | learners, agents, replay buffer, env wrappers, CLI (`utils.py`) |
-| `minisat/` | patched MiniSat 2.2 + gym env (SWIG `_GymSolver.so`), sub-submodule |
-| `dqn.py` | DQN training driver |
-| `evaluate.py`, `evaluate.sh` | evaluation → per-instance `runs/*.tsv` (MRIR, sec-to-solve, model iterations and both MiniSat baselines) |
-| `reeval.sh` | batch re-evaluation of the released checkpoints, by phase, resumable |
-| `paper_numbers.py` | the tables of the note, read against either MiniSat baseline |
-| `add_metadata.py` | precompute MiniSat baseline metadata for a dataset |
-| `aggregate_results.py` | `runs/*.tsv` → `results/*.md` + `summary.csv` |
-| `make_plots.py`, `paper_analysis.py` | regenerate the figures (violet theme) from the logs |
-| `runs/`, `results/` | trained checkpoints + evaluation logs |
-| `report/` | the scientific note on GAT-Q-SAT (`pdflatex report/gatqsat.tex`), with its figures |
+| `gqsat/models.py` | the encode-process-decode graph network, with the optional attention layers (`--use_attention`) and the attention aggregation (`--e2v-aggregator attention`) |
+| `gqsat/` | learner, agents (also the restricted heuristics), replay buffer, command line (`utils.py`) |
+| `minisat/` | the modified MiniSat 2.2 and its environment (SWIG `_GymSolver.so`) |
+| `dqn.py`, `train.sh` | the training, and the entry point with the published configuration (`graphqsat`, `gatqsat`, `graphwide`, `attnagg`) |
+| `evaluate.py`, `evaluate.sh`, `reeval.sh` | the evaluation, one line per instance with the time, the iterations of the model and those of MiniSat with and without restarts; `reeval.sh` runs the evaluations of the note by phase |
+| `make_metadata.py`, `add_metadata.py` | the iterations of MiniSat on each instance of a family (`METADATA`) |
+| `paper_numbers.py` | the tables of the note, from the logs |
+| `make_plots.py`, `paper_analysis.py`, `transfer_study.py`, `figstyle.py` | the figures of the note, from the same logs; `transfer_study.py` also runs the evaluations on the SATLIB families |
+| `data/` | the instances, from [SATLIB](https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html), with the training, validation and test splits (`train_val_test_split.sh`, seed 123456) and the `METADATA` of each family |
+| `runs/` | the checkpoints and the logs of the runs of 2021 |
+| `report/` | the note (`pdflatex gatqsat.tex`) and its figures |
 
-CNF datasets live **outside** this submodule, in the parent repo's shared
-[`../data`](../data) hub (DIMACS `.cnf`).
+## The port
 
-The note in [`report/`](report) is about this module only, i.e., the step from
-Graph-Q-SAT to GAT-Q-SAT and how far the learned heuristic transfers; the
-[NeuroSAT](https://github.com/dmeoli/NeuroSAT) super-repo keeps the course
-material that compares the two approaches.
-
-## Baseline (forked) → our work
-
-**Baseline.** Kurin, Godil, Whiteson & Catanzaro, *Can Q-Learning with Graph
-Networks Learn a Generalizable Branching Heuristic for a SAT Solver?* (NeurIPS
-2020): a DQN agent whose Q-function is an encode–process–decode graph net over
-the variable/clause bipartite graph; metric = **MRIR** (MiniSat iterations /
-model iterations; `>1` beats MiniSat).
-
-**Port & fixes (semantics preserved):**
-- TensorFlow-era stack → the latest `torch` and `torch-geometric`, dropping
-  `torch-scatter`/`torch-sparse` (now `torch_geometric.utils.scatter`),
-  `numpy>=2`, `gymnasium`.
-- Exact reproduction of the published MRIR from the original checkpoints, used as
-  a semantic non-regression oracle.
-- Version-agnostic checkpoint loading (`SATModel.reconcile_gat_lin_keys` bridges
-  the GATConv `lin_src`/`lin_dst` ↔ `lin` rename across PyG versions).
-- Robustness fixes: gym env construction, `int32` decision-cap clamp
-  (`OverflowError`), `SummaryWriter` honouring `--logdir` (Drive resume),
-  GSL-free / warning-free C++ build.
-
-**Evolutions (our contributions):**
-1. **Graph-Q-SAT**: the reproduced baseline (`--use_attention` off).
-2. **GAT-Q-SAT**: edge-aware, multi-head `GATConv` attention injected in the core
-   block (`--use_attention`). It helps on structured problems (graph colouring),
-   in distribution and under transfer, with an advantage that grows with the size
-   of the instances; on uniform-random SAT it does not help.
-
-**Results** (regenerated by `paper_analysis.py` / `transfer_study.py` into
-`../img/paper/`):
-- Reproduction of the released checkpoints is exact (Graph 1.833 / GAT 1.667 on
-  flat30-60).
-- **Cross-domain transfer** (`transfer_study.py`): colouring-trained models tested,
-  with no retraining, on unseen SATLIB families; GAT-Q-SAT stays ≥ MiniSat on 3/4
-  domains, Graph-Q-SAT on 1/4.
-- **Iterations against wall-clock** (`fig_mrir_time`): fewer iterations (MRIR > 1)
-  but ~1–7 s per problem against MiniSat's milliseconds, attention being costlier
-  per decision.
+The original code is written for PyTorch 1.1, with pinned versions of PyTorch
+Geometric and of the compiled extensions `torch-scatter` and `torch-sparse`,
+which can no longer be installed together. In the port the aggregations come
+from `torch_geometric.utils.scatter`, the environment is constructed without
+`gym.make` (so that it runs with `gym` and with `gymnasium`), the SWIG wrapper
+is rebuilt against `numpy` 2, and the checkpoints of 2021 load with the current
+`GATConv` (`SATModel.reconcile_gat_lin_keys`, since the old version stored the
+same linear map twice, as `lin_src` and `lin_dst`). The evaluation of the
+checkpoints of 2021 on the new stack reproduces the logs of 2021 instance by
+instance in 63 of 86 evaluations, and the median ratio changes by at most 0.03
+in the others (on `flat30-60` at cap 500 the MRIR is 1.833 for Graph-Q-SAT and
+2.000 for GAT-Q-SAT on both stacks). The runs of 2026 add a seed (`--seed`,
+or `SEED=<n> bash train.sh ...`).
 
 ## Usage
 
 ```sh
-# build the native env (only if the C++/SWIG changed)
-cd minisat && make python-wrap && cd ..
+pip install -r requirements.txt
+cd minisat && make python-wrap && cd ..   # the environment of MiniSat
 
-# train (pick the variant via the attention flag), or use `bash train.sh <variant> ...`
-python dqn.py --train-problems-paths ../data/graph-coloring/train ...           # Graph-Q-SAT
-python dqn.py ... --use_attention                                               # GAT-Q-SAT
+# train with the published configuration (variants: graphqsat, gatqsat, graphwide, attnagg)
+bash train.sh graphqsat data/graph-coloring/train/flat50-115 data/graph-coloring/val/flat50-115 runs/graphqsat
+SEED=1 bash train.sh gatqsat data/graph-coloring/train/flat50-115 data/graph-coloring/val/flat50-115 runs/gatqsat_s1
 
 # evaluate a checkpoint → runs/*.tsv  (add --no-cuda on CPU)
 python evaluate.py --env-name sat-v0 --core-steps -1 --eps-final 0.0 \
     --no_restarts --test_time_max_decisions_allowed 500 \
-    --eval-problems-paths ../data/graph-coloring/flat30-60 \
+    --eval-problems-paths data/graph-coloring/flat30-60 \
     --model-dir runs/<run> --model-checkpoint model_50000.chkp
 
 # restricted heuristics (Shirokikh et al. 2023): trade model decisions for time
-#   --release_after N    guide the first N decisions, then hand over to VSIDS
-#   --action_pool_size K one GNN forward → top-K actions executed without re-running
-#   --warmstart_release  seed MiniSat's VSIDS activities from root-state Q-values,
-#                        then solve with pure VSIDS (needs the C++ env rebuilt)
+#   --release_after T    the model takes the first T decisions, VSIDS the others
+#   --action_pool_size L one forward pass gives the L best actions, executed in order
+#   --warmstart_release  the Q-values of the root initialize the activities of
+#                        VSIDS, which then runs unaided
 python evaluate.py ... --release_after 5 --action_pool_size 4
 python evaluate.py ... --warmstart_release
 
 # re-evaluate the trained checkpoints, logging both MiniSat baselines per problem
-bash reeval.sh tables     # cap 500 everywhere; also `seeds`, `aa`, `colouring`, `transfer`, `random`
-python paper_numbers.py   # the note: with restarts on colouring, without on random 3-SAT
+bash reeval.sh tables     # cap 500 everywhere; also seeds, aa, colouring, transfer, random
+python paper_numbers.py   # the note: with restarts on graph coloring, without on random 3-SAT
 python paper_numbers.py --baseline no_restarts     # or with_restarts, best, stronger
 
 # tables + figures from the same logs (OUT_ROOT: where the logs are; PAPER_IMG_DIR

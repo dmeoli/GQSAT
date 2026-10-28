@@ -17,7 +17,7 @@ DIR/<family>/ after each instance, and restored from there at the start: on
 Colab this keeps them on Drive across sessions.
 
 Usage (from the GQSAT root):
-  python make_metadata.py ../data/satlib/* [--timeout 600] [--mirror <Drive>/metadata]
+  python make_metadata.py data/satlib/* [--timeout 600] [--mirror <Drive>/metadata]
 """
 import argparse
 import os

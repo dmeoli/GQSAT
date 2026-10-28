@@ -50,12 +50,12 @@ RANDOM_RUNS="Dec21_01-59-59_6bed2aa9b612 Dec21_14-55-50_5eccdc34d583 \
              Nov12_14-06-54_c42e8ad320d8 Nov12_20-35-32_c42e8ad320d8 \
              Nov13_03-55-51_c42e8ad320d8 Nov14_03-26-36_54337a27a809"
 
-data_path() {  # dataset -> directory under ../data
+data_path() {  # dataset -> directory under data
     case "$1" in
-        flat50-115) echo "../data/graph-coloring/test/flat50-115" ;;
-        flat*)      echo "../data/graph-coloring/$1" ;;
-        u*250-1065) echo "../data/uniform-random-3-sat/$1" ;;
-        u*)         echo "../data/uniform-random-3-sat/test/$1" ;;
+        flat50-115) echo "data/graph-coloring/test/flat50-115" ;;
+        flat*)      echo "data/graph-coloring/$1" ;;
+        u*250-1065) echo "data/uniform-random-3-sat/$1" ;;
+        u*)         echo "data/uniform-random-3-sat/test/$1" ;;
     esac
 }
 

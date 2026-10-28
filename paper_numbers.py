@@ -98,12 +98,12 @@ def scores(path, baseline):
 REEVAL_ROOT = None   # set by --reeval-root when the logs live outside the repo
 
 # where the instances of a dataset are, as in reeval.sh and transfer_study.py
-DATA = {"aim": "../data/aim", "planning": "../data/planning"}
+DATA = {"aim": "data/aim", "planning": "data/planning"}
 
 
-# the transfer panel: the SATLIB families under ../data/satlib (one directory
+# the transfer panel: the SATLIB families under data/satlib (one directory
 # per family, the small-world levels as sw-lp0 ... sw-lp8 and sw-p0)
-SATLIB = "../data/satlib"
+SATLIB = "data/satlib"
 
 # instances on which MiniSat, with and without restarts, takes fewer decisions
 # than this have (almost) nothing to branch on; they are kept in the MRIR, as in
@@ -117,12 +117,12 @@ def data_dir(dataset):
     if os.path.isdir(os.path.join(SATLIB, dataset)):
         return os.path.join(SATLIB, dataset)
     if dataset == "flat50-115":
-        return "../data/graph-coloring/test/flat50-115"
+        return "data/graph-coloring/test/flat50-115"
     if dataset.startswith("flat"):
-        return f"../data/graph-coloring/{dataset}"
+        return f"data/graph-coloring/{dataset}"
     if dataset.endswith("250-1065"):
-        return f"../data/uniform-random-3-sat/{dataset}"
-    return f"../data/uniform-random-3-sat/test/{dataset}"
+        return f"data/uniform-random-3-sat/{dataset}"
+    return f"data/uniform-random-3-sat/test/{dataset}"
 
 
 def cap0(dataset, baseline):

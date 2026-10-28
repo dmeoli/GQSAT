@@ -1,0 +1,13 @@
+# The current releases of PyTorch and PyTorch Geometric: the aggregations come
+# from torch_geometric.utils.scatter (no torch-scatter, no torch-sparse), the
+# environment is built without gym.make and runs with gymnasium (or gym), and
+# the SWIG wrapper of MiniSat is rebuilt against the installed numpy.
+numpy
+PyYAML
+scipy
+split-folders
+tensorboardX
+gymnasium
+torch
+torch-geometric
+matplotlib
