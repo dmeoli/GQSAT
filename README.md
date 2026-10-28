@@ -75,6 +75,7 @@ python evaluate.py ... --warmstart_release
 bash reeval.sh tables     # cap 500 everywhere; also seeds, aa, colouring, transfer, random
 python paper_numbers.py   # the note: with restarts on graph coloring, without on random 3-SAT
 python paper_numbers.py --baseline no_restarts     # or with_restarts, best, stronger
+python paper_numbers.py --latex                    # the rows of the four tables of the note
 
 # tables + figures from the same logs (OUT_ROOT: where the logs are; PAPER_IMG_DIR
 # and --out-dir to write the figures next to the note)

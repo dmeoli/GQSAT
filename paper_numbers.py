@@ -12,6 +12,7 @@ cost iterations (and whose 2021 logs only carry that baseline).
 
 Usage:
   python paper_numbers.py [--baseline family|no_restarts|with_restarts|best] [--cap 500]
+  python paper_numbers.py --latex      # the rows of the tables of the note
 """
 import argparse
 import csv
@@ -192,6 +193,41 @@ def fmt(v, w=6, d=2):
     return f"{v:{w}.{d}f}" if v is not None else " " * (w - 1) + "-"
 
 
+def latex(b, cap):
+    """The rows of the four tables of the note, as they are written in the
+    .tex, so that they are pasted and never copied by hand: Table 1 (per seed,
+    in the order of RUNS, i.e. 2021 / 2026 / third seed, and the mean), Table 2
+    (the four coloring-trained variants), Table 3 (uniform random 3-SAT) and
+    Table 4 (flat200-479 against the cap: median seconds and MRIR)."""
+    tex = lambda v: f"{v:.2f}" if v is not None else "--"
+    seed_runs = lambda v: [r for r, (var, t) in RUNS.items() if var == v and t in COL]
+    print("% Table 1 (tab:numbers)")
+    for d in FLAT_ALL:
+        cells, means = [], []
+        for v in ("Graph-Q-SAT", "GAT-Q-SAT"):
+            vals = [cell(r, d, cap, b, NAME[v])[0] for r in seed_runs(v)]
+            m = group(v, COL, d, cap, b)
+            means.append(m)
+            cells.append(" / ".join(tex(x) for x in vals) + f" & {tex(m)}")
+        delta = f"${means[1] - means[0]:+.2f}$" if None not in means else "--"
+        print(f"\\code{{{d}}} & " + " & ".join(cells) + f" & {delta} \\\\")
+    print("% Table 2 (tab:controls)")
+    order = ["Graph-Q-SAT", "Graph-Q-SAT wide", "Attention aggregation", "GAT-Q-SAT"]
+    for d in FLAT_ALL:
+        print(f"\\code{{{d}}} & " + " & ".join(tex(group(v, COL, d, cap, b)) for v in order)
+              + " \\\\")
+    print("% Table 3 (tab:unsat)")
+    for v in ("Graph-Q-SAT", "GAT-Q-SAT"):
+        print(f"{v:11s} & " + " & ".join(tex(group(v, SAT, d, cap, b)) for d in RAND) + " \\\\")
+    print("% Table 4 (tab:budget)")
+    for v in ("Graph-Q-SAT", "GAT-Q-SAT"):
+        cells = []
+        for c in (50, 500, 1000):
+            cells += [tex(group(v, COL, "flat200-479", c, b, idx=1)),
+                      tex(group(v, COL, "flat200-479", c, b))]
+        print(f"{v:11s} & " + " & ".join(cells) + " \\\\")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--baseline", default="family",
@@ -199,6 +235,8 @@ def main():
     ap.add_argument("--cap", type=int, default=500)
     ap.add_argument("--min-iters", type=int, default=0,
                     help="leave out the instances that MiniSat solves in fewer decisions")
+    ap.add_argument("--latex", action="store_true",
+                    help="print the rows of the four tables of the note, in LaTeX")
     ap.add_argument("--reeval-root", default=os.environ.get("OUT_ROOT"),
                     help="directory holding <run>/ subdirectories of re-evaluation logs")
     a = ap.parse_args()
@@ -206,6 +244,9 @@ def main():
     REEVAL_ROOT = a.reeval_root
     MIN_ITERS = a.min_iters
     b, cap = a.baseline, a.cap
+    if a.latex:
+        latex(b, cap)
+        return
 
     print(f"baseline = {b}, cap = {cap}\n")
     print("Table 1 - colouring-trained, on graph colouring: per seed [runs in RUNS order], mean")
