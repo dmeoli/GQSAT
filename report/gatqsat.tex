@@ -382,7 +382,7 @@ bias, which the normalization cancels) add 483 parameters to the 71144 of
 Graph-Q-SAT. The first control has the capacity of GAT-Q-SAT without its
 attention, and the second one has the attention (in a simpler form) without
 the added capacity. Note that a weighted mean such as \eqref{eq:attnagg} does not
-carry the degree of the node, which the sum does; this may matter on graphs
+carry the degree of the node, which the sum does. This may matter on graphs
 whose degrees vary, and it is one of the reasons why the second control is not
 simply a smaller GAT-Q-SAT.
 
@@ -668,12 +668,12 @@ them, with the exception of those whose instances exceed 2000 variables or
 150000 clauses (the size of the largest instances that we could evaluate on our
 hardware in reasonable time), and an instance enters the panel only if MiniSat,
 with and without restarts, solves it within 10 minutes (cf. the appendix). The resulting
-panel has thirteen families and \upd{$N$} instances: AIM \cite{Asahiro1996},
+panel has thirteen families and 258 instances: AIM \cite{Asahiro1996},
 \code{jnh}, \code{dubois}, \code{pret}, pigeon hole, parity, all interval
 series, inductive inference, circuit fault analysis, the Beijing set, towers of
 Hanoi, planning \cite{KautzSelman1996} and quasigroup completion
-\cite{GomesSelman1997}. Several of these families are rather ``small'' (from 2 to 50
-instances), and on some of them MiniSat needs very few decisions after its
+\cite{GomesSelman1997}. Several of these families are rather ``small'' (seven of
+them have fewer than 10 instances), and on some of them MiniSat needs very few decisions after its
 preprocessing (fewer than 10 on 46\% of the AIM instances, e.g.); we report the
 MRIR on all the instances, as in \cite{Kurin2020}, and we also check that the
 ranking does not change when those instances are left out. We evaluate at a cap
@@ -682,9 +682,7 @@ stronger MiniSat run on each family.
 
 \begin{figure}[ht]
 \centering
-%% the panel of four families of September; at \textwidth once transfer_study.py
-%% draws the thirteen families (figstyle.FULL)
-\includegraphics[width=0.75\textwidth]{transfer.png}
+\includegraphics[width=\textwidth]{transfer.png}
 \caption{Coloring-trained models on thirteen SATLIB families not seen in
 training (number of instances in parentheses): MRIR at cap $200$ against the
 stronger MiniSat run on each family, mean over the seeds, on a log scale; bars
@@ -693,12 +691,27 @@ start at parity.}
 \end{figure}
 
 \noindent
-\upd{[To be written from Figure~\ref{fig:transfer} and from the summary table:
-on how many families each variant is above the reference solver and above the
-other variants, by how much (as a range), the families where the ranking flips,
-the effect of leaving out the instances solved in fewer than 10 decisions, and
-the variation across the seeds; the families with fewer than 10 instances are
-commented as indications only.]}
+On \code{dubois} and \code{pret}, all of whose instances MiniSat solves in
+fewer than 10 decisions, the MRIR of both models is $1$, and these two families
+carry no information on the heuristic. \upd{On the other eleven GAT-Q-SAT is
+above the reference solver on eight families (from $1.06$ on quasigroup
+completion to $2.03$ on AIM) and Graph-Q-SAT on six (from $1.03$ on \code{jnh}
+to $1.65$ on towers of Hanoi). GAT-Q-SAT is the better of the two on eight
+families, by $0.09$ to $1.29$ (and by $0.2$ to $0.4$ on five of them),
+Graph-Q-SAT on the Beijing set and on towers of Hanoi, and the two are level on
+circuit fault analysis. Leaving out the instances that MiniSat solves in fewer
+than 10 decisions changes this ranking only on two families: on circuit fault
+analysis Graph-Q-SAT moves ahead ($1.19$ against $0.88$), and on planning the
+two become level ($1.69$). On AIM, instead, the gap widens ($3.27$ against
+$1.63$). We
+remark, however, that the variation across the seeds is large: the values of
+the seeds of the two models overlap on all the families but \code{jnh}. On the
+smallest families they differ by more than the gap between the models (on all
+interval series, e.g., the two seeds of GAT-Q-SAT give $2.85$ and $0.20$, and
+on the single instance of towers of Hanoi those of Graph-Q-SAT give $0.47$ and
+$2.82$).} The panel therefore suggests that GAT-Q-SAT transfers
+somewhat better to structured families, rather than showing it, and the
+families with fewer than 10 instances are to be read as indications only.
 
 \smallskip
 \noindent
@@ -708,10 +721,21 @@ are the 5-coloring problems of graphs on 100 vertices obtained from a ring
 lattice by rewiring each edge with probability $p$, and SATLIB provides nine levels, from $p = 1$ (a
 random graph) to $p = 2^{-8}$ (almost the lattice), plus the lattice itself.
 Figure~\ref{fig:sw} reports the MRIR of the coloring-trained models on 20
-instances per level (one for the lattice). \upd{[To be written from
-Figure~\ref{fig:sw}: whether the MRIR of the two models, and their difference,
-change with $p$, i.e., with the distance of the graphs from the random ones of
-the training family.]}
+instances per level (one for the lattice). \upd{The MRIR of both models
+decreases with $p$: it is above parity for $p \ge 2^{-2}$ (from $2.65$ to
+$1.66$ for Graph-Q-SAT and from $1.49$ to $1.38$ for GAT-Q-SAT), below it from
+$p = 2^{-3}$ on, and about $0.03$ at $p = 2^{-8}$. Up to $p = 2^{-6}$ the
+decisions of MiniSat do not decrease (their median is between 99 and 239 at
+every level), and hence the decline is due to the models, which take more and
+more decisions as the graphs move away from the random ones of the training
+family. At $p = 2^{-7}$, $2^{-8}$ and on the lattice, instead, MiniSat needs
+only 11 to 17 decisions, and the MRIR falls also because the reference solver
+becomes much faster. Graph-Q-SAT is ahead at the three highest levels, i.e., on
+the graphs closest to those of training (where the two seeds of GAT-Q-SAT
+differ widely, e.g., $0.69$ and $2.29$ at $p = 1$). Below them the two models
+are level within $0.15$.} On this family, then, the attention does not
+help as the graphs become regular, and neither model is of use on graphs close
+to the lattice.
 
 \begin{figure}[ht]
 \centering
@@ -918,11 +942,14 @@ families with at most 2000 variables and 150000 clauses per instance, namely
 AIM (72 instances with 50, 100 and 200 variables, 48 satisfiable with a single
 solution and 24 unsatisfiable), \code{jnh} (50, random with clauses of variable
 length), \code{dubois} (13, unsatisfiable), \code{pret} (8, unsatisfiable
-2-coloring), pigeon hole (5, unsatisfiable), parity learning (25: \code{par8},
-\code{par16} and the compressed \code{par32}), all interval series (4),
+2-coloring), pigeon hole (4, unsatisfiable), parity learning (20: \code{par8}
+and \code{par16}), all interval series (4),
 inductive inference (41), circuit fault analysis (9: the \code{bf} and
 \code{ssa} instances within the limit), the Beijing set (8), towers of Hanoi
-(2), planning (8, blocks world and logistics) and quasigroup completion (20).
+(1), planning (8, blocks world and logistics) and quasigroup completion (20),
+i.e., 258 instances. The limit of 10 minutes on MiniSat leaves out 7 further
+instances within the bounds on the size (the five compressed \code{par32},
+\code{hole10} and \code{hanoi5}), which MiniSat does not solve in that time.
 The rule leaves out all of \code{bmc} and of the large graph coloring set
 \code{gcp}, the uncompressed \code{par32}, the largest blocks-world, logistics,
 quasigroup and circuit instances and most of the Beijing set; the large random
@@ -941,7 +968,7 @@ denominator of \eqref{eq:mrir} is the same for all the models; for the families
 of section~\ref{sec:transfer} this is done by \code{make\_metadata.py}, which
 runs the two MiniSat configurations on each instance with a limit of 10 minutes
 and leaves out (listing it) any instance that is not solved within the limit
-(\upd{$X$} instances). The evaluation
+(the 7 instances above). The evaluation
 of a model on a family at a cap writes one line per instance, with the time, the
 iterations of the model and the two iterations of MiniSat. The logs of 2021,
 which are the only ones for the random families, record only the ratio against

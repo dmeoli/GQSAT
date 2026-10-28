@@ -418,20 +418,21 @@
 \end{frame}
 
 \begin{frame}{\T{Cross-domain transfer: thirteen SATLIB families}{Transfer fra domini: tredici famiglie di SATLIB}}
-  \begin{columns}[c]
-    \begin{column}{0.6\textwidth}\centering
-      \includegraphics[width=\textwidth]{transfer.png}
-    \end{column}
-    \begin{column}{0.4\textwidth}\footnotesize
-      \T{The coloring-trained models, with no retraining, on all the structured SATLIB
-      families up to 2000 variables and 150000 clauses, and on small-world coloring at nine
-      levels of rewiring; cap 200, MRIR against the stronger MiniSat.}%
-      {I modelli addestrati sul coloring, senza riaddestramento, su tutte le famiglie
-      strutturate di SATLIB fino a 2000 variabili e 150000 clausole, e sul coloring
-      small-world a nove livelli di rewiring; cap 200, MRIR contro il MiniSat pi\`u forte.}\\[2mm]
-      \upd{\T{[On how many families each variant is above MiniSat and above the others, and
-      where the ranking flips.]}{[Su quante famiglie ogni variante \`e sopra MiniSat e sopra
-      le altre, e dove l'ordine si inverte.]}}
+  \centering
+  \includegraphics[width=\textwidth, height=\goldenpower{-1.5}\textheight,
+    keepaspectratio]{transfer.png}\\[1mm]
+  \begin{columns}
+    \begin{column}{0.96\textwidth}\footnotesize
+      \T{The coloring-trained models with no retraining, cap 200, MRIR against the stronger
+      MiniSat.}{I modelli addestrati sul coloring senza riaddestramento, cap 200, MRIR contro il
+      MiniSat pi\`u forte.}
+      \upd{\T{On the eleven informative families GAT-Q-SAT is above MiniSat on eight and
+      Graph-Q-SAT on six; GAT-Q-SAT is the better of the two on eight, Graph-Q-SAT on two.
+      Yet, the seeds overlap on all the families but \texttt{jnh}: an indication, not a
+      proof.}{Sulle undici famiglie informative GAT-Q-SAT \`e sopra MiniSat su otto e
+      Graph-Q-SAT su sei; GAT-Q-SAT \`e il migliore dei due su otto, Graph-Q-SAT su due.
+      Per\`o i semi si sovrappongono su tutte le famiglie tranne \texttt{jnh}: un indizio,
+      non una prova.}}
     \end{column}
   \end{columns}
 \end{frame}

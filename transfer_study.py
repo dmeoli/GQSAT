@@ -40,10 +40,10 @@ from paper_analysis import ratio_axis, ratio_bars
 # (aim, planning) or data/satlib; the order is the one of the figure
 FAMILIES = [
     ("AIM", "aim"), ("jnh", "jnh"), ("dubois", "dubois"), ("pret", "pret"),
-    ("pigeon hole", "pigeon-hole"), ("parity", "parity"), ("ais", "ais"),
+    ("pigeon\nhole", "pigeon-hole"), ("parity", "parity"), ("ais", "ais"),
     ("inductive\ninference", "inductive-inference"), ("circuit\nfaults", "circuit"),
     ("Beijing", "beijing"), ("hanoi", "hanoi"), ("planning", "planning"),
-    ("quasigroup", "quasigroup"),
+    ("quasi-\ngroup", "quasigroup"),
 ]
 # the small-world levels: lpk has rewiring probability 2^-k, p0 is the lattice
 SW = [(f"sw-lp{k}", 2.0 ** -k) for k in range(9)] + [("sw-p0", 0.0)]
@@ -188,10 +188,12 @@ def main():
     fig, ax = plt.subplots(figsize=fs.FULL)
     for i, v in enumerate(variants):
         xs = [k + (i - (len(variants) - 1) / 2) * w for k in range(len(fams))]
-        ratio_bars(ax, xs, [mrir(v, n)[0] for _, n in fams], w, label=v,
+        # no values on the bars: with four variants on thirteen families they
+        # would overlap, and they are in transfer_summary.md
+        ratio_bars(ax, xs, [mrir(v, n)[0] for _, n in fams], w, labels=False, label=v,
                    color=fs.model_color(v), hatch=fs.MODEL_HATCH.get(v),
                    edgecolor="white", linewidth=0)
-    ratio_axis(ax, 0.25, 8)
+    ratio_axis(ax, 0.18, 4)
     ax.set_xticks(range(len(fams)))
     ax.set_xticklabels([f"{l}\n({n_problems(pn.data_dir(n))})" for l, n in fams], fontsize=6)
     ax.set_ylabel(f"MRIR (cap {CAP}, log scale)")
@@ -205,7 +207,7 @@ def main():
         ys = [mrir(v, n)[0] for n, _ in SW]
         ax.plot(xs, [y if y is not None else float("nan") for y in ys], marker="o",
                 label=v, color=fs.model_color(v), ls=fs.MODEL_LS.get(v, "-"))
-    ratio_axis(ax)
+    ratio_axis(ax, 0.005, 4)
     ax.set_xticks(xs); ax.set_xticklabels(["1"] + [f"$2^{{-{k}}}$" for k in range(1, 9)] + ["0"])
     ax.set_xlabel("rewiring probability (1: random graph, 0: ring lattice)")
     ax.set_ylabel(f"MRIR (cap {CAP}, log scale)")

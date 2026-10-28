@@ -36,7 +36,7 @@ def ratio_axis(ax, lo=None, hi=None):
     """The MRIR is a ratio: a log2 axis puts 1/2 and 2 at the same distance
     from parity, which is drawn as a dashed line."""
     ax.set_yscale("log", base=2)
-    ticks = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8]
+    ticks = [0.01, 0.03, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8]
     if lo is not None and hi is not None:
         ax.set_ylim(lo, hi)
         ticks = [t for t in ticks if lo <= t <= hi]
@@ -46,11 +46,12 @@ def ratio_axis(ax, lo=None, hi=None):
     ax.axhline(1.0, color="gray", lw=.8, ls="--")
 
 
-def ratio_bars(ax, xs, vals, width, **kw):
-    """Bars that start at parity, going up for MRIR > 1 and down for MRIR < 1."""
+def ratio_bars(ax, xs, vals, width, labels=True, **kw):
+    """Bars that start at parity, going up for MRIR > 1 and down for MRIR < 1,
+    with their values written on them unless labels is False."""
     heights = [(v - 1) if v is not None else 0 for v in vals]
     ax.bar(xs, heights, width, bottom=1, **kw)
-    for x, v in zip(xs, vals):
+    for x, v in zip(xs, vals if labels else []):
         if v is not None:
             ax.text(x, v * (1.03 if v >= 1 else 0.97), f"{v:.2f}", ha="center",
                     va="bottom" if v >= 1 else "top", fontsize=6)
