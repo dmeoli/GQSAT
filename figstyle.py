@@ -42,9 +42,12 @@ plt.rcParams.update({
 from matplotlib import colors as mcolors
 
 DATASET_COLOR = {
-    "flat30-60": "#1f77b4", "flat50-115": "#ff7f0e", "flat75-180": "#2ca02c",
-    "flat100-239": "#d62728", "flat125-301": "#9467bd", "flat150-360": "#8c564b",
-    "flat175-417": "#e377c2", "flat200-479": "#bcbd22",
+    # graph coloring: deep, muted tones in the order of the wheel, from teal to
+    # ochre as the graphs grow, so that the order of the sizes can be read
+    "flat30-60": "#0f7c78", "flat50-115": "#3b7dbf", "flat75-180": "#4c46a8",
+    "flat100-239": "#7d4fa3", "flat125-301": "#b8457a", "flat150-360": "#d0624a",
+    "flat175-417": "#c88a1c", "flat200-479": "#6f8a2a",
+    # uniform random 3-SAT
     "uf50-218": "#17becf", "uf100-430": "#1a3a6b", "uf250-1065": "#8e1b5c",
 }
 
