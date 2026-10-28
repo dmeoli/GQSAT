@@ -1,5 +1,7 @@
 # GQSAT: Graph-Q-SAT and GAT-Q-SAT
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/dmeoli/GQSAT/blob/main/notebooks/gatqsat.ipynb)
+
 A port of [Graph-Q-SAT](https://github.com/NVIDIA/GraphQSat) (Kurin et al.,
 NeurIPS 2020) to the current releases of PyTorch and PyTorch Geometric, and
 GAT-Q-SAT, which adds two edge-featured graph attention layers to the core block
@@ -26,6 +28,8 @@ that separate the effect of the attention from that of the added parameters.
 | `data/` | the instances, from [SATLIB](https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html), with the training, validation and test splits (`train_val_test_split.sh`, seed 123456) and the `METADATA` of each family |
 | `runs/` | the checkpoints and the logs of the runs of 2021 |
 | `report/` | the note (`pdflatex gatqsat.tex`) and its figures |
+| `notebooks/gatqsat.ipynb` | every experiment of the note on Colab in one *Run all*, which resumes from what is already on Drive |
+| `slides/` | the talk on the note, in English and Italian |
 
 ## The port
 
