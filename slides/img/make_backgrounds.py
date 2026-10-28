@@ -85,9 +85,11 @@ def content(seed=4):
                         arrowprops=dict(arrowstyle="-|>", color=col, lw=.3 + 3.0 * alpha,
                                         alpha=.3 + .7 * alpha, shrinkA=3, shrinkB=6,
                                         mutation_scale=4 + 6 * alpha))
-            ax.add_patch(Rectangle((x - .08, y - .08), .16, .16, zorder=2,
-                                   color=lighter(col, .35), ls="-" if rnd.random() < .5 else "--"))
-        ax.add_patch(Circle((cx, cy), .17, color=col, zorder=3))
+            # filled shapes with no outline: a dashed outline on so small a
+            # square gives jagged corners
+            ax.add_patch(Rectangle((x - .08, y - .08), .16, .16, zorder=2, lw=0,
+                                   facecolor=lighter(col, .35)))
+        ax.add_patch(Circle((cx, cy), .17, facecolor=col, lw=0, zorder=3))
     return fig
 
 
