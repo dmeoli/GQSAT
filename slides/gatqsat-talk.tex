@@ -33,6 +33,12 @@
         {\includegraphics[width=\paperwidth, height=\paperheight]{bg-cover.pdf}};
     \fi
   \end{tikzpicture}}
+% the lines of the title page that lie on the clauses of the background (name,
+% institution, date) with a thin halo of the color of the page, so that they
+% stay readable on a full background
+\usepackage[outline]{contour}
+\contourlength{1.1pt}
+\newcommand{\halo}[1]{\contour{lamalunga-canvas}{#1}}
 % the title boxed (as with titles=boxed) on the title page only, so that it
 % stands out on the clauses of the background; the frame titles stay plain
 \ExplSyntaxOn
@@ -84,8 +90,8 @@
 \fi
 \subtitle{\T{GAT-Q-SAT against Graph-Q-SAT, at matched training set and with two controls}%
             {GAT-Q-SAT contro Graph-Q-SAT, a parit\`a di training set e con due controlli}}
-\author{\textcolor{lamalunga-primary}{Donato Meoli}}
-\institute{\textcolor{lamalunga-accent}{Universit\`a di Pisa}}
+\author{\textcolor{lamalunga-primary}{\halo{Donato Meoli}}}
+\institute{\textcolor{lamalunga-accent}{\halo{Universit\`a di Pisa}}}
 \date{}
 
 \begin{document}

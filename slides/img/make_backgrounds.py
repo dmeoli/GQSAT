@@ -7,8 +7,7 @@ bg-cover.pdf, behind the title page: a wall of 3-SAT clauses, with the AND and
 the OR of the CNF drawn large.  bg-content.pdf, behind the other frames:
 neighborhoods of a bipartite graph whose messages flow into a node, each arrow
 as wide and as opaque as its softmax coefficient, i.e., message passing
-weighted by attention.  Run from this directory: python3 make_backgrounds.py;
-another deck writes its own cover with --cover-only <pdf> --free <bands>.
+weighted by attention.  Run from this directory: python3 make_backgrounds.py
 """
 import math
 import random
@@ -45,23 +44,14 @@ def sub(n):
     return "".join("₀₁₂₃₄₅₆₇₈₉"[int(c)] for c in str(n))
 
 
-# the heights (cm from the bottom) of the lines of the title page that the
-# clauses must leave free, i.e., from the rule under the subtitle down to the
-# name and the institution, measured on the PDF of the deck with pdftotext -bbox
-FREE = [(2.16, 3.80)]
 ROW = 0.42                                       # the pitch of the rows of clauses
 
 
-def cover(seed=1, free=FREE):
+def cover(seed=1):
     rnd = random.Random(seed)
     fig, ax = page()
     y, row = H - 0.25, 0
     while y > 0:
-        # a row whose glyphs (about 0.2 cm below its top) would touch a line
-        # of text is left out, so that the line falls on an empty band
-        if any(y > lo - 0.06 and y - 0.22 < hi + 0.06 for lo, hi in free):
-            y -= ROW; row += 1
-            continue
         cls = []
         for _ in range(9):
             lits = [("¬" if rnd.random() < .5 else "") + "x" + sub(v)
@@ -117,18 +107,6 @@ def content(seed=4):
 
 
 if __name__ == "__main__":
-    import argparse
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--free", default=None,
-                    help="the bands to leave free on the cover, as lo:hi,lo:hi (cm)")
-    ap.add_argument("--cover-only", default=None, metavar="PDF",
-                    help="write only the cover, to this file")
-    a = ap.parse_args()
-    free = [tuple(float(x) for x in b.split(":")) for b in a.free.split(",")] if a.free else FREE
-    if a.cover_only:
-        fig = cover(free=free); fig.savefig(a.cover_only); plt.close(fig)
-        print("wrote", a.cover_only)
-    else:
-        for name, f in [("bg-cover", lambda: cover(free=free)), ("bg-content", content)]:
-            fig = f(); fig.savefig(name + ".pdf"); plt.close(fig)
-            print("wrote", name + ".pdf")
+    for name, f in [("bg-cover", cover), ("bg-content", content)]:
+        fig = f(); fig.savefig(name + ".pdf"); plt.close(fig)
+        print("wrote", name + ".pdf")
