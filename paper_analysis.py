@@ -27,7 +27,7 @@ SIZE = {"flat30-60": 90, "flat50-115": 150, "flat75-180": 225, "flat100-239": 30
         "flat125-301": 375, "flat150-360": 450, "flat175-417": 525, "flat200-479": 600,
         "uf50-218": 50, "uf100-430": 100, "uf250-1065": 250,
         "uuf50-218": 50, "uuf100-430": 100, "uuf250-1065": 250}
-COL = dict(fs.MODEL_GRAY)  # figures not in the note
+COL = dict(fs.MODEL_COLOR)  # figures not in the note
 TRAIN = {"coloring": pn.COL, "random": pn.SAT}
 BASELINE = "family"
 
@@ -70,7 +70,7 @@ def fig_thesis(data, out):
     """Mean MRIR (cap 500) per regime, GAT vs Graph, on a log2 axis."""
     SAT_R = [d for d in RANDOM if d.startswith("uf")]
     UNSAT_R = [d for d in RANDOM if d.startswith("uuf")]
-    # a bar mixes several families, hence it has the gray of its model (figstyle)
+    # a bar mixes several families, hence it has the violet of its model (figstyle)
     regimes = [("coloring", FLAT, "trained: coloring\ntested: coloring"),
                ("random", FLAT, "trained: random\ntested: coloring"),
                ("random", SAT_R, "trained: random\ntested: random sat"),
@@ -180,7 +180,7 @@ def fig_generalization(data, out):
     """Random-trained: MRIR (cap 500) against the size of the test instances, on
     graph coloring and on random 3-SAT (satisfiable solid, unsatisfiable dashed)."""
     fig, axes = plt.subplots(1, 2, figsize=fs.FULL, sharey=True)
-    # the lines are the models, in their gray; each point has the color of its
+    # the lines are the models, in their violet; each point has the color of its
     # family, as in the curves of make_plots.py (figstyle)
     panels = [(axes[0], [("", FLAT, "-")], "graph coloring", "# variables (3 per node)"),
               (axes[1], [(" (sat)", [d for d in RANDOM if d.startswith("uf")], "-"),

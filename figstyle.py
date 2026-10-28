@@ -37,8 +37,9 @@ plt.rcParams.update({
 # in every figure: the eight graph-coloring families have eight distinct
 # colors, the uniform random ones three more, and an unsatisfiable family has
 # the color of the satisfiable one with as many variables, lighter (and its
-# curve dashed).  The models carry no color: light gray Graph-Q-SAT, dark gray
-# GAT-Q-SAT, the two controls in between and hatched or dashed.
+# curve dashed).  The models are in the violet of the theme: light lilac
+# Graph-Q-SAT, deep violet GAT-Q-SAT, the two controls in between and hatched or
+# dashed.
 from matplotlib import colors as mcolors
 
 DATASET_COLOR = {
@@ -60,8 +61,8 @@ def _lighter(c, f=0.45):
 for _n in ("50-218", "100-430", "250-1065"):
     DATASET_COLOR["uuf" + _n] = _lighter(DATASET_COLOR["uf" + _n])
 
-MODEL_GRAY = {"Graph-Q-SAT": "#b4b4b4", "Graph-Q-SAT wide": "#8a8a8a",
-              "Attention aggregation": "#5e5e5e", "GAT-Q-SAT": "#262626"}
+MODEL_COLOR = {"Graph-Q-SAT": "#b9a7d6", "Graph-Q-SAT wide": "#9a86c4",
+              "Attention aggregation": "#6f58a8", "GAT-Q-SAT": "#4b2e83"}
 MODEL_HATCH = {"Graph-Q-SAT wide": "////", "Attention aggregation": "...."}
 MODEL_LS = {"Graph-Q-SAT wide": "--", "Attention aggregation": ":"}
 
@@ -71,12 +72,12 @@ def dataset_color(d):
 
 
 def model_color(model):
-    return MODEL_GRAY[model]
+    return MODEL_COLOR[model]
 
 
 def model_legend(ax, models, **kw):
-    """A legend of the models, by their gray."""
+    """A legend of the models, by their violet."""
     from matplotlib.patches import Patch
-    hs = [Patch(facecolor=MODEL_GRAY[m], hatch=MODEL_HATCH.get(m, ""),
+    hs = [Patch(facecolor=MODEL_COLOR[m], hatch=MODEL_HATCH.get(m, ""),
                 edgecolor="white", label=m) for m in models]
     ax.legend(handles=hs, **kw)

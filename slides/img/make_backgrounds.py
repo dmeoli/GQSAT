@@ -17,9 +17,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle
 from matplotlib import colors as mcolors
+from matplotlib import patheffects as pe
 
 W, H = 16, 9                                     # cm, the page of a 16:9 beamer
 VIOLET, CYAN, NAVY, MAGENTA = "#665094", "#17becf", "#1a3a6b", "#8e1b5c"
+GOLD = "#d4a52a"                                 # the complement of the violet
+PAGE = "white"                                   # the color of the page
 
 
 def lighter(c, f=0.45):
@@ -54,8 +57,16 @@ def cover(seed=1):
         ax.text(-0.3 - 0.6 * (row % 2), y, " ∧ ".join(cls), fontsize=5.2,
                 family="DejaVu Sans Mono", color=[VIOLET, NAVY][row % 2], va="top", ha="left")
         y -= 0.42; row += 1
-    ax.text(W - 2.4, 0.2, "⋀", fontsize=105, color=NAVY, alpha=.6, ha="center", va="bottom")
-    ax.text(W - 0.9, 1.9, "⋁", fontsize=70, color=MAGENTA, alpha=.6, ha="center", va="bottom")
+    # the AND and the OR of the CNF, side by side and crossing each other, in the
+    # middle of the band between the rule of the title page and the bottom, at
+    # the right of the name, in the violet of the theme and its complement;
+    # both are outlined in the color of the page,
+    # so that a thin gap keeps the OR, in front, apart from the AND where they
+    # cross, and both apart from the clauses
+    ax.text(11.75, 0.1, "⋀", fontsize=90, color=VIOLET, ha="center", va="bottom",
+            path_effects=[pe.withStroke(linewidth=2.2, foreground=PAGE)])
+    ax.text(13.2, 0.1, "⋁", fontsize=90, color=GOLD, ha="center", va="bottom",
+            path_effects=[pe.withStroke(linewidth=2.2, foreground=PAGE)])
     return fig
 
 

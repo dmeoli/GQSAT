@@ -26,13 +26,18 @@
   \begin{tikzpicture}
     \useasboundingbox (0,0) rectangle (\paperwidth,\paperheight);
     \ifnum\value{page}>1
-      \node[anchor=center, inner sep=0pt, opacity=0.3] at (0.5\paperwidth,0.5\paperheight)
+      \node[anchor=center, inner sep=0pt, opacity=0.22] at (0.5\paperwidth,0.5\paperheight)
         {\includegraphics[width=\paperwidth, height=\paperheight]{bg-content.pdf}};
     \else
       \node[anchor=center, inner sep=0pt, opacity=0.4] at (0.5\paperwidth,0.5\paperheight)
         {\includegraphics[width=\paperwidth, height=\paperheight]{bg-cover.pdf}};
     \fi
   \end{tikzpicture}}
+% the title boxed (as with titles=boxed) on the title page only, so that it
+% stands out on the clauses of the background; the frame titles stay plain
+\ExplSyntaxOn
+\NewDocumentCommand \lamalungatitles { m } { \tl_gset:Nn \g_lamalunga_titles_tl {#1} }
+\ExplSyntaxOff
 % the figures are those of the note
 \graphicspath{{img/}{../report/img/}}
 
@@ -85,7 +90,9 @@
 
 \begin{document}
 
+\lamalungatitles{boxed}
 \maketitle
+\lamalungatitles{plain}
 
 % ==================================================================== problem
 \begin{frame}{\T{The branching heuristic of a CDCL solver}{L'euristica di branching di un solutore CDCL}}
@@ -392,11 +399,11 @@
     keepaspectratio]{thesis.png}\\[1mm]
   \begin{columns}
     \begin{column}{0.92\textwidth}\footnotesize
-      \T{Light gray Graph-Q-SAT, dark gray GAT-Q-SAT.
+      \T{Light lilac Graph-Q-SAT, deep violet GAT-Q-SAT.
       Trained on uniform random 3-SAT, Graph-Q-SAT is below MiniSat on five of the eight
       coloring families, GAT-Q-SAT above it on seven: the weighting of the neighbors helps
       also on a structure not seen in training.}%
-      {Grigio chiaro Graph-Q-SAT, grigio scuro GAT-Q-SAT.
+      {Lilla chiaro Graph-Q-SAT, viola scuro GAT-Q-SAT.
       Addestrato sul random 3-SAT uniforme, Graph-Q-SAT \`e sotto MiniSat su cinque delle otto
       famiglie di coloring, GAT-Q-SAT sopra su sette: pesare i vicini aiuta anche su una
       struttura non vista in training.}
