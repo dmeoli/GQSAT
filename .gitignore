@@ -16,3 +16,5 @@ smspp/build/
 *.blg
 *.bbl
 *.synctex.gz
+report/arxiv/
+report/arxiv.tar.gz
