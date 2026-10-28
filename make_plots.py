@@ -66,10 +66,10 @@ def shared_ylim(agg, models, datasets, idx, ratio=False, pad=0.06):
 def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, ratio=False,
                 ylim=None, dashed=()):
     fig, ax = plt.subplots(figsize=fs.HALF)
-    # one line per dataset: use a categorical palette (a violet gradient makes the
-    # per-dataset legend unreadable) + varied markers, so each curve is identifiable;
-    # a cap with no log is a gap in the line, not a straight segment across it.
-    palette = plt.get_cmap("tab10").colors
+    # one line per dataset, in the hue of its kind and from light to dark with
+    # the size (figstyle), with varied markers so that each curve can be
+    # followed; a cap with no log is a gap in the line, not a segment across it
+    palette = fs.gradient(datasets)
     markers = ["o", "s", "^", "D", "v", "P", "X", "*", "<", ">"]
     for i, d in enumerate(datasets):
         xs = [0] + CAPS if ratio else CAPS
@@ -78,7 +78,7 @@ def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, ratio=False,
             continue
         ys = [float("nan") if y is None else y for y in ys]
         ax.plot(xs, ys, marker=markers[i % len(markers)],
-                ls="--" if d in dashed else "-", label=d, color=palette[i % len(palette)])
+                ls="--" if d in dashed else "-", label=d, color=palette[d])
     ax.set_xscale("symlog", linthresh=10)
     # at the width of half the text block the labels of 300, 500 and 1000
     # collide: 300 keeps its tick and loses its label

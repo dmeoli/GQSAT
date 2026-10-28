@@ -32,3 +32,58 @@ plt.rcParams.update({
     "ytick.major.width": 0.6,
     "savefig.dpi": DPI,
 })
+
+# The colors.  The hue says the kind of the test instances, and is the same in
+# every figure: graph coloring (the flat and the small-world families) blue,
+# satisfiable uniform random 3-SAT green, unsatisfiable red, the structured
+# SATLIB families violet.  Within a hue the shade orders the objects: the
+# families by size (light the smallest) in the curves of one model, the models
+# (light Graph-Q-SAT, dark GAT-Q-SAT) where the models are compared, the two
+# controls in between and hatched.
+from matplotlib import colormaps
+
+KIND_CMAP = {"coloring": "Blues", "sat": "Greens", "unsat": "Reds", "structured": "Purples"}
+MODEL_SHADE = {"Graph-Q-SAT": 0.0, "Graph-Q-SAT wide": 0.35,
+               "Attention aggregation": 0.65, "GAT-Q-SAT": 1.0}
+MODEL_HATCH = {"Graph-Q-SAT wide": "////", "Attention aggregation": "...."}
+MODEL_LS = {"Graph-Q-SAT wide": "--", "Attention aggregation": ":"}
+
+
+def kind(dataset):
+    """The kind of a family, i.e., its hue."""
+    if dataset.startswith(("flat", "sw")):
+        return "coloring"
+    if dataset.startswith("uuf"):
+        return "unsat"
+    if dataset.startswith("uf"):
+        return "sat"
+    return "structured"
+
+
+def shade(k, t):
+    """The color of kind k at shade t in [0, 1] (0 light, 1 dark); the ends of
+    the colormaps are left out, too pale on white and too close to black."""
+    return colormaps[KIND_CMAP[k]](0.38 + 0.57 * t)
+
+
+def gradient(datasets):
+    """One color per family, the families of each kind from light to dark in
+    the order given (i.e., by size)."""
+    out = {}
+    for k in KIND_CMAP:
+        ds = [d for d in datasets if kind(d) == k]
+        for i, d in enumerate(ds):
+            out[d] = shade(k, i / (len(ds) - 1) if len(ds) > 1 else 1.0)
+    return out
+
+
+def model_color(model, k):
+    return shade(k, MODEL_SHADE[model])
+
+
+def model_legend(ax, models, **kw):
+    """A legend of the models in gray, since their hue changes with the data."""
+    from matplotlib.patches import Patch
+    hs = [Patch(facecolor=colormaps["Greys"](0.3 + 0.55 * MODEL_SHADE[m]),
+                hatch=MODEL_HATCH.get(m, ""), edgecolor="white", label=m) for m in models]
+    ax.legend(handles=hs, **kw)

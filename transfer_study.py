@@ -34,9 +34,8 @@ import matplotlib.pyplot as plt
 
 import figstyle as fs
 import paper_numbers as pn
-from paper_analysis import COL as _COL, ratio_axis, ratio_bars
+from paper_analysis import ratio_axis, ratio_bars
 
-COL = dict(_COL, **{"Graph-Q-SAT wide": "#8c8c8c", "Attention aggregation": "#e39b3a"})
 # (label, dataset) of the structured families, i.e. the directory under ../data
 # (aim, planning) or ../data/satlib; the order is the one of the figure
 FAMILIES = [
@@ -189,7 +188,9 @@ def main():
     fig, ax = plt.subplots(figsize=fs.FULL)
     for i, v in enumerate(variants):
         xs = [k + (i - (len(variants) - 1) / 2) * w for k in range(len(fams))]
-        ratio_bars(ax, xs, [mrir(v, n)[0] for _, n in fams], w, label=v, color=COL[v])
+        ratio_bars(ax, xs, [mrir(v, n)[0] for _, n in fams], w, label=v,
+                   color=fs.model_color(v, "structured"), hatch=fs.MODEL_HATCH.get(v),
+                   edgecolor="white", linewidth=0)
     ratio_axis(ax, 0.25, 8)
     ax.set_xticks(range(len(fams)))
     ax.set_xticklabels([f"{l}\n({n_problems(pn.data_dir(n))})" for l, n in fams], fontsize=6)
@@ -203,7 +204,7 @@ def main():
     for v in variants:
         ys = [mrir(v, n)[0] for n, _ in SW]
         ax.plot(xs, [y if y is not None else float("nan") for y in ys], marker="o",
-                label=v, color=COL[v])
+                label=v, color=fs.model_color(v, "coloring"), ls=fs.MODEL_LS.get(v, "-"))
     ratio_axis(ax)
     ax.set_xticks(xs); ax.set_xticklabels(["1"] + [f"$2^{{-{k}}}$" for k in range(1, 9)] + ["0"])
     ax.set_xlabel("rewiring probability (1: random graph, 0: ring lattice)")

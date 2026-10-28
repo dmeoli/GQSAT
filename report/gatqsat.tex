@@ -4,14 +4,15 @@
 %%  Graph attention in a learned SAT branching heuristic.
 %%
 %%  Note on GAT-Q-SAT: Graph-Q-SAT with two edge-featured attention layers in
-%%  the core block, compared with the plain model at matched training set on
-%%  graph coloring, on uniform random 3-SAT and on four families never seen
-%%  in training.  The port and the reproduction test are in section 5; the
-%%  instances and the way the numbers are regenerated are in the appendix.
+%%  the core block, compared with Graph-Q-SAT and with two controls (more
+%%  capacity, attention in place of the sum) at matched training set, on graph
+%%  coloring, on uniform random 3-SAT and on the structured SATLIB families.
+%%  The port and the reproduction test are in section 5; the instances and the
+%%  way the numbers are regenerated are in the appendix.
 %%
-%%  \upd{...} marks a number that the Colab re-evaluation of September 2026
-%%  (second seed, transfer with per-problem logs, timing A/A, curves of the
-%%  2021 GAT run) will change: grep for it when the logs are in.
+%%  \upd{...} marks a number or a paragraph that the Colab campaign (third
+%%  seed, controls, transfer panel, timing A/A) will fill or change: grep for
+%%  it when the logs are in.
 %% ===========================================================================
 
 \usepackage[T1]{fontenc}
@@ -55,19 +56,21 @@ and is trained by Deep Q-Learning to reduce the number of decisions of the
 solver. We add to the core block of that network two edge-featured graph
 attention layers, which weight the neighbors of each node by learned
 coefficients before the global attribute is updated, and we compare the
-resulting model with the plain one at matched training set and configuration.
-On graph coloring the attention model takes fewer decisions than the plain one
-on all the families we test, and the difference tends to grow with the size of
-the instances, since the plain model degrades almost to the level of the
-reference solver on the largest ones. Trained on uniform random 3-SAT and tested
-on graph coloring, the attention model is again the better of the two, and it
+resulting model (GAT-Q-SAT) with Graph-Q-SAT at matched training set and
+configuration, together with two controls that separate the effect of the
+attention from that of the added parameters. On graph coloring GAT-Q-SAT takes
+fewer decisions than Graph-Q-SAT on all the families we test, and the
+difference tends to grow with the size of the instances, since Graph-Q-SAT
+degrades almost to the level of the reference solver on the largest ones.
+\upd{[One sentence on what the controls show.]} Trained on uniform random 3-SAT
+and tested on graph coloring, GAT-Q-SAT is again the better of the two, and it
 also appears to be the better one on some structured families that neither
-model has seen in training. Yet, on satisfiable uniform random 3-SAT the plain
-model is clearly superior, and on instances of this size neither model is
+model has seen in training. Yet, on satisfiable uniform random 3-SAT
+Graph-Q-SAT is clearly superior, and on instances of this size neither model is
 competitive with the solver in running time, each decision costing a forward
-pass of the network. This evidence rests on two training seeds per variant on
-graph coloring, and on one or two elsewhere. Computational results are
-reported.
+pass of the network. This evidence rests on three training seeds per model on
+graph coloring (two per control), and on one run per training family
+elsewhere. Computational results are reported.
 \end{abstract}
 
 %% ===========================================================================
@@ -134,25 +137,28 @@ best of our knowledge, not inside the core block of Graph-Q-SAT.
 \noindent
 In this note we add to the core block of Graph-Q-SAT two graph attention layers
 that use the edge embeddings computed by the block, and we compare the
-resulting model (GAT-Q-SAT) with the plain one. We make the comparison at
+resulting model (GAT-Q-SAT) with Graph-Q-SAT. We make the comparison at
 matched training set and configuration, on graph coloring (the family on which
 Graph-Q-SAT was originally trained, and larger instances of it), on uniform
 random 3-SAT and, with no retraining, on thirteen structured SATLIB families
 that neither model has seen, together with small-world coloring at nine levels
 of structure. Since the attention layers are added to the block (the sum
 aggregation of Graph-Q-SAT being kept), GAT-Q-SAT has about 60\% more
-parameters than the plain model; in order to separate the effect of the
+parameters than Graph-Q-SAT; in order to separate the effect of the
 attention from that of the capacity we also train two controls, i.e.,
 Graph-Q-SAT with wider hidden layers and the same number of parameters as
-GAT-Q-SAT, and a model in which attention replaces the sum at the capacity of
-Graph-Q-SAT. We use three training seeds for each of the two main variants on
+GAT-Q-SAT (Graph-Q-SAT wide), and a model in which attention replaces the sum
+at the capacity of Graph-Q-SAT (attention aggregation). We use three training
+seeds for each of the two main models on
 graph coloring and two for each control, which is enough to see the larger
 differences but not always the smaller ones (i.e., those of a few tenths of the
 measure used below). As in \cite{Kurin2020} the results are measured
 in solver iterations, and the running time is reported separately. The note
 also documents a port of the original implementation to a current software
 stack (without which the experiments could not have been run), together with
-the test used to check that the port has not changed what the models compute.
+the test used to check that the port has not changed what the models compute;
+the code of both models and of the experiments is available at
+\url{https://github.com/dmeoli/GQSAT}.
 
 \smallskip
 \noindent
@@ -184,10 +190,9 @@ partial assignment (together with the clauses learned so far), and its actions
 are the pairs of an unassigned variable and a truth value. Transitions are
 computed by the solver itself (cf. \cite[section 3]{Kurin2020}): a step is one decision followed by the propagation, the
 conflict analysis and the backjumping that it triggers, and therefore the
-transition is deterministic but known only by running it. A reward of $-p$ is
-given at each non-terminal step and $0$ at termination (with $p = 0.1$ in all our
-runs); hence, maximizing the return means terminating in as few decisions as
-possible. Note that the formula is first simplified by the variable elimination
+transition is deterministic but known only by running it. A reward of $-0.1$
+is given at each non-terminal step and $0$ at termination; hence, maximizing
+the return means terminating in as few decisions as possible. Note that the formula is first simplified by the variable elimination
 of MiniSat, which is part of the environment.
 
 \smallskip
@@ -219,10 +224,15 @@ constant learning rate of $2\cdot 10^{-5}$, the discount is $\gamma = 0.99$,
 the replay buffer holds 20000 transitions and the minibatches have 64 of them.
 One update is made every 4 transitions after the first 5000, and $\theta$ is copied
 into $\theta^-$ every 10 updates. Training stops after 50000 updates (about
-$2\cdot 10^{5}$ transitions); $\varepsilon$ is $1$ for the first 5000
-transitions and then decreases linearly to $0.01$. During training an episode
-may take at most 500 decisions of the model, after which the solver completes
-the search with VSIDS in a single step. Also, the gradient norm is clipped at $0.1$
+$2\cdot 10^{5}$ transitions). The exploration rate $\varepsilon$ is $1$ for the
+first 5000 transitions, then decreases linearly (by $0.99/30000$ per
+transition) until transition 30000, where it is $0.175$. From there on it is
+$0.01$; this jump comes from the schedule of the released code, which compares
+the length of the decay with the total number of transitions. During training
+an episode may take at most 500 decisions of the model (the \emph{cap}), after
+which the solver completes the search with VSIDS in a single step; at test
+time the cap is a parameter of the evaluation (cf. section~\ref{sec:results}).
+Also, the gradient norm is clipped at $0.1$
 for the runs trained on graph coloring and at $1$ for those trained on uniform
 random 3-SAT (as in the respective configurations of \cite{Kurin2020}).
 
@@ -243,26 +253,34 @@ agent takes the $\arg\max$ over all of them.
 \smallskip
 \noindent
 As in \cite{Kurin2020}, the network is an encode--process--decode graph network
-\cite{Battaglia2018} (cf. Figure~\ref{fig:epd}). An encoder maps the edges, the nodes and the global
-attribute independently to embeddings of size 32. Then, the core block (whose
-weights are shared) is applied $M = 4$ times to the concatenation of the encoded
-graph and of its previous output. Each application updates first the edges,
-then the nodes, then the global attribute:
+\cite{Battaglia2018} (cf. Figure~\ref{fig:epd}). An encoder maps the edges, the
+nodes and the global attribute independently, each by a linear layer followed
+by a ReLU and a layer normalization, to embeddings of size 32. Then, the core
+block (whose weights are shared) is applied $M = 4$ times to the concatenation
+of the encoded graph and of its previous output (zero at the first round). Each
+edge is stored in both directions, and we denote by $e_{ij}$ the embedding of
+the edge from node $i$ to node $j$, by $v_i$ that of node $i$, by $u$ the
+global attribute, and by $\mathcal N_i$ the set of the neighbors of $i$ in the
+bipartite graph. Each application of the block updates first the edges, then
+the nodes, then the global attribute:
 \begin{equation}\label{eq:gnblock}
-  e_k' = \phi^e\big(e_k, v_{r_k}, v_{s_k}, u\big) \, , \quad
-  v_i' = \phi^v\Big(\textstyle\sum_{k:\, r_k = i} e_k', \, v_i, \, u\Big) \, , \quad
+  e_{ij}' = \phi^e\big(e_{ij}, v_i, v_j, u\big) \, , \quad
+  v_i' = \phi^v\Big(\textstyle\sum_{j \in \mathcal N_i} e_{ij}', \, v_i, \, u\Big) \, , \quad
   u'   = \phi^u\big(\bar e', \bar v', u\big) \, ,
 \end{equation}
-where $r_k$ and $s_k$ are the two endpoints of edge $k$, $\bar e'$ and $\bar v'$
-are the means of the updated edge and node embeddings, and $\phi^e$, $\phi^v$
-and $\phi^u$ are perceptrons with one hidden layer of 64 units and outputs of
-size 64, each followed by a layer normalization. Finally, a decoder reads the
-$Q$-values off the variable nodes. Since the weights are shared across the nodes
-and across the $M$ rounds, one set of them applies to a formula with any number
-of variables and clauses; with this configuration the network has 71144
-parameters.
+where $\bar e'$ and $\bar v'$ are the means of the updated edge and node
+embeddings, and $\phi^e$, $\phi^v$ and $\phi^u$ are perceptrons with one hidden
+layer of 64 units and outputs of size 64, each followed by a ReLU and a layer
+normalization. Finally, a decoder of the same form as the encoder maps the
+embedding of each variable node to 32 components, and a linear layer maps
+these to the two $Q$-values of the node. Since the weights are shared across
+the nodes and across the $M$ rounds, one set of them applies to a formula with
+any number of variables and clauses; with this configuration the network has
+71144 parameters. (The figures follow the notation of \cite{Battaglia2018},
+in which $V$ and $E$ are the sets of the node and edge embeddings and $\rho$
+denotes an aggregation, e.g., the sum in \eqref{eq:gnblock}.)
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=0.86\textwidth]{gqsat_epd.png}
 \caption{The encode--process--decode network of Graph-Q-SAT: an independent
@@ -291,34 +309,37 @@ weighting of the neighbors to be of some use.
 GAT-Q-SAT inserts two graph attention layers \cite{Velickovic2018} in the core
 block, between the node update and the global update of \eqref{eq:gnblock}.
 Thus, the node embeddings are recomputed from those of their neighbors, with
-learned weights, before $u'$ is computed. Each layer maps the embeddings $h_i$
-of the nodes into
+learned weights, before $u'$ is computed. Each layer maps the embeddings $v_i$
+of the nodes (the first one those computed by $\phi^v$) into
 \begin{equation}\label{eq:gat}
   \begin{gathered}
-  h_i^{+} = \mathop{\Big\|}_{k=1}^{K} \sum_{j \in \mathcal N_i} \alpha^k_{ij}\, W_k h_j + b \, ,
+  v_i^{+} = \mathop{\Big\|}_{k=1}^{K} \sum_{j \in \mathcal N_i} \alpha^k_{ij}\, W_k v_j + b \, ,
   \qquad
-  \alpha^k_{ij} = \frac{\exp s^k_{ij}}{\sum_{l \in \mathcal N_i} \exp s^k_{il}} \, ,
+  \alpha^k_{ij} = \frac{\exp \omega^k_{ij}}{\sum_{j' \in \mathcal N_i} \exp \omega^k_{ij'}} \, ,
   \\
-  s^k_{ij} = \mathrm{LeakyReLU}\big(\mathbf a_k^{\!\top}
-            [\,W_k h_i \,\|\, W_k h_j \,\|\, W^e_k e'_{ij}\,]\big) \, ,
+  \omega^k_{ij} = \mathrm{LeakyReLU}\big(\mathbf w_k^{\!\top}
+            [\,W_k v_i \,\|\, W_k v_j \,\|\, W^e_k e'_{ji}\,]\big) \, ,
   \end{gathered}
 \end{equation}
-where $\mathcal N_i$ is the set of the neighbors of $i$ in the bipartite graph
-(with no self-loop), $\|$ denotes concatenation, and $e'_{ij}$ is the embedding
-of the edge between $i$ and $j$ computed by $\phi^e$ in the same application of
-the block. Hence, the coefficients $\alpha^k_{ij}$ depend on the current edge
-embeddings, which carry the polarity of the literal together with what the
-block has added to it. In our configuration the first layer has $K = 3$ heads
-of size 64 (concatenated into 192 components) and the second a single head,
-which returns to size 64; each layer is followed by a ReLU, and the output by a
-layer normalization. All the rest of the network (the encoder, the edge and node updates
+where $K$ is the number of heads, $\|$ denotes concatenation, the LeakyReLU has
+slope $0.2$ on the negative values, and $e'_{ji}$ is the embedding of the edge
+from $j$ to $i$ computed by $\phi^e$ in the same application of the block (no
+self-loop is added, since the graph is bipartite). Hence, the coefficients
+$\alpha^k_{ij}$ depend on the current edge embeddings, which carry the polarity
+of the literal together with what the block has added to it. In our
+configuration the first layer has $K = 3$ heads of size 64 (concatenated into
+192 components) and the second a single head, which returns to size 64; each
+layer is followed by a ReLU, and the output by a layer normalization. (In the
+notation of Figure~\ref{fig:gatepd}, $\alpha^e$ are the coefficients
+$\alpha^k_{ij}$ and $\beta^e$ the messages $W_k v_j$.) All the rest of the
+network (the encoder, the edge and node updates
 with their sum, the global update, the decoder, and $M$) is unchanged, and so is
 the training configuration of section~\ref{sec:problem}. In the terms of
 \cite{Battaglia2018}, the resulting block is a full graph-network block with a
 non-local block inserted between the node and the global update
 (cf. Figure~\ref{fig:gatepd}).
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{gatqsat_epd.png}
 \caption{The core block of GAT-Q-SAT: the block of Figure~\ref{fig:epd} with a
@@ -342,22 +363,23 @@ parameters to make the fit somewhat harder.
 {\bf Controls.} Since the layers are added and the sum of \eqref{eq:gnblock} is
 kept, a difference between GAT-Q-SAT and Graph-Q-SAT may be due to the attention
 or simply to the larger network. We therefore train two further models with the
-same configuration. The first one (``wide'') is Graph-Q-SAT with hidden layers of
-104 units in place of 64, which gives 113504 parameters (against the 113256 of
-GAT-Q-SAT) and no attention. The second one (``attention aggregation'') keeps
-the block of \eqref{eq:gnblock} and replaces its sum by
+same configuration. The first one (Graph-Q-SAT wide) is Graph-Q-SAT with hidden
+layers of 104 units in place of 64, which gives 113504 parameters (against the
+113256 of GAT-Q-SAT) and no attention. The second one (attention aggregation)
+keeps the block of \eqref{eq:gnblock} and replaces its sum by
 \begin{equation}\label{eq:attnagg}
   \begin{gathered}
-  \sum_{k:\, r_k = i} \bar\alpha_{ik}\, e_k' \, , \qquad
-  \bar\alpha_{ik} = \frac1K \sum_{h=1}^{K} \alpha^h_{ik} \, ,
+  \sum_{j \in \mathcal N_i} \bar\lambda_{ij}\, e_{ij}' \, , \qquad
+  \bar\lambda_{ij} = \frac1K \sum_{k=1}^{K} \lambda^k_{ij} \, ,
   \\
-  \alpha^h_{ik} = \frac{\exp s^h_{ik}}{\sum_{l:\, r_l = i} \exp s^h_{il}} \, , \qquad
-  s^h_{ik} = \mathrm{LeakyReLU}\big(\mathbf c_h^{\!\top} [\, v_i \,\|\, e_k' \,]\big) \, ,
+  \lambda^k_{ij} = \frac{\exp \mu^k_{ij}}{\sum_{j' \in \mathcal N_i} \exp \mu^k_{ij'}} \, , \qquad
+  \mu^k_{ij} = \mathrm{LeakyReLU}\big(\mathbf z_k^{\!\top} [\, v_i \,\|\, e_{ij}' \,]\big) \, ,
   \end{gathered}
 \end{equation}
 with $K = 3$ heads, whose coefficients are averaged so that $\phi^v$ receives an
-input of the same size as with the sum; this adds 483 parameters to the 71144
-of Graph-Q-SAT. The first control has the capacity of GAT-Q-SAT without its
+input of the same size as with the sum. The vectors $\mathbf z_k$ (each with a
+bias, which the normalization cancels) add 483 parameters to the 71144 of
+Graph-Q-SAT. The first control has the capacity of GAT-Q-SAT without its
 attention, and the second one has the attention (in a simpler form) without
 the added capacity. Note that a weighted mean such as \eqref{eq:attnagg} does not
 carry the degree of the node, which the sum does; this may matter on graphs
@@ -392,8 +414,10 @@ In order to check that the port has not changed what the models compute, we
 re-ran on the new stack the evaluation of the checkpoints trained in 2021 on the
 original one, and compared the logs instance by instance. In 63 of the 86
 repeated evaluations the number of iterations of the model coincides with the
-2021 one on all the instances; in the other 23 the median ratio
-\eqref{eq:mrir} changes by at most $0.03$ (on \code{flat30-60} at cap $500$,
+2021 one on all the instances; in the other 23 the median over the instances
+of the ratio between the iterations of MiniSat and those of the model (the
+measure \eqref{eq:mrir} of section~\ref{sec:results}) changes by at most $0.03$
+(on \code{flat30-60} at cap $500$,
 e.g., the medians are $1.833$ for Graph-Q-SAT and $2.000$ for GAT-Q-SAT on both
 stacks). We have not traced the residual differences, which may be due to the
 non-determinism of the scatter operations on a GPU; they are in any case much
@@ -408,8 +432,8 @@ section~\ref{sec:results}).
 \noindent
 Finally, the evaluation code implements the three restricted heuristics of
 \cite{Shirokikh2023}, which reduce the number of forward passes. In the first
-one the model takes the first $N$ decisions and VSIDS the rest. In the second
-one a forward pass gives the $K$ best actions, which are executed in order
+one the model takes the first $T$ decisions and VSIDS the rest. In the second
+one a forward pass gives the $L$ best actions, which are executed in order
 (skipping those whose variable has meanwhile been assigned) before the network
 is queried again. In the third one the $Q$-values computed at the root
 initialize the activities of VSIDS, which then runs unaided (this required a
@@ -430,9 +454,9 @@ measured by the Median Relative Iteration Reduction
           \frac{\#\text{iterations of MiniSat}}{\#\text{iterations of the model}} \, ,
 \end{equation}
 where the median is over the instances of a family, and an iteration is a
-branching decision (of the model or of VSIDS). Each evaluation is run with a
-``cap'' on the number of decisions of the model, after which VSIDS takes the
-remaining ones; unless stated otherwise the cap is $500$, as in training.
+branching decision (of the model or of VSIDS). Each evaluation is run at a
+given cap (cf. section~\ref{sec:problem}), after which VSIDS takes the
+remaining decisions; unless stated otherwise the cap is $500$, as in training.
 
 \smallskip
 \noindent
@@ -462,7 +486,7 @@ number generators (the others were not seeded). The two controls of
 section~\ref{sec:gat} have two runs each, trained in 2026 with fixed seeds. On uniform random 3-SAT each variant has two runs trained on satisfiable
 formulas (one on \code{uf50-218}, one on \code{uf100-430}), whose results we
 average, and two trained on the unsatisfiable \code{uuf50-218} and
-\code{uuf100-430}, used only as a control in section~\ref{sec:random}. For a
+\code{uuf100-430}, used only for a comparison in section~\ref{sec:random}. For a
 group of runs we report the mean of the MRIR of its runs.
 
 \smallskip
@@ -470,9 +494,9 @@ group of runs we report the mean of the MRIR of its runs.
 {\bf Instances and machine.} Each test set has 100 instances (101 for
 \code{flat150-360}): the held-out test part for the families used in training,
 and the whole family for the others (cf. the appendix). All the evaluations
-of 2026 were run on a Colab instance with a GPU, whose load we could not
-control. This does not affect the MRIR (a ratio of iteration counts), whereas the running
-times of section~\ref{sec:time} are, and we discuss their reliability there.
+of 2026 were run on a Colab instance with a GPU; the MRIR, a ratio
+of iteration counts, does not depend on the machine, and the running times are
+discussed in section~\ref{sec:time}.
 
 \subsection{Graph coloring}\label{sec:indist}
 
@@ -483,7 +507,7 @@ difference of the means (positive when GAT-Q-SAT takes fewer decisions). Since
 the families range from 30 to 200 nodes, the largest test instances are four
 times the size of the training ones.
 
-\begin{table}[h]\centering\small
+\begin{table}[ht]\centering\small
 \begin{tabular}{lcccccr}
 \toprule
  & \multicolumn{2}{c}{Graph-Q-SAT} & \multicolumn{2}{c}{GAT-Q-SAT} & \\
@@ -511,12 +535,12 @@ GAT-Q-SAT takes fewer decisions than Graph-Q-SAT on all eight families. Up to
 100 nodes, which include the test part of the training family, the difference
 is \upd{between $0.07$ and $0.58$} and it does not grow with the size (it is
 \upd{$0.58$ at 75 nodes and $0.12$ at 100}). From 125 nodes on it is
-\upd{between $0.66$ and $1.66$}. This is mostly (but not only) due to the plain model, whose
-MRIR decreases from \upd{$2.64$} at 100 nodes to \upd{$1.05$} at 200 (i.e.,
-almost to parity with the reference solver), while that of the attention model
-stays \upd{between $2.6$ and $3.4$}. In other words, the two models are quite
-close on instances of about the training size, and the attention model degrades
-much less when the instances grow. \upd{With the other two seeds the pattern is the same on all the families,
+\upd{between $0.66$ and $1.66$}. This is mostly (but not only) due to
+Graph-Q-SAT, whose MRIR decreases from \upd{$2.64$} at 100 nodes to
+\upd{$1.05$} at 200 (i.e., almost to parity with the reference solver), while
+that of GAT-Q-SAT stays \upd{between $2.6$ and $3.4$}. In other words, the two
+models are quite close on instances of about the training size, and GAT-Q-SAT
+degrades much less when the instances grow. \upd{With the other two seeds the pattern is the same on all the families,
 although the size of the difference changes from seed to seed by up to $X$.}
 
 \smallskip
@@ -524,15 +548,15 @@ although the size of the difference changes from seed to seed by up to $X$.}
 Figure~\ref{fig:flatpair} shows the MRIR of the runs of 2021 as a function of
 the cap, family by family, on a common vertical scale (the runs of 2026 were
 evaluated only at the caps of Tables~\ref{tab:numbers} and~\ref{tab:budget}).
-\upd{On most families the plain model reaches its best MRIR at a cap of 50. It
+\upd{On most families Graph-Q-SAT reaches its best MRIR at a cap of 50. It
 then degrades as it is allowed more decisions, down to $0.77$ on
-\code{flat200-479} at cap $1000$; the MRIR of the attention model does not
-decrease with the cap on any family.} On the larger instances, then, the
-decisions that the plain model takes after the first few tens make the search
+\code{flat200-479} at cap $1000$; the MRIR of GAT-Q-SAT does not decrease with
+the cap on any family.} On the larger instances, then, the decisions that
+Graph-Q-SAT takes after the first few tens make the search
 longer, and the ranking of Table~\ref{tab:numbers} does not seem to depend on
 the choice of the cap (at least above a few tens of decisions).
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{graphqsat.png}\end{subfigure}
 \hfill
@@ -549,15 +573,15 @@ MiniSat without restarts, i.e., the solver that the models drive, left alone.}
 We now check whether the advantage of GAT-Q-SAT on graph coloring is due to
 the attention or to its larger network. Table~\ref{tab:controls} reports, on the
 same families and at the same cap as Table~\ref{tab:numbers}, the mean MRIR of
-the four coloring-trained variants: Graph-Q-SAT, the wide Graph-Q-SAT with the
-capacity of GAT-Q-SAT, the attention aggregation \eqref{eq:attnagg} with the
-capacity of Graph-Q-SAT, and GAT-Q-SAT (cf. section~\ref{sec:gat}); the two
+the four coloring-trained variants: Graph-Q-SAT, Graph-Q-SAT wide (with the
+capacity of GAT-Q-SAT), attention aggregation \eqref{eq:attnagg} (with the
+capacity of Graph-Q-SAT), and GAT-Q-SAT (cf. section~\ref{sec:gat}); the two
 controls are the mean of two seeds, the other two of three.
 
-\begin{table}[h]\centering\small
+\begin{table}[ht]\centering\small
 \begin{tabular}{lcccc}
 \toprule
-family & Graph-Q-SAT & wide & attention aggregation & GAT-Q-SAT \\
+family & Graph-Q-SAT & Graph-Q-SAT wide & attention aggregation & GAT-Q-SAT \\
 \midrule
 \code{flat30-60}   & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
 \code{flat50-115}  & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
@@ -578,7 +602,7 @@ two for the controls).}
 \end{table}
 
 \noindent
-\upd{[To be written from Table~\ref{tab:controls}: whether the wide model closes
+\upd{[To be written from Table~\ref{tab:controls}: whether Graph-Q-SAT wide closes
 the gap (in which case the advantage is one of capacity), whether the attention
 aggregation reaches GAT-Q-SAT at a sixth of its added parameters, and on which
 families; the range of the differences and their size against the variation
@@ -588,17 +612,17 @@ across the seeds.]}
 
 We now evaluate on graph coloring the models trained on satisfiable uniform
 random 3-SAT, whose formulas have none of the structure of a coloring
-problem. On five of the eight families the plain model is below the reference
-solver, its MRIR ranging from $0.63$ to $1.16$ ($0.89$ on average). The
-attention model, instead, is above it on seven (from $0.94$ to $1.75$, $1.44$ on average);
-the difference between the two is $0.44$ to $0.97$ on the first seven
-families. On \code{flat200-479}, however, it drops to $0.10$, and the attention
-model too falls slightly below parity. Figure~\ref{fig:thesis} compares at cap
+problem. On five of the eight families Graph-Q-SAT is below the reference
+solver, its MRIR ranging from $0.63$ to $1.16$ ($0.89$ on average). GAT-Q-SAT,
+instead, is above it on seven (from $0.94$ to $1.75$, $1.44$ on average); the
+difference between the two is $0.44$ to $0.97$ on the first seven families. On
+\code{flat200-479}, however, it drops to $0.10$, and GAT-Q-SAT too falls
+slightly below parity. Figure~\ref{fig:thesis} compares at cap
 $500$ the three regimes that have been measured on the same families, and
 Figure~\ref{fig:gen} shows the models trained on random formulas as a function
 of the number of variables of the test instances.
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{thesis.png}
 \caption{MRIR at cap $500$, mean over the families: trained and tested on graph
@@ -609,7 +633,7 @@ Table~\ref{tab:unsat}; log scale, bars start at parity.}
 \label{fig:thesis}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{generalization.png}
 \caption{Models trained on satisfiable random 3-SAT: MRIR at cap $500$ as a
@@ -620,8 +644,10 @@ families dashed), on a log scale.}
 \end{figure}
 
 \noindent
-Thus, the attention model is the better of the two at all sizes on graph
-coloring, and the worse one at all sizes on satisfiable random formulas
+Thus, GAT-Q-SAT is the better of the two at all sizes on graph coloring
+(although by only $0.10$ on \code{flat200-479}), and the worse one at all
+sizes on satisfiable
+random formulas
 (cf. section~\ref{sec:random}). The ranking may therefore depend on the test family
 more than on the particular instances, and the learned weighting of the
 neighbors seems to be of some use even on a structure that the model has not
@@ -633,10 +659,10 @@ instances.
 \FloatBarrier
 \subsection{A change of domain}\label{sec:transfer}
 
-All the families above are random, either in the formula or in the graph.
-They say little about what a user of a learned heuristic would like to know,
-namely whether a heuristic trained on the instances at hand is of any use on
-different ones. We therefore evaluated the coloring-trained models (all their
+All the families above are random, either in the formula or in the graph, and
+therefore they are of limited help to a user of a learned heuristic, who would
+like to know whether a heuristic trained on the instances at hand is of any use
+on different ones. We therefore evaluated the coloring-trained models (all their
 seeds, with no retraining) on the structured families of SATLIB. We took all of
 them, with the exception of those whose instances exceed 2000 variables or
 150000 clauses (the size of the largest instances that we could evaluate on our
@@ -654,7 +680,7 @@ ranking does not change when those instances are left out. We evaluate at a cap
 of $200$ to contain the cost of the largest instances, and divide by the
 stronger MiniSat run on each family.
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 %% the panel of four families of September; at \textwidth once transfer_study.py
 %% draws the thirteen families (figstyle.FULL)
@@ -678,8 +704,8 @@ commented as indications only.]}
 \noindent
 Small-world coloring \cite{Walsh1999} allows a more controlled experiment,
 since it varies the structure of the graph within one problem. Its instances
-5-color graphs on 100 vertices obtained from a ring lattice by rewiring each
-edge with probability $p$, and SATLIB provides nine levels, from $p = 1$ (a
+are the 5-coloring problems of graphs on 100 vertices obtained from a ring
+lattice by rewiring each edge with probability $p$, and SATLIB provides nine levels, from $p = 1$ (a
 random graph) to $p = 2^{-8}$ (almost the lattice), plus the lattice itself.
 Figure~\ref{fig:sw} reports the MRIR of the coloring-trained models on 20
 instances per level (one for the lattice). \upd{[To be written from
@@ -687,7 +713,7 @@ Figure~\ref{fig:sw}: whether the MRIR of the two models, and their difference,
 change with $p$, i.e., with the distance of the graphs from the random ones of
 the training family.]}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=0.75\textwidth]{transfer_sw.png}
 \caption{Coloring-trained models on small-world coloring: MRIR at cap $200$
@@ -704,15 +730,16 @@ Table~\ref{tab:unsat} reports the MRIR of the models trained on satisfiable
 formulas (mean of the runs trained on \code{uf50-218} and \code{uf100-430}) on
 the satisfiable and on the unsatisfiable families of the same generator.
 Figure~\ref{fig:randpair} shows the same models as a function of the cap. On the
-satisfiable families the plain model is better at all sizes: by $0.35$ at 50
+satisfiable families Graph-Q-SAT is better at all sizes: by $0.35$ at 50
 variables, by $0.49$ at 100, and by $3.09$ at 250, where its MRIR is $4.78$
-against $1.69$. (The plain model trained on \code{uf50-218} alone reaches $6.19$
+against $1.69$. (The run of Graph-Q-SAT trained on \code{uf50-218} alone reaches $6.19$
 there, on instances five times larger than the training ones.) This is
 consistent with the remark of section~\ref{sec:gat}: at the phase transition the
 neighbors of a node are statistically alike, and the attention coefficients
 have little to learn.
 
-\begin{table}[h]\centering\small
+\begin{table}[ht]\centering\small
+\setlength{\tabcolsep}{5pt}
 \begin{tabular}{lccc@{\qquad}ccc}
 \toprule
  & \multicolumn{3}{c}{satisfiable} & \multicolumn{3}{c}{unsatisfiable} \\
@@ -730,7 +757,7 @@ at cap $500$.}
 \label{tab:unsat}
 \end{table}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{graphqsat_random.png}\end{subfigure}
 \hfill
@@ -744,20 +771,21 @@ dashed.}
 \end{figure}
 
 \noindent
-However, the advantage of the plain model does not carry over to the
-unsatisfiable formulas. On these the two models are level at 50 variables ($1.61$ and
-$1.62$), and the attention model is ahead at 100 ($1.69$ against $1.45$) and at
-250 ($1.45$ against $1.21$). Two explanations are possible, and our measurements
-do not separate them: either the plain model may have learned something about where
-the satisfying assignments of these formulas tend to be, which is of no use
-when there are none, or proving unsatisfiability leaves little room to the
-branching heuristic, so that the two models end up somewhat closer. In fact, the control
-runs trained on unsatisfiable formulas improve the plain model (from $1.61$ to
-$1.96$ on \code{uuf50-218} and from $1.45$ to $1.56$ on \code{uuf100-430}) but
-not the attention one ($1.63$ and $1.50$). All in all, the regime in which the
-plain aggregation is clearly superior is that of satisfiable uniform random
-formulas, which is also, typically, the one with the least structure for a weighting of
-the neighbors to exploit.
+However, the advantage of Graph-Q-SAT does not carry over to the
+unsatisfiable formulas. On these the two models are level at 50 variables
+($1.61$ and $1.62$), and GAT-Q-SAT is ahead at 100 ($1.69$ against $1.45$) and
+at 250 ($1.45$ against $1.21$). Two explanations are possible, and our
+measurements do not separate them: either Graph-Q-SAT has learned something
+about where the satisfying assignments of these formulas tend to be, which is
+of no use when there are none, or proving unsatisfiability leaves little room
+to the branching heuristic, and the two models end up somewhat closer. The runs
+trained on unsatisfiable formulas improve Graph-Q-SAT (from $1.61$ to $1.96$ on
+\code{uuf50-218} and from $1.45$ to $1.56$ on \code{uuf100-430}) but not
+GAT-Q-SAT ($1.63$ and $1.50$), which is consistent with the first explanation
+without excluding the second. All in all, the regime in which the sum of
+Graph-Q-SAT is clearly superior is that of satisfiable uniform random formulas,
+which is also the one with the least structure for a weighting of the neighbors
+to exploit.
 
 \FloatBarrier
 \subsection{Iterations and running time}\label{sec:time}
@@ -771,11 +799,12 @@ at each decision, the forward passes and the part of the search left to VSIDS
 (but not the loading of the model and the runs of MiniSat that give
 the denominator of \eqref{eq:mrir}, which are computed once per family and
 stored with it). We report medians over the instances, since a few instances
-usually take much longer than the others. As said above, the machine was not under our
-control: \upd{repeating two of the evaluations gave medians within $X$\% of the
-first ones}, and hence we only comment on differences much larger than that.
+usually take much longer than the others. The load of the Colab instance was
+not under our control; \upd{repeating two of the evaluations gave medians
+within $X$\% of the first ones}, and hence we only comment on differences much
+larger than that.
 
-\begin{table}[h]\centering\small
+\begin{table}[ht]\centering\small
 \begin{tabular}{lcc@{\qquad}cc@{\qquad}cc}
 \toprule
  & \multicolumn{2}{c}{cap $50$} & \multicolumn{2}{c}{cap $500$} & \multicolumn{2}{c}{cap $1000$} \\
@@ -796,13 +825,13 @@ cap (mean over the seeds).}
 Table~\ref{tab:budget} reports time and MRIR on the largest coloring family at
 three values of the cap. At cap $50$ a decision of GAT-Q-SAT is more expensive
 than one of Graph-Q-SAT (\upd{$3.52$ against $2.55$} seconds for the same number
-of model decisions), as expected. At larger caps, instead, the attention model
-is the faster of the two (\upd{by a factor of 2 at cap $500$ and of almost 5 at
-cap $1000$}), since it terminates in fewer decisions; indeed, each decision of a
-model costs far more than the VSIDS decisions it replaces. The plain model pays
-\upd{22 times} the time of cap $50$ to reach a lower MRIR, and it ends up below the reference
-solver at cap $1000$. Going from cap $50$ to cap $500$ improves the attention
-model by \upd{$0.21$}, and going to $1000$ changes nothing, since its episodes
+of model decisions), as expected. At larger caps, instead, GAT-Q-SAT is the
+faster of the two (\upd{by a factor of 2 at cap $500$ and of almost 5 at cap
+$1000$}), since it terminates in fewer decisions; indeed, each decision of a
+model costs far more than the VSIDS decisions it replaces. Graph-Q-SAT pays
+\upd{22 times} the time of cap $50$ to reach a lower MRIR, and it ends up below
+the reference solver at cap $1000$. Going from cap $50$ to cap $500$ improves
+GAT-Q-SAT by \upd{$0.21$}, and going to $1000$ changes nothing, since its episodes
 terminate before the cap is reached.
 
 \smallskip
@@ -821,17 +850,18 @@ search is long enough to dominate the cost of inference.
 %% ===========================================================================
 
 We have added two edge-featured graph attention layers to the core block of
-Graph-Q-SAT, and compared the resulting model with the plain one at matched
-training set and configuration. On all the graph-coloring families the attention
-model took fewer decisions. The difference was small on instances of about
-the training size and large (up to about $1.7$) on those three and four times larger, where the
-plain model approached the reference solver. It was also the better of the two when trained on random formulas and tested on graph coloring
-and, with the caveats due to the size of the families, on some of the
-structured families that neither model had seen. On satisfiable uniform random
-3-SAT, instead, the plain model was clearly superior, consistently with the
-absence of structure for the attention to weight. On the unsatisfiable
-formulas of the same generator, however, the two were level or the attention
-model was slightly ahead. Within the limits of these experiments, the attention layers
+Graph-Q-SAT, and compared the resulting model, GAT-Q-SAT, with Graph-Q-SAT at
+matched training set and configuration. On all the graph-coloring families
+GAT-Q-SAT took fewer decisions. The difference was small on instances of about
+the training size and large (up to about \upd{$1.7$}) on those three and four
+times larger, where Graph-Q-SAT approached the reference solver. \upd{[One
+sentence on the controls.]} GAT-Q-SAT was also the better of the two when
+trained on random formulas and tested on graph coloring and, with the caveats
+due to the size of the families, on some of the structured families that
+neither model had seen. On satisfiable uniform random 3-SAT, instead,
+Graph-Q-SAT was clearly superior, consistently with the absence of structure
+for the attention to weight. On the unsatisfiable formulas of the same
+generator, however, the two were level or GAT-Q-SAT was ahead. Within the limits of these experiments, the attention layers
 seem to make the learned heuristic less sensitive to the size and to the nature
 of the test instances when these have some structure, at the cost of about 60\%
 more parameters and of a more expensive decision.
@@ -870,7 +900,7 @@ with \cite{Kurin2020}, and the solver underneath it is MiniSat
 %% ===========================================================================
 
 All the instances come from SATLIB \cite{HoosStutzle2000}, in DIMACS form, and
-are stored in the repository of the note. The families used in training
+are stored in the repository of the code (cf. section~\ref{sec:intro}). The families used in training
 (\code{flat50-115}, \code{uf50-218}, \code{uf100-430}, \code{uuf50-218} and
 \code{uuf100-430}) are split once, with a fixed seed, into training, validation
 and test parts of 80\%, 10\% and 10\% (800, 100 and 100 formulas for most of
@@ -924,7 +954,9 @@ logs, and with the same grouping, by \code{make\_plots.py}
 (Figures~\ref{fig:thesis} and~\ref{fig:gen}) and \code{transfer\_study.py}
 (Figure~\ref{fig:transfer}), which also runs the evaluations of
 section~\ref{sec:transfer}; those of the other sections are run by
-\code{reeval.sh}. The logs written in 2026 are kept with the checkpoints,
+\code{reeval.sh}. %% TODO before submission: copy the logs of 2026 (reeval/, transfer_logs/)
+%% from Drive into the repository and say so here
+The logs written in 2026 are kept with the checkpoints,
 outside the repository.
 
 \end{document}
