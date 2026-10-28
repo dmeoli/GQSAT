@@ -33,57 +33,47 @@ plt.rcParams.update({
     "savefig.dpi": DPI,
 })
 
-# The colors.  The hue says the kind of the test instances, and is the same in
-# every figure: graph coloring (the flat and the small-world families) blue,
-# satisfiable uniform random 3-SAT green, unsatisfiable red, the structured
-# SATLIB families violet.  Within a hue the shade orders the objects: the
-# families by size (light the smallest) in the curves of one model, the models
-# (light Graph-Q-SAT, dark GAT-Q-SAT) where the models are compared, the two
-# controls in between and hatched.
-from matplotlib import colormaps
+# The colors.  A color always means a family of instances, and the same one
+# in every figure: the eight graph-coloring families have eight distinct
+# colors, the uniform random ones three more, and an unsatisfiable family has
+# the color of the satisfiable one with as many variables, lighter (and its
+# curve dashed).  The models carry no color: light gray Graph-Q-SAT, dark gray
+# GAT-Q-SAT, the two controls in between and hatched or dashed.
+from matplotlib import colors as mcolors
 
-KIND_CMAP = {"coloring": "Blues", "sat": "Greens", "unsat": "Reds", "structured": "Purples"}
-MODEL_SHADE = {"Graph-Q-SAT": 0.0, "Graph-Q-SAT wide": 0.35,
-               "Attention aggregation": 0.65, "GAT-Q-SAT": 1.0}
+DATASET_COLOR = {
+    "flat30-60": "#1f77b4", "flat50-115": "#ff7f0e", "flat75-180": "#2ca02c",
+    "flat100-239": "#d62728", "flat125-301": "#9467bd", "flat150-360": "#8c564b",
+    "flat175-417": "#e377c2", "flat200-479": "#bcbd22",
+    "uf50-218": "#17becf", "uf100-430": "#1a3a6b", "uf250-1065": "#8e1b5c",
+}
+
+
+def _lighter(c, f=0.45):
+    r, g, b = mcolors.to_rgb(c)
+    return (r + (1 - r) * f, g + (1 - g) * f, b + (1 - b) * f)
+
+
+for _n in ("50-218", "100-430", "250-1065"):
+    DATASET_COLOR["uuf" + _n] = _lighter(DATASET_COLOR["uf" + _n])
+
+MODEL_GRAY = {"Graph-Q-SAT": "#b4b4b4", "Graph-Q-SAT wide": "#8a8a8a",
+              "Attention aggregation": "#5e5e5e", "GAT-Q-SAT": "#262626"}
 MODEL_HATCH = {"Graph-Q-SAT wide": "////", "Attention aggregation": "...."}
 MODEL_LS = {"Graph-Q-SAT wide": "--", "Attention aggregation": ":"}
 
 
-def kind(dataset):
-    """The kind of a family, i.e., its hue."""
-    if dataset.startswith(("flat", "sw")):
-        return "coloring"
-    if dataset.startswith("uuf"):
-        return "unsat"
-    if dataset.startswith("uf"):
-        return "sat"
-    return "structured"
+def dataset_color(d):
+    return DATASET_COLOR[d]
 
 
-def shade(k, t):
-    """The color of kind k at shade t in [0, 1] (0 light, 1 dark); the ends of
-    the colormaps are left out, too pale on white and too close to black."""
-    return colormaps[KIND_CMAP[k]](0.38 + 0.57 * t)
-
-
-def gradient(datasets):
-    """One color per family, the families of each kind from light to dark in
-    the order given (i.e., by size)."""
-    out = {}
-    for k in KIND_CMAP:
-        ds = [d for d in datasets if kind(d) == k]
-        for i, d in enumerate(ds):
-            out[d] = shade(k, i / (len(ds) - 1) if len(ds) > 1 else 1.0)
-    return out
-
-
-def model_color(model, k):
-    return shade(k, MODEL_SHADE[model])
+def model_color(model):
+    return MODEL_GRAY[model]
 
 
 def model_legend(ax, models, **kw):
-    """A legend of the models in gray, since their hue changes with the data."""
+    """A legend of the models, by their gray."""
     from matplotlib.patches import Patch
-    hs = [Patch(facecolor=colormaps["Greys"](0.3 + 0.55 * MODEL_SHADE[m]),
-                hatch=MODEL_HATCH.get(m, ""), edgecolor="white", label=m) for m in models]
+    hs = [Patch(facecolor=MODEL_GRAY[m], hatch=MODEL_HATCH.get(m, ""),
+                edgecolor="white", label=m) for m in models]
     ax.legend(handles=hs, **kw)

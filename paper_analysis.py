@@ -27,7 +27,7 @@ SIZE = {"flat30-60": 90, "flat50-115": 150, "flat75-180": 225, "flat100-239": 30
         "flat125-301": 375, "flat150-360": 450, "flat175-417": 525, "flat200-479": 600,
         "uf50-218": 50, "uf100-430": 100, "uf250-1065": 250,
         "uuf50-218": 50, "uuf100-430": 100, "uuf250-1065": 250}
-COL = {m: fs.model_color(m, "structured") for m in ("Graph-Q-SAT", "GAT-Q-SAT")}  # figures not in the note
+COL = dict(fs.MODEL_GRAY)  # figures not in the note
 TRAIN = {"coloring": pn.COL, "random": pn.SAT}
 BASELINE = "family"
 
@@ -70,14 +70,14 @@ def fig_thesis(data, out):
     """Mean MRIR (cap 500) per regime, GAT vs Graph, on a log2 axis."""
     SAT_R = [d for d in RANDOM if d.startswith("uf")]
     UNSAT_R = [d for d in RANDOM if d.startswith("uuf")]
-    # the color of a pair of bars is that of the test instances (figstyle)
-    regimes = [("coloring", FLAT, "trained: coloring\ntested: coloring", "coloring"),
-               ("random", FLAT, "trained: random\ntested: coloring", "coloring"),
-               ("random", SAT_R, "trained: random\ntested: random sat", "sat"),
-               ("random", UNSAT_R, "trained: random\ntested: random unsat", "unsat")]
+    # a bar mixes several families, hence it has the gray of its model (figstyle)
+    regimes = [("coloring", FLAT, "trained: coloring\ntested: coloring"),
+               ("random", FLAT, "trained: random\ntested: coloring"),
+               ("random", SAT_R, "trained: random\ntested: random sat"),
+               ("random", UNSAT_R, "trained: random\ntested: random unsat")]
     cap = 500
     gat, graph = [], []
-    for train, dss, _, _ in regimes:
+    for train, dss, _ in regimes:
         g = [mean_mrir(data, (train, "GAT-Q-SAT"), d, cap) for d in dss]
         h = [mean_mrir(data, (train, "Graph-Q-SAT"), d, cap) for d in dss]
         gat.append(statistics.fmean([x for x in g if x is not None]))
@@ -85,8 +85,7 @@ def fig_thesis(data, out):
     x = range(len(regimes)); w = 0.38
     fig, ax = plt.subplots(figsize=fs.FULL)
     for off, m, vals in [(-w/2, "Graph-Q-SAT", graph), (w/2, "GAT-Q-SAT", gat)]:
-        for i, v in zip(x, vals):
-            ratio_bars(ax, [i + off], [v], w, color=fs.model_color(m, regimes[i][3]))
+        ratio_bars(ax, [i + off for i in x], vals, w, color=fs.model_color(m))
     ratio_axis(ax, 0.5, 4)
     ax.set_xticks(list(x)); ax.set_xticklabels([r[2] for r in regimes])
     ax.set_ylabel("mean MRIR (cap 500, log scale)")
@@ -181,18 +180,23 @@ def fig_generalization(data, out):
     """Random-trained: MRIR (cap 500) against the size of the test instances, on
     graph coloring and on random 3-SAT (satisfiable solid, unsatisfiable dashed)."""
     fig, axes = plt.subplots(1, 2, figsize=fs.FULL, sharey=True)
-    panels = [(axes[0], [("", FLAT, "-", "coloring")], "graph coloring", "# variables (3 per node)"),
-              (axes[1], [(" (sat)", [d for d in RANDOM if d.startswith("uf")], "-", "sat"),
-                         (" (unsat)", [d for d in RANDOM if d.startswith("uuf")], "--", "unsat")],
+    # the lines are the models, in their gray; each point has the color of its
+    # family, as in the curves of make_plots.py (figstyle)
+    panels = [(axes[0], [("", FLAT, "-")], "graph coloring", "# variables (3 per node)"),
+              (axes[1], [(" (sat)", [d for d in RANDOM if d.startswith("uf")], "-"),
+                         (" (unsat)", [d for d in RANDOM if d.startswith("uuf")], "--")],
                "uniform random 3-SAT", "# variables")]
     for ax, series, name, xlabel in panels:
         for model in ("Graph-Q-SAT", "GAT-Q-SAT"):
-            for suffix, dss, ls, k in series:
-                pts = [(SIZE[d], mean_mrir(data, ("random", model), d, 500)) for d in dss]
-                pts = sorted((s_, v) for s_, v in pts if v is not None)
+            for suffix, dss, ls in series:
+                pts = [(SIZE[d], mean_mrir(data, ("random", model), d, 500), d) for d in dss]
+                pts = sorted(p for p in pts if p[1] is not None)
                 if pts:
-                    ax.plot([p[0] for p in pts], [p[1] for p in pts], marker="o",
-                            ls=ls, label=model + suffix, color=fs.model_color(model, k))
+                    ax.plot([p[0] for p in pts], [p[1] for p in pts], ls=ls,
+                            label=model + suffix, color=fs.model_color(model), zorder=1)
+                    ax.scatter([p[0] for p in pts], [p[1] for p in pts], s=22, zorder=2,
+                               c=[fs.dataset_color(p[2]) for p in pts],
+                               edgecolors=fs.model_color(model), linewidths=1.0)
         ratio_axis(ax, 0.5, 6)
         ax.set_xlabel(xlabel); ax.set_title(name); ax.grid(alpha=.3); ax.legend(fontsize=6)
     axes[0].set_ylabel("MRIR (cap 500, log scale)")

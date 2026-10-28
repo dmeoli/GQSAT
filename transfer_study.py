@@ -189,7 +189,7 @@ def main():
     for i, v in enumerate(variants):
         xs = [k + (i - (len(variants) - 1) / 2) * w for k in range(len(fams))]
         ratio_bars(ax, xs, [mrir(v, n)[0] for _, n in fams], w, label=v,
-                   color=fs.model_color(v, "structured"), hatch=fs.MODEL_HATCH.get(v),
+                   color=fs.model_color(v), hatch=fs.MODEL_HATCH.get(v),
                    edgecolor="white", linewidth=0)
     ratio_axis(ax, 0.25, 8)
     ax.set_xticks(range(len(fams)))
@@ -204,7 +204,7 @@ def main():
     for v in variants:
         ys = [mrir(v, n)[0] for n, _ in SW]
         ax.plot(xs, [y if y is not None else float("nan") for y in ys], marker="o",
-                label=v, color=fs.model_color(v, "coloring"), ls=fs.MODEL_LS.get(v, "-"))
+                label=v, color=fs.model_color(v), ls=fs.MODEL_LS.get(v, "-"))
     ratio_axis(ax)
     ax.set_xticks(xs); ax.set_xticklabels(["1"] + [f"$2^{{-{k}}}$" for k in range(1, 9)] + ["0"])
     ax.set_xlabel("rewiring probability (1: random graph, 0: ring lattice)")
