@@ -94,9 +94,9 @@ is delegated to a heuristic, usually some variant of the Variable State Independ
 Sum (VSIDS) \cite{Moskewicz2001} (see, e.g., \cite{Liang2016} for an
 alternative), which ranks the variables by activity counters that are increased
 at each conflict and periodically decayed. These counters usually carry little
-information at the start of the search. Furthermore, they are only a rough surrogate of
-what one would like to know (say, the variable whose assignment leads to the
-smallest search tree). The heuristic is therefore a natural place for a learned
+information at the start of the search, and in any case they are only a rough
+surrogate of what one would like to know (say, the variable whose assignment
+leads to the smallest search tree). The heuristic is therefore a natural place for a learned
 policy, and a convenient one, since a poor decision costs time but not
 correctness (the solver is sound and complete whatever the policy does). We
 restrict ourselves to the choice of the variable and of its value, and we leave
@@ -138,13 +138,13 @@ best of our knowledge, not inside the core block of Graph-Q-SAT.
 In this note we add to the core block of Graph-Q-SAT two graph attention layers
 that use the edge embeddings computed by the block, and we compare the
 resulting model (GAT-Q-SAT) with Graph-Q-SAT. We make the comparison at
-matched training set and configuration, on graph coloring (the family on which
-Graph-Q-SAT was originally trained, and larger instances of it), on uniform
+matched training set and configuration, on graph coloring (from instances of
+the size of the training ones to instances four times larger), on uniform
 random 3-SAT and, with no retraining, on thirteen structured SATLIB families
 that neither model has seen, together with small-world coloring at nine levels
 of structure. Since the attention layers are added to the block (the sum
 aggregation of Graph-Q-SAT being kept), GAT-Q-SAT has about 60\% more
-parameters than Graph-Q-SAT; in order to separate the effect of the
+parameters than Graph-Q-SAT. In order to separate the effect of the
 attention from that of the capacity we also train two controls, i.e.,
 Graph-Q-SAT with wider hidden layers and the same number of parameters as
 GAT-Q-SAT (Graph-Q-SAT wide), and a model in which attention replaces the sum
@@ -156,8 +156,8 @@ measure used below). As in \cite{Kurin2020} the results are measured
 in solver iterations, and the running time is reported separately. The note
 also documents a port of the original implementation to a current software
 stack (without which the experiments could not have been run), together with
-the test used to check that the port has not changed what the models compute;
-the code of both models and of the experiments is available at
+the test used to check that the port has not changed what the models compute.
+The code of both models and of the experiments is available at
 \url{https://github.com/dmeoli/GQSAT}.
 
 \smallskip
@@ -170,8 +170,8 @@ and section~\ref{sec:gat} the attention layers that GAT-Q-SAT adds to it; the
 port and the reproduction test are described in section~\ref{sec:impl}. In
 section~\ref{sec:results} we report the computational results, ordered by the
 distance between the training and the test instances (graph coloring at
-increasing size, a change of the training distribution, a change of domain),
-followed by uniform random 3-SAT and by the running time. Finally, in
+increasing size, with the two controls, a change of the training distribution,
+a change of domain), followed by uniform random 3-SAT and by the running time. Finally, in
 section~\ref{sec:conc} we draw some conclusions, and the appendix describes the
 instances and how the numbers of section~\ref{sec:results} are regenerated.
 Instance families keep their SATLIB \cite{HoosStutzle2000} names:
@@ -201,13 +201,13 @@ The action-value function
 \begin{equation}\label{eq:bellman}
   Q^\star(s,a) = \mathbb{E}\big[\,r + \gamma \max_{a'} Q^\star(s',a')\,\big]
 \end{equation}
-is approximated by a network $Q_\theta$ trained by DQN \cite{Mnih2015}. This
+is approximated by a network $Q_\theta$ trained by DQN \cite{Mnih2015}, which
 minimizes the squared one-step temporal-difference error on minibatches drawn
 uniformly from a replay buffer, with the bootstrap target computed by a copy
 $\theta^-$ of the weights that is refreshed periodically, and with the
 transitions collected by an $\varepsilon$-greedy policy (neither the double
 estimator of \cite{vanHasselt2016} nor the prioritized replay of
-\cite{Schaul2016} is used); the learned heuristic is then
+\cite{Schaul2016} is used). The learned heuristic is then
 $\pi(s) = \arg\max_a Q_\theta(s,a)$. Two features of the problem constrain the
 approximator: the number of actions changes along an episode (two per
 unassigned variable), and the state is defined up to a permutation of the
@@ -257,9 +257,9 @@ As in \cite{Kurin2020}, the network is an encode--process--decode graph network
 nodes and the global attribute independently, each by a linear layer followed
 by a ReLU and a layer normalization, to embeddings of size 32. Then, the core
 block (whose weights are shared) is applied $M = 4$ times to the concatenation
-of the encoded graph and of its previous output (zero at the first round). Each
-edge is stored in both directions, and we denote by $e_{ij}$ the embedding of
-the edge from node $i$ to node $j$, by $v_i$ that of node $i$, by $u$ the
+of the encoded graph and of its previous output (zero at the first round). We
+denote by $e_{ij}$ the embedding of the edge from node $i$ to node $j$ (one for
+each direction), by $v_i$ that of node $i$, by $u$ the
 global attribute, and by $\mathcal N_i$ the set of the neighbors of $i$ in the
 bipartite graph. Each application of the block updates first the edges, then
 the nodes, then the global attribute:
@@ -275,7 +275,7 @@ normalization. Finally, a decoder of the same form as the encoder maps the
 embedding of each variable node to 32 components, and a linear layer maps
 these to the two $Q$-values of the node. Since the weights are shared across
 the nodes and across the $M$ rounds, one set of them applies to a formula with
-any number of variables and clauses; with this configuration the network has
+any number of variables and clauses. With this configuration the network has
 71144 parameters. (The figures follow the notation of \cite{Battaglia2018},
 in which $V$ and $E$ are the sets of the node and edge embeddings and $\rho$
 denotes an aggregation, e.g., the sum in \eqref{eq:gnblock}.)
@@ -425,7 +425,7 @@ smaller than the differences discussed in section~\ref{sec:results}. Indeed, inf
 exercises the graph construction, the message passing, the decoder and the
 stepping of the environment together, and hence this is a reasonably stringent
 test of all but the training path. The latter was checked by retraining the two
-coloring models from scratch on the new stack (these are the second seeds of
+coloring models from scratch on the new stack (these are the runs of 2026 of
 section~\ref{sec:results}).
 
 \smallskip
