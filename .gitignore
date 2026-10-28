@@ -3,3 +3,16 @@ __pycache__
 runs/*/*.insyncdl
 runs/*/buffer.pkl
 smspp/build/
+
+# LaTeX build files of the note and of the slides
+*.aux
+*.log
+*.out
+*.nav
+*.snm
+*.toc
+*.fls
+*.fdb_latexmk
+*.blg
+*.bbl
+*.synctex.gz
