@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""The backgrounds of the slides, 16:9 and vector, in the colors of the random
+families of the figures (figstyle) and of the violet of the theme; the slides
+fade them (opacity in the background template).
+
+bg-cover.pdf, behind the title page: a wall of 3-SAT clauses, with the AND and
+the OR of the CNF drawn large.  bg-content.pdf, behind the other frames:
+neighborhoods of a bipartite graph whose messages flow into a node, each arrow
+as wide and as opaque as its softmax coefficient, i.e., message passing
+weighted by attention.  Run from this directory: python3 make_backgrounds.py
+"""
+import math
+import random
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Rectangle
+from matplotlib import colors as mcolors
+
+W, H = 16, 9                                     # cm, the page of a 16:9 beamer
+VIOLET, CYAN, NAVY, MAGENTA = "#665094", "#17becf", "#1a3a6b", "#8e1b5c"
+
+
+def lighter(c, f=0.45):
+    r, g, b = mcolors.to_rgb(c)
+    return (r + (1 - r) * f, g + (1 - g) * f, b + (1 - b) * f)
+
+
+PAL = [CYAN, NAVY, MAGENTA, VIOLET, lighter(CYAN), lighter(NAVY), lighter(MAGENTA)]
+
+
+def page():
+    fig = plt.figure(figsize=(W / 2.54, H / 2.54))
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, W); ax.set_ylim(0, H); ax.axis("off")
+    return fig, ax
+
+
+def sub(n):
+    return "".join("₀₁₂₃₄₅₆₇₈₉"[int(c)] for c in str(n))
+
+
+def cover(seed=1):
+    rnd = random.Random(seed)
+    fig, ax = page()
+    y, row = H - 0.25, 0
+    while y > 0:
+        cls = []
+        for _ in range(9):
+            lits = [("¬" if rnd.random() < .5 else "") + "x" + sub(v)
+                    for v in rnd.sample(range(1, 60), 3)]
+            cls.append("(" + " ∨ ".join(lits) + ")")
+        ax.text(-0.3 - 0.6 * (row % 2), y, " ∧ ".join(cls), fontsize=5.2,
+                family="DejaVu Sans Mono", color=[VIOLET, NAVY][row % 2], va="top", ha="left")
+        y -= 0.42; row += 1
+    ax.text(W - 2.4, 0.2, "⋀", fontsize=105, color=NAVY, alpha=.6, ha="center", va="bottom")
+    ax.text(W - 0.9, 1.9, "⋁", fontsize=70, color=MAGENTA, alpha=.6, ha="center", va="bottom")
+    return fig
+
+
+def content(seed=4):
+    rnd = random.Random(seed)
+    fig, ax = page()
+    centers = []
+    while len(centers) < 16:                     # neighborhoods not too close
+        c = (rnd.uniform(.4, W - .4), rnd.uniform(.4, H - .4))
+        if all((c[0] - d[0]) ** 2 + (c[1] - d[1]) ** 2 > 3.2 for d in centers):
+            centers.append(c)
+    # a few long, faint edges between the neighborhoods: the rest of the graph
+    for i, c in enumerate(centers):
+        for d in sorted(centers, key=lambda d: (d[0] - c[0]) ** 2 + (d[1] - c[1]) ** 2)[1:3]:
+            ax.plot([c[0], d[0]], [c[1], d[1]], color=VIOLET, lw=.4, alpha=.35, zorder=0)
+    for k, (cx, cy) in enumerate(centers):
+        col = PAL[k % 3]                         # the node in a full color
+        n = rnd.randint(4, 7)
+        r = rnd.uniform(.9, 1.4)
+        s = [rnd.gauss(0, 1.1) for _ in range(n)]
+        z = sum(math.exp(x) for x in s)
+        for t in range(n):
+            a = 2 * math.pi * t / n + rnd.random() * .4
+            x, y = cx + r * math.cos(a), cy + r * math.sin(a)
+            alpha = math.exp(s[t]) / z           # the attention coefficient
+            ax.annotate("", (cx, cy), (x, y), zorder=1,
+                        arrowprops=dict(arrowstyle="-|>", color=col, lw=.3 + 3.0 * alpha,
+                                        alpha=.3 + .7 * alpha, shrinkA=3, shrinkB=6,
+                                        mutation_scale=4 + 6 * alpha))
+            ax.add_patch(Rectangle((x - .08, y - .08), .16, .16, zorder=2,
+                                   color=lighter(col, .35), ls="-" if rnd.random() < .5 else "--"))
+        ax.add_patch(Circle((cx, cy), .17, color=col, zorder=3))
+    return fig
+
+
+if __name__ == "__main__":
+    for name, f in [("bg-cover", cover), ("bg-content", content)]:
+        fig = f(); fig.savefig(name + ".pdf"); plt.close(fig)
+        print("wrote", name + ".pdf")
