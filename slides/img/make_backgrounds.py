@@ -60,15 +60,41 @@ def cover(seed=1):
         ax.text(-0.3 - 0.6 * (row % 2), y, " ∧ ".join(cls), fontsize=5.2,
                 family="DejaVu Sans Mono", color=[VIOLET, NAVY][row % 2], va="top", ha="left")
         y -= ROW; row += 1
-    # the AND and the OR of the CNF, side by side and crossing each other, on
-    # the bottom of the page in its right corner, in the violet of the theme and its complement;
-    # both are outlined in the color of the page,
-    # so that a thin gap keeps the OR, in front, apart from the AND where they
-    # cross, and both apart from the clauses
-    ax.text(W - 2.75, -0.32, "⋀", fontsize=90, color=VIOLET, ha="center", va="bottom",
-            path_effects=[pe.withStroke(linewidth=2.2, foreground=PAGE)])
-    ax.text(W - 1.3, -0.32, "⋁", fontsize=90, color=GOLD, ha="center", va="bottom",
-            path_effects=[pe.withStroke(linewidth=2.2, foreground=PAGE)])
+    # the AND and the OR of the CNF, side by side and crossing each other, in
+    # the violet of the theme and its complement, whole and inside the page:
+    # their joint box is measured on the renderer and placed BOTTOM cm above
+    # the bottom and RIGHT cm from the right edge, as tall as HEIGHT, i.e., in
+    # the band below the rule of the title page; both are outlined in the
+    # color of the page, so that a thin gap keeps the OR, in front, apart from
+    # the AND where they cross, and both apart from the clauses
+    BOTTOM, RIGHT, HEIGHT = 0.4, 0.6, 2.9
+    halo = [pe.withStroke(linewidth=2.2, foreground=PAGE)]
+    texts = [ax.text(0, 0, "⋀", fontsize=100, color=VIOLET, ha="left", va="baseline",
+                     path_effects=halo),
+             ax.text(0, 0, "⋁", fontsize=100, color=GOLD, ha="left", va="baseline",
+                     path_effects=halo)]
+    fig.canvas.draw()
+    inv = ax.transData.inverted()
+
+    def box(t):
+        b = t.get_window_extent(renderer=fig.canvas.get_renderer())
+        (x0, y0), (x1, y1) = inv.transform([(b.x0, b.y0), (b.x1, b.y1)])
+        return x0, y0, x1, y1
+
+    x0, y0, x1, y1 = box(texts[0])
+    size = 100 * HEIGHT / (y1 - y0)              # the font size that gives HEIGHT
+    for t in texts:
+        t.set_fontsize(size)
+    fig.canvas.draw()
+    x0, y0, x1, y1 = box(texts[0])
+    w = x1 - x0
+    shift = 0.62 * w                             # the OR overlaps the AND by a third
+    texts[1].set_x(shift)
+    fig.canvas.draw()
+    X1 = box(texts[1])[2]
+    dx, dy = (W - RIGHT) - X1, BOTTOM - y0
+    texts[0].set_position((dx, dy))
+    texts[1].set_position((shift + dx, dy))
     return fig
 
 
