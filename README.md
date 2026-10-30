@@ -94,6 +94,9 @@ rows of Graph-Q-SAT or, with `--bnb-features 1`, also the weights, the costs, th
 best solution and the cores; an action fixes a variable, and the reward is
 `-penalty` per node. A policy learned there, or here on MiniSat, is exported as
 a TorchScript module that the `GQSATBranchRule` of SMS++ reads (libtorch only).
+SMS++ is installed from any of its channels (Ubuntu PPA, conda-forge, Homebrew,
+vcpkg, Conan, Spack, Nix, AUR, MSYS2, xmake), as described in the
+[installation guide](https://gitlab.com/smspp/smspp-project/-/wikis/Installing-SMS++).
 
 ```sh
 # the environment, against an installed SATBlock of SMS++ and pybind11
