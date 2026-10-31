@@ -45,6 +45,11 @@ RUNS = {
     "gqsat_gatqsat_s4": ("GAT-Q-SAT", "flat50-115"),
     "gqsat_graphqsat_s5": ("Graph-Q-SAT", "flat50-115"),
     "gqsat_gatqsat_s5": ("GAT-Q-SAT", "flat50-115"),
+    # GAT-Q-SAT with attention in place of the mean that pools the global
+    # attribute (train.sh gatpool), three seeds
+    "gqsat_gatpool_s1": ("GAT-Q-SAT pool", "flat50-115"),
+    "gqsat_gatpool_s2": ("GAT-Q-SAT pool", "flat50-115"),
+    "gqsat_gatpool_s3": ("GAT-Q-SAT pool", "flat50-115"),
     "Dec21_01-59-59_6bed2aa9b612": ("Graph-Q-SAT", "uf50-218"),
     "Dec23_01-48-54_90582559eea7": ("Graph-Q-SAT", "uf100-430"),
     "Nov12_14-06-54_c42e8ad320d8": ("GAT-Q-SAT", "uf50-218"),
@@ -59,7 +64,8 @@ FLAT_ALL = ["flat30-60", "flat50-115", "flat75-180", "flat100-239",
             "flat125-301", "flat150-360", "flat175-417", "flat200-479"]
 # the name of a variant in the file names of the logs
 NAME = {"Graph-Q-SAT": "graphqsat", "GAT-Q-SAT": "gatqsat",
-        "Graph-Q-SAT wide": "graphwide", "Attention aggregation": "attnagg"}
+        "Graph-Q-SAT wide": "graphwide", "Attention aggregation": "attnagg",
+        "GAT-Q-SAT pool": "gatpool"}
 VARIANTS = list(NAME)
 
 # the 2021 colouring pair, the only one evaluated at every cap
@@ -203,7 +209,7 @@ def latex(b, cap):
     """The rows of the four tables of the note, as they are written in the
     .tex, so that they are pasted and never copied by hand: Table 1 (per seed,
     in the order of RUNS, i.e. 2021 / 2026 / third seed, and the mean), Table 2
-    (the four coloring-trained variants), Table 3 (uniform random 3-SAT) and
+    (the coloring-trained variants, GAT-Q-SAT pool last), Table 3 (uniform random 3-SAT) and
     Table 4 (flat200-479 against the cap: median seconds and MRIR)."""
     tex = lambda v: f"{v:.2f}" if v is not None else "--"
     seed_runs = lambda v: [r for r, (var, t) in RUNS.items() if var == v and t in COL]
@@ -218,7 +224,8 @@ def latex(b, cap):
         delta = f"${means[1] - means[0]:+.2f}$" if None not in means else "--"
         print(f"\\code{{{d}}} & " + " & ".join(cells) + f" & {delta} \\\\")
     print("% Table 2 (tab:controls)")
-    order = ["Graph-Q-SAT", "Graph-Q-SAT wide", "Attention aggregation", "GAT-Q-SAT"]
+    order = ["Graph-Q-SAT", "Graph-Q-SAT wide", "Attention aggregation", "GAT-Q-SAT",
+             "GAT-Q-SAT pool"]
     for d in FLAT_ALL:
         print(f"\\code{{{d}}} & " + " & ".join(tex(group(v, COL, d, cap, b)) for v in order)
               + " \\\\")

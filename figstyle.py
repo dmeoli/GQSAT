@@ -62,7 +62,8 @@ for _n in ("50-218", "100-430", "250-1065"):
     DATASET_COLOR["uuf" + _n] = _lighter(DATASET_COLOR["uf" + _n])
 
 MODEL_COLOR = {"Graph-Q-SAT": "#b9a7d6", "Graph-Q-SAT wide": "#9a86c4",
-              "Attention aggregation": "#6f58a8", "GAT-Q-SAT": "#4b2e83"}
+              "Attention aggregation": "#6f58a8", "GAT-Q-SAT": "#4b2e83",
+              "GAT-Q-SAT pool": "#2a1650"}
 MODEL_HATCH = {"Graph-Q-SAT wide": "////", "Attention aggregation": "...."}
 MODEL_LS = {"Graph-Q-SAT wide": "--", "Attention aggregation": ":"}
 

@@ -17,7 +17,8 @@
 #   transfer  : the random-trained runs on the flat families, cap 500
 #   random    : the random-trained runs on the random families, every cap
 #   seeds     : the colouring-trained runs of 2026 (the pair retrained on the
-#               current stack, the seeds 3 to 5, the two controls of train.sh),
+#               current stack, the seeds 3 to 5, the two controls and the
+#               gatpool variant of train.sh),
 #               with what "tables" asks of them; runs not trained yet, or still
 #               training, are skipped;
 #               the checkpoints are read from CKPT_ROOT, i.e. the Drive folder
@@ -44,7 +45,8 @@ COLOURING_RUNS="Dec08_08-39-57_e63e47f25457 Dec09_12-16-16_d4e65e7af705"
 # second seed: same configuration, retrained in 2026, kept under CKPT_ROOT
 SEED_RUNS="gqsat_graphqsat gqsat_gatqsat gqsat_graphqsat_s3 gqsat_gatqsat_s3 \
            gqsat_graphwide_s1 gqsat_graphwide_s2 gqsat_attnagg_s1 gqsat_attnagg_s2 \
-           gqsat_graphqsat_s4 gqsat_gatqsat_s4 gqsat_graphqsat_s5 gqsat_gatqsat_s5"
+           gqsat_graphqsat_s4 gqsat_gatqsat_s4 gqsat_graphqsat_s5 gqsat_gatqsat_s5 \
+           gqsat_gatpool_s1 gqsat_gatpool_s2 gqsat_gatpool_s3"
 CKPT_ROOT="${CKPT_ROOT:-}"
 RANDOM_RUNS="Dec21_01-59-59_6bed2aa9b612 Dec21_14-55-50_5eccdc34d583 \
              Dec23_01-48-54_90582559eea7 Dec23_14-42-44_90582559eea7 \

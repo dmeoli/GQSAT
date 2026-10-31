@@ -50,6 +50,8 @@ SW = [(f"sw-lp{k}", 2.0 ** -k) for k in range(9)] + [("sw-p0", 0.0)]
 CAP = 200
 MAIN = ["Graph-Q-SAT", "GAT-Q-SAT"]
 CONTROLS = ["Graph-Q-SAT wide", "Attention aggregation"]
+# the variant that extends GAT-Q-SAT, evaluated after the controls
+EXTENSIONS = ["GAT-Q-SAT pool"]
 DEVICE_FLAG = os.environ.get("DEVICE_FLAG", "--no-cuda")
 OUT_ROOT = os.environ.get("OUT_ROOT", "runs")
 CKPT_ROOT = os.environ.get("CKPT_ROOT", "")
@@ -172,13 +174,13 @@ def main():
     pn.REEVAL_ROOT = None if OUT_ROOT == "runs" else OUT_ROOT
     names = [n for _, n in FAMILIES] + [n for n, _ in SW]
     if not a.plot_only:
-        for group in (MAIN, CONTROLS):
+        for group in (MAIN, CONTROLS, EXTENSIONS):
             for variant in group:
                 for run in runs_of(variant):
                     for name in names:
                         run_eval(run, variant, name)
 
-    variants = [v for v in MAIN + CONTROLS if any(mrir(v, n)[0] for n in names)]
+    variants = [v for v in MAIN + CONTROLS + EXTENSIONS if any(mrir(v, n)[0] for n in names)]
     od = os.environ.get("PAPER_IMG_DIR", "../img/paper")
     os.makedirs(od, exist_ok=True)
 
