@@ -39,6 +39,12 @@ RUNS = {
     "gqsat_graphwide_s2": ("Graph-Q-SAT wide", "flat50-115"),
     "gqsat_attnagg_s1": ("Attention aggregation", "flat50-115"),
     "gqsat_attnagg_s2": ("Attention aggregation", "flat50-115"),
+    # two more seeds of the pair (SEED=4 and SEED=5), since the variation
+    # across the seeds is of the order of the differences between the models
+    "gqsat_graphqsat_s4": ("Graph-Q-SAT", "flat50-115"),
+    "gqsat_gatqsat_s4": ("GAT-Q-SAT", "flat50-115"),
+    "gqsat_graphqsat_s5": ("Graph-Q-SAT", "flat50-115"),
+    "gqsat_gatqsat_s5": ("GAT-Q-SAT", "flat50-115"),
     "Dec21_01-59-59_6bed2aa9b612": ("Graph-Q-SAT", "uf50-218"),
     "Dec23_01-48-54_90582559eea7": ("Graph-Q-SAT", "uf100-430"),
     "Nov12_14-06-54_c42e8ad320d8": ("GAT-Q-SAT", "uf50-218"),
