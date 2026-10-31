@@ -53,7 +53,8 @@ or `SEED=<n> bash train.sh ...`).
 pip install -r requirements.txt
 cd minisat && make python-wrap && cd ..   # the environment of MiniSat
 
-# train with the published configuration (variants: graphqsat, gatqsat, graphwide, attnagg)
+# train with the published configuration (variants: graphqsat, gatqsat, graphwide, attnagg,
+# and gatpool, experimental: attention in place of the mean that pools the global attribute)
 bash train.sh graphqsat data/graph-coloring/train/flat50-115 data/graph-coloring/val/flat50-115 runs/graphqsat
 SEED=1 bash train.sh gatqsat data/graph-coloring/train/flat50-115 data/graph-coloring/val/flat50-115 runs/gatqsat_s1
 

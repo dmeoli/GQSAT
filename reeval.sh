@@ -64,9 +64,10 @@ run_dir() {  # run -> its directory: runs/<run> in the repository, else under CK
     if [ -d "runs/$1" ]; then echo "runs/$1"; else echo "${CKPT_ROOT:?CKPT_ROOT not set}/$1"; fi
 }
 
-model_of() {  # run -> graphqsat | gatqsat | graphwide | attnagg
+model_of() {  # run -> graphqsat | gatqsat | graphwide | attnagg | gatpool
     local y; y="$(run_dir "$1")/model.yaml"
-    if grep -aq "use_attention: true" "$y"; then echo gatqsat
+    if grep -aq "global_pool: attention" "$y"; then echo gatpool
+    elif grep -aq "use_attention: true" "$y"; then echo gatqsat
     elif grep -aq "e2v_agg: attention" "$y"; then echo attnagg
     elif grep -aqE "hidden_size: 104$" "$y"; then echo graphwide
     else echo graphqsat; fi

@@ -3,13 +3,16 @@
 #
 # Usage:
 #   [SEED=<n>] bash train.sh <variant> <train_path> <val_path> [logdir]
-#     variant  : graphqsat | gatqsat | graphwide | attnagg
+#     variant  : graphqsat | gatqsat | graphwide | attnagg | gatpool
 #       graphqsat : Graph-Q-SAT, the published configuration
 #       gatqsat   : two GAT layers added to the core block (113256 parameters)
 #       graphwide : Graph-Q-SAT with hidden layers of 104 units (113504
 #                   parameters), i.e. the capacity of gatqsat with no attention
 #       attnagg   : attention in place of the sum over the incoming edges of a
 #                   node (3 heads, averaged; 71627 parameters against 71144)
+#       gatpool   : gatqsat with attention in place of the mean that pools the
+#                   nodes and the edges into the global attribute (3 heads,
+#                   averaged)
 #     SEED     : seed of python, numpy and torch (unset: not seeded)
 #
 # Hyperparameters below reproduce the original Graph-Q-SAT training exactly
@@ -30,7 +33,8 @@ case "$VARIANT" in
   gatqsat)   ATTN="--use_attention --heads 3" ;;
   graphwide) ATTN=""; HIDDEN=104 ;;
   attnagg)   ATTN="--heads 3"; AGG=attention ;;
-  *) echo "unknown variant '$VARIANT' (graphqsat|gatqsat|graphwide|attnagg)"; exit 1 ;;
+  gatpool)   ATTN="--use_attention --heads 3 --global-pool attention" ;;
+  *) echo "unknown variant '$VARIANT' (graphqsat|gatqsat|graphwide|attnagg|gatpool)"; exit 1 ;;
 esac
 SEEDARG=""
 [ -n "${SEED:-}" ] && SEEDARG="--seed $SEED"

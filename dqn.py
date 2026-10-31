@@ -228,7 +228,8 @@ class DQN:
                 activation=arg2activation(args.activation),
                 independent_block_layers=args.independent_block_layers,
                 use_attention=args.use_attention,
-                heads=args.heads
+                heads=args.heads,
+                global_pool=getattr(args, "global_pool", "mean")
             ).to(args.device)
         print(str(net))
         target_net = copy.deepcopy(net)

@@ -217,9 +217,12 @@ class GraphNet(SATModel):
             activation=ReLU,
             layer_norm=True,
             use_attention=False,
-            heads=3
+            heads=3,
+            global_pool='mean'
     ):
         super().__init__(save_name)
+        if global_pool not in ['mean', 'attention']:
+            raise ValueError('unknown global pooling {}'.format(global_pool))
         if e2v_agg not in ['sum', 'mean', 'attention']:
             raise ValueError('unknown aggregation function {}'.format(e2v_agg))
 
@@ -306,6 +309,24 @@ class GraphNet(SATModel):
                     activation=activation,
                     layer_norm=layer_norm
                 )
+                if global_pool == 'attention':
+                    # attention in place of the mean: one score per node (edge) and
+                    # head, from its embedding and the global attribute of its
+                    # graph, softmax-ed over the nodes (edges) of the graph; the
+                    # heads are averaged, so that phi^u sees an input of the same
+                    # size as with the mean
+                    self.att_v = Lin(v_out + u_in, heads)
+                    self.att_e = Lin(e_out + u_in, heads)
+                    self.att_act = torch.nn.LeakyReLU(0.2)
+
+            def pool(self, feat, index, u, att):
+                # feat: [N, F] (nodes or edges), index: [N] with max entry B - 1
+                if global_pool == 'mean':
+                    return scatter(feat, index, dim=0, dim_size=u.size(0), reduce='mean')
+                score = self.att_act(att(torch.cat([feat, u[index]], dim=1)))      # [N, H]
+                alpha = softmax(score, index, num_nodes=u.size(0))                 # [N, H]
+                msg = (alpha.unsqueeze(-1) * feat.unsqueeze(1)).mean(dim=1)        # [N, F]
+                return scatter(msg, index, dim=0, dim_size=u.size(0), reduce='sum')
 
             def forward(self, x, edge_attr, u, v_indices, e_indices):
                 # x: node feature matrix of shape [N, F_x], where N is the number of nodes
@@ -315,8 +336,8 @@ class GraphNet(SATModel):
                 # v_indices: [N] with max entry B - 1.
                 # e_indices: [E] with max entry B - 1.
                 out = torch.cat([u,
-                                 scatter(x, v_indices, dim=0, dim_size=u.size(0), reduce='mean'),
-                                 scatter(edge_attr, e_indices, dim=0, dim_size=u.size(0), reduce='mean')], dim=1)
+                                 self.pool(x, v_indices, u, getattr(self, 'att_v', None)),
+                                 self.pool(edge_attr, e_indices, u, getattr(self, 'att_e', None))], dim=1)
                 return self.global_mlp(out)
 
         if use_attention:
@@ -395,7 +416,8 @@ class EncodeProcessDecode(SATModel):
             independent_block_layers=1,
             layer_norm=True,
             use_attention=False,
-            heads=3
+            heads=3,
+            global_pool='mean'
     ):
         super().__init__(save_name)
         # all dims are tuples with (v,e) feature sizes
@@ -431,7 +453,8 @@ class EncodeProcessDecode(SATModel):
             activation=activation,
             layer_norm=layer_norm,
             use_attention=use_attention,
-            heads=heads
+            heads=heads,
+            global_pool=global_pool
         )
 
         self.decoder = None

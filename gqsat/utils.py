@@ -367,6 +367,13 @@ def build_argparser():
         help="Aggregation to use for e->v. Can be sum|mean|attention"
     )
     parser.add_argument(
+        "--global-pool",
+        default="mean",
+        choices=["mean", "attention"],
+        help="Pooling of the nodes and the edges into the global attribute: mean "
+             "(Graph-Q-SAT) or attention (weighted by learned coefficients, 3 heads)"
+    )
+    parser.add_argument(
         "--seed",
         type=int,
         default=None,
