@@ -824,9 +824,10 @@ at each decision, the forward passes and the part of the search left to VSIDS
 the denominator of \eqref{eq:mrir}, which are computed once per family and
 stored with it). We report medians over the instances, since a few instances
 usually take much longer than the others. The load of the Colab instance was
-not under our control; \upd{repeating two of the evaluations gave medians
-within $X$\% of the first ones}, and hence we only comment on differences much
-larger than that.
+not under our control. Repeating two of the evaluations (the two models of 2021
+on \code{flat200-479} at cap $500$) gave the same iterations on every instance
+and medians within 5\% of the first ones ($4.6$\% and $2.4$\%), and hence we
+only comment on differences much larger than that.
 
 \begin{table}[ht]\centering\small
 \begin{tabular}{lcc@{\qquad}cc@{\qquad}cc}
