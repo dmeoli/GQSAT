@@ -62,14 +62,15 @@ attention from that of the added parameters. On graph coloring GAT-Q-SAT takes
 fewer decisions than Graph-Q-SAT on all the families we test, and the
 difference tends to grow with the size of the instances, since Graph-Q-SAT
 degrades almost to the level of the reference solver on the largest ones.
-\upd{[One sentence on what the controls show.]} Trained on uniform random 3-SAT
+A wider Graph-Q-SAT does not close the gap, and attention in place of the sum
+of the messages is the worst variant. Trained on uniform random 3-SAT
 and tested on graph coloring, GAT-Q-SAT is again the better of the two, and it
 also appears to be the better one on some structured families that neither
 model has seen in training. Yet, on satisfiable uniform random 3-SAT
 Graph-Q-SAT is clearly superior, and on instances of this size neither model is
 competitive with the solver in running time, each decision costing a forward
-pass of the network. This evidence rests on three training seeds per model on
-graph coloring (two per control), and on one run per training family
+pass of the network. This evidence rests on five training seeds per model on
+graph coloring (two or three per control), and on one run per training family
 elsewhere. Computational results are reported.
 \end{abstract}
 
@@ -148,9 +149,11 @@ parameters than Graph-Q-SAT. In order to separate the effect of the
 attention from that of the capacity we also train two controls, i.e.,
 Graph-Q-SAT with wider hidden layers and the same number of parameters as
 GAT-Q-SAT (Graph-Q-SAT wide), and a model in which attention replaces the sum
-at the capacity of Graph-Q-SAT (attention aggregation). We use three training
-seeds for each of the two main models on
-graph coloring and two for each control, which is enough to see the larger
+at the capacity of Graph-Q-SAT (attention aggregation), and we try a variant
+of GAT-Q-SAT in which attention also replaces the mean that pools the nodes and
+the edges into the global attribute (GAT-Q-SAT pool). We use five training
+seeds for each of the two main models on graph coloring, three for GAT-Q-SAT
+pool and two for each control, which is enough to see the larger
 differences but not always the smaller ones (i.e., those of a few tenths of the
 measure used below). As in \cite{Kurin2020} the results are measured
 in solver iterations, and the running time is reported separately. The note
@@ -386,6 +389,31 @@ carry the degree of the node, which the sum does. This may matter on graphs
 whose degrees vary, and it is one of the reasons why the second control is not
 simply a smaller GAT-Q-SAT.
 
+\smallskip
+\noindent
+In both Graph-Q-SAT and GAT-Q-SAT the global update of \eqref{eq:gnblock}
+receives the plain means $\bar e'$ and $\bar v'$, so that the attribute $u$, which
+enters the update of all the edges and nodes at the next application of the block,
+weighs all the variables and clauses of the formula alike. A third model
+(GAT-Q-SAT pool) is GAT-Q-SAT with these two means replaced by
+\begin{equation}\label{eq:attpool}
+  \begin{gathered}
+  \sum_{i} \bar\gamma_i\, v_i' \, , \qquad
+  \bar\gamma_i = \frac1K \sum_{k=1}^{K} \gamma^k_i \, ,
+  \\
+  \gamma^k_i = \frac{\exp \eta^k_i}{\sum_{i'} \exp \eta^k_{i'}} \, , \qquad
+  \eta^k_i = \mathrm{LeakyReLU}\big(\mathbf y_k^{\!\top} [\, v_i' \,\|\, u \,]\big) \, ,
+  \end{gathered}
+\end{equation}
+where $v_i'$ are the node embeddings that enter the global update (i.e., those
+returned by the attention layers), the sums run over all the nodes of the
+graph, and $K = 3$; the mean of the edges is replaced in the same way, with
+vectors of its own. These add 966 parameters to the 113256 of GAT-Q-SAT. The
+model lets the global attribute summarize the formula by the variables and
+clauses that the network deems relevant, instead of all of them alike; unlike
+the two controls, it is meant as a possible improvement of GAT-Q-SAT, not as a
+test of it.
+
 %% ===========================================================================
 \section{Implementation}\label{sec:impl}
 %% ===========================================================================
@@ -479,11 +507,12 @@ section~\ref{sec:transfer} we also divide by the stronger of the two.
 \noindent
 {\bf Runs.} Each run is trained once on one family, with the configuration of
 section~\ref{sec:problem}, and is evaluated at its last checkpoint. On graph
-coloring, Graph-Q-SAT and GAT-Q-SAT have three runs each trained on
-\code{flat50-115} (i.e., three seeds): one trained in 2021 on the original stack
-and two in 2026 on the ported one, the last with a fixed seed of the random
-number generators (the others were not seeded). The two controls of
-section~\ref{sec:gat} have two runs each, trained in 2026 with fixed seeds. On uniform random 3-SAT each variant has two runs trained on satisfiable
+coloring, Graph-Q-SAT and GAT-Q-SAT have five runs each trained on
+\code{flat50-115} (i.e., five seeds): one trained in 2021 on the original stack
+and four in 2026 on the ported one, the last three with fixed seeds of the
+random number generators (the others were not seeded). The two controls of
+section~\ref{sec:gat} have two runs each and GAT-Q-SAT pool has three, all
+trained in 2026 with fixed seeds. On uniform random 3-SAT each variant has two runs trained on satisfiable
 formulas (one on \code{uf50-218}, one on \code{uf100-430}), whose results we
 average, and two trained on the unsatisfiable \code{uuf50-218} and
 \code{uuf100-430}, used only for a comparison in section~\ref{sec:random}. For a
@@ -502,7 +531,7 @@ discussed in section~\ref{sec:time}.
 
 Table~\ref{tab:numbers} reports the MRIR of the coloring-trained models on the
 eight graph-coloring families. Column ``seeds'' gives the MRIR of the run of
-2021 and of the two of 2026, ``mean'' their mean, and ``$\Delta$'' the
+2021 and of the four of 2026, ``mean'' their mean, and ``$\Delta$'' the
 difference of the means (positive when GAT-Q-SAT takes fewer decisions). Since
 the families range from 30 to 200 nodes, the largest test instances are four
 times the size of the training ones.
@@ -514,19 +543,19 @@ times the size of the training ones.
 \cmidrule(r){2-3}\cmidrule(r){4-5}
 family & seeds & mean & seeds & mean & $\Delta$ \\
 \midrule
-\code{flat30-60}   & 1.83 / \upd{--} / \upd{--} & \upd{1.83} & 2.00 / \upd{--} / \upd{--} & \upd{2.00} & \upd{$+0.17$} \\
-\code{flat50-115}  & 2.18 / \upd{--} / \upd{--} & \upd{2.18} & 2.25 / \upd{--} / \upd{--} & \upd{2.25} & \upd{$+0.07$} \\
-\code{flat75-180}  & 2.37 / \upd{--} / \upd{--} & \upd{2.37} & 2.94 / \upd{--} / \upd{--} & \upd{2.94} & \upd{$+0.58$} \\
-\code{flat100-239} & 2.64 / \upd{--} / \upd{--} & \upd{2.64} & 2.76 / \upd{--} / \upd{--} & \upd{2.76} & \upd{$+0.12$} \\
-\code{flat125-301} & 2.43 / \upd{--} / \upd{--} & \upd{2.43} & 3.09 / \upd{--} / \upd{--} & \upd{3.09} & \upd{$+0.66$} \\
-\code{flat150-360} & 1.74 / \upd{--} / \upd{--} & \upd{1.74} & 3.40 / \upd{--} / \upd{--} & \upd{3.40} & \upd{$+1.66$} \\
-\code{flat175-417} & 1.17 / \upd{--} / \upd{--} & \upd{1.17} & 2.59 / \upd{--} / \upd{--} & \upd{2.59} & \upd{$+1.42$} \\
-\code{flat200-479} & 1.05 / \upd{--} / \upd{--} & \upd{1.05} & 2.64 / \upd{--} / \upd{--} & \upd{2.64} & \upd{$+1.59$} \\
+\code{flat30-60} & 1.83 / \upd{2.00} / \upd{1.83} / \upd{2.00} / \upd{--} & \upd{1.92} & 2.00 / \upd{2.00} / \upd{2.00} / \upd{--} / \upd{--} & \upd{2.00} & \upd{$+0.08$} \\
+\code{flat50-115} & 2.18 / \upd{2.20} / \upd{2.12} / \upd{2.18} / \upd{--} & \upd{2.17} & 2.25 / \upd{2.33} / \upd{2.29} / \upd{--} / \upd{--} & \upd{2.29} & \upd{$+0.12$} \\
+\code{flat75-180} & 2.37 / \upd{2.57} / \upd{2.35} / \upd{2.42} / \upd{--} & \upd{2.43} & 2.94 / \upd{2.72} / \upd{3.03} / \upd{--} / \upd{--} & \upd{2.90} & \upd{$+0.47$} \\
+\code{flat100-239} & 2.64 / \upd{2.87} / \upd{2.49} / \upd{2.60} / \upd{--} & \upd{2.65} & 2.76 / \upd{3.08} / \upd{3.33} / \upd{--} / \upd{--} & \upd{3.06} & \upd{$+0.41$} \\
+\code{flat125-301} & 2.43 / \upd{2.82} / \upd{2.67} / \upd{2.05} / \upd{--} & \upd{2.49} & 3.09 / \upd{3.57} / \upd{3.46} / \upd{--} / \upd{--} & \upd{3.38} & \upd{$+0.88$} \\
+\code{flat150-360} & 1.74 / \upd{2.18} / \upd{2.65} / \upd{2.00} / \upd{--} & \upd{2.14} & 3.40 / \upd{3.59} / \upd{3.83} / \upd{--} / \upd{--} & \upd{3.61} & \upd{$+1.46$} \\
+\code{flat175-417} & 1.17 / \upd{1.77} / \upd{1.80} / \upd{1.77} / \upd{--} & \upd{1.63} & 2.59 / \upd{2.54} / \upd{2.88} / \upd{--} / \upd{--} & \upd{2.67} & \upd{$+1.04$} \\
+\code{flat200-479} & 1.05 / \upd{1.48} / \upd{1.44} / \upd{1.48} / \upd{--} & \upd{1.36} & 2.64 / \upd{1.68} / \upd{2.56} / \upd{--} / \upd{--} & \upd{2.29} & \upd{$+0.93$} \\
 \bottomrule
 \end{tabular}
 \caption{Coloring-trained models on graph coloring: MRIR against MiniSat
-with restarts at cap $500$, per seed (2021 / 2026 / 2026 with a fixed seed) and
-mean over the seeds.}
+with restarts at cap $500$, per seed (the run of 2021, the one of 2026
+without a fixed seed, and the three with fixed seeds) and mean over the seeds.}
 \label{tab:numbers}
 \end{table}
 
@@ -540,7 +569,7 @@ Graph-Q-SAT, whose MRIR decreases from \upd{$2.64$} at 100 nodes to
 \upd{$1.05$} at 200 (i.e., almost to parity with the reference solver), while
 that of GAT-Q-SAT stays \upd{between $2.6$ and $3.4$}. In other words, the two
 models are quite close on instances of about the training size, and GAT-Q-SAT
-degrades much less when the instances grow. \upd{With the other two seeds the pattern is the same on all the families,
+degrades much less when the instances grow. \upd{With the other four seeds the pattern is the same on all the families,
 although the size of the difference changes from seed to seed by up to $X$.}
 
 \smallskip
@@ -573,40 +602,54 @@ MiniSat without restarts, i.e., the solver that the models drive, left alone.}
 We now check whether the advantage of GAT-Q-SAT on graph coloring is due to
 the attention or to its larger network. Table~\ref{tab:controls} reports, on the
 same families and at the same cap as Table~\ref{tab:numbers}, the mean MRIR of
-the four coloring-trained variants: Graph-Q-SAT, Graph-Q-SAT wide (with the
+the five coloring-trained variants: Graph-Q-SAT, Graph-Q-SAT wide (with the
 capacity of GAT-Q-SAT), attention aggregation \eqref{eq:attnagg} (with the
-capacity of Graph-Q-SAT), and GAT-Q-SAT (cf. section~\ref{sec:gat}); the two
-controls are the mean of two seeds, the other two of three.
+capacity of Graph-Q-SAT), GAT-Q-SAT, and GAT-Q-SAT pool \eqref{eq:attpool}
+(cf. section~\ref{sec:gat}); the two controls are the mean of two seeds,
+GAT-Q-SAT pool of three, and the other two of five.
 
 \begin{table}[ht]\centering\small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccc}
 \toprule
-family & Graph-Q-SAT & Graph-Q-SAT wide & attention aggregation & GAT-Q-SAT \\
+ & & Graph-Q-SAT & attention & & GAT-Q-SAT \\
+family & Graph-Q-SAT & wide & aggregation & GAT-Q-SAT & pool \\
 \midrule
-\code{flat30-60}   & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
-\code{flat50-115}  & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
-\code{flat75-180}  & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
-\code{flat100-239} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
-\code{flat125-301} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
-\code{flat150-360} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
-\code{flat175-417} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
-\code{flat200-479} & \upd{--} & \upd{--} & \upd{--} & \upd{--} \\
+\code{flat30-60} & \upd{1.92} & \upd{1.82} & \upd{1.61} & \upd{2.00} & \upd{--} \\
+\code{flat50-115} & \upd{2.17} & \upd{2.20} & \upd{1.74} & \upd{2.29} & \upd{--} \\
+\code{flat75-180} & \upd{2.43} & \upd{2.67} & \upd{1.48} & \upd{2.90} & \upd{--} \\
+\code{flat100-239} & \upd{2.65} & \upd{2.50} & \upd{1.12} & \upd{3.06} & \upd{--} \\
+\code{flat125-301} & \upd{2.49} & \upd{2.29} & \upd{0.48} & \upd{3.38} & \upd{--} \\
+\code{flat150-360} & \upd{2.14} & \upd{2.01} & \upd{0.64} & \upd{3.61} & \upd{--} \\
+\code{flat175-417} & \upd{1.63} & \upd{1.78} & \upd{0.49} & \upd{2.67} & \upd{--} \\
+\code{flat200-479} & \upd{1.36} & \upd{1.56} & \upd{0.53} & \upd{2.29} & \upd{--} \\
 \midrule
-parameters & 71144 & 113504 & 71627 & 113256 \\
+parameters & 71144 & 113504 & 71627 & 113256 & 114222 \\
 \bottomrule
 \end{tabular}
 \caption{Coloring-trained variants on graph coloring: MRIR against MiniSat with
-restarts at cap $500$, mean over the seeds (three for Graph-Q-SAT and GAT-Q-SAT,
-two for the controls).}
+restarts at cap $500$, mean over the seeds (five for Graph-Q-SAT and GAT-Q-SAT,
+three for GAT-Q-SAT pool, two for the controls).}
 \label{tab:controls}
 \end{table}
 
 \noindent
-\upd{[To be written from Table~\ref{tab:controls}: whether Graph-Q-SAT wide closes
-the gap (in which case the advantage is one of capacity), whether the attention
-aggregation reaches GAT-Q-SAT at a sixth of its added parameters, and on which
-families; the range of the differences and their size against the variation
-across the seeds.]}
+The larger network does not explain the advantage of GAT-Q-SAT: Graph-Q-SAT
+wide stays within \upd{$0.25$} of Graph-Q-SAT on all eight families, above it on
+\upd{four} and below on the other \upd{four} (a variation of the order of the one
+across the seeds of Graph-Q-SAT), and it is below GAT-Q-SAT on all of them, by
+\upd{$0.09$} to \upd{$0.56$} up to 100 nodes and by \upd{$0.73$} to \upd{$1.60$}
+from 125 nodes on. Attention aggregation, instead, is the worst of the variants
+on all the families: it is already \upd{$0.43$} below Graph-Q-SAT on the training
+family, and from \code{flat125-301} on its MRIR is between \upd{$0.48$} and
+\upd{$0.64$}, i.e., it takes about twice as many decisions as the reference
+solver. Hence, the attention helps when it is added to the sum of
+\eqref{eq:gnblock}, as in GAT-Q-SAT, and hurts when it takes its place. A
+plausible reason is the one noted in section~\ref{sec:gat}: the weighted mean
+\eqref{eq:attnagg} loses the degree of the node, i.e., the number of clauses in
+which a variable still occurs, on which the classical branching heuristics
+(e.g., MOMS and Jeroslow--Wang \cite{MarquesSilva1999}) rely and which the sum
+keeps; in GAT-Q-SAT the attention layers can then weigh the neighbors on top of
+it. \upd{[GAT-Q-SAT pool against GAT-Q-SAT, from its three seeds.]}
 
 \subsection{A change of the training distribution}\label{sec:shift}
 
@@ -879,8 +922,10 @@ Graph-Q-SAT, and compared the resulting model, GAT-Q-SAT, with Graph-Q-SAT at
 matched training set and configuration. On all the graph-coloring families
 GAT-Q-SAT took fewer decisions. The difference was small on instances of about
 the training size and large (up to about \upd{$1.7$}) on those three and four
-times larger, where Graph-Q-SAT approached the reference solver. \upd{[One
-sentence on the controls.]} GAT-Q-SAT was also the better of the two when
+times larger, where Graph-Q-SAT approached the reference solver. A Graph-Q-SAT
+with as many parameters as GAT-Q-SAT did not close this gap, and attention that
+replaced the sum of the messages, instead of being added to it, was the worst
+of the variants. GAT-Q-SAT was also the better of the two when
 trained on random formulas and tested on graph coloring and, with the caveats
 due to the size of the families, on some of the structured families that
 neither model had seen. On satisfiable uniform random 3-SAT, instead,
@@ -893,11 +938,13 @@ more parameters and of a more expensive decision.
 
 \smallskip
 \noindent
-Several limitations should be kept in mind. First, three training seeds per
-variant (two for the controls) are enough for the larger differences but not
-for those of a few tenths of MRIR, which may well be within the variance of DQN
-training. \upd{[Second, the conclusion drawn from the controls, with its
-limits.]} On the instances used here neither model is competitive with MiniSat
+Several limitations should be kept in mind. First, five training seeds per
+variant (two or three for the controls) are enough for the larger differences
+but not for those of a few tenths of MRIR, which may well be within the
+variance of DQN training. Second, the controls tell the attention apart from the
+capacity only for the two forms that we tried: the loss of the degree is a
+plausible explanation of the failure of attention aggregation, but we have not
+tested it, e.g., by passing the degree to the weighted mean as a feature. On the instances used here neither model is competitive with MiniSat
 in running time, and the restricted heuristics that should reduce the cost of
 inference are implemented but have not been measured on instances large enough
 for them to matter. Finally, several families of the transfer panel have fewer

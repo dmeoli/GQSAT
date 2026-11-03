@@ -135,7 +135,8 @@
     \item \T{Branching as a decision process}{Il branching come processo decisionale}
     \item Graph-Q-SAT
     \item GAT-Q-SAT
-    \item \T{The two controls}{I due controlli}
+    \item \T{The two controls, and attention in the global pooling}%
+          {I due controlli, e l'attenzione nel pooling globale}
   \end{itemize}}{%
   \href{https://arxiv.org/abs/1909.11830}{Kurin et al., \emph{Can Q-Learning with Graph
   Networks Learn a Generalizable Branching Heuristic for a SAT Solver?}}\\
@@ -230,6 +231,7 @@
 
 % ==================================================================== controls
 \begin{frame}{\T{Attention or capacity: the two controls}{Attenzione o capacit\`a: i due controlli}}
+  \small
   \T{GAT-Q-SAT adds the attention to the sum, so a gain may be due to the attention or
   simply to the larger network. Two more models, with the same configuration:}%
   {GAT-Q-SAT aggiunge l'attenzione alla somma, quindi un guadagno pu\`o venire
@@ -245,13 +247,20 @@
           {attention aggregation: la somma sostituita da una media pesata dall'attenzione (3
           teste, mediate), alla capacit\`a di Graph-Q-SAT.}
   \end{itemize}
+  \T{A third model, GAT-Q-SAT pool, is GAT-Q-SAT with attention (3 heads, averaged) in place
+  of the mean that pools the nodes and the edges into the global attribute: a possible
+  improvement, not a control.}%
+  {Un terzo modello, GAT-Q-SAT pool, \`e GAT-Q-SAT con l'attenzione (3 teste, mediate) al
+  posto della media che raccoglie nodi e archi nell'attributo globale: un possibile
+  miglioramento, non un controllo.}
   \begin{center}\footnotesize\setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lcccc}
+  \begin{tabular}{lccccc}
     \toprule
-     & Graph-Q-SAT & Graph-Q-SAT wide & attention aggregation & GAT-Q-SAT \\
+     & & Graph-Q-SAT & attention & & GAT-Q-SAT \\
+     & Graph-Q-SAT & wide & aggregation & GAT-Q-SAT & pool \\
     \midrule
-    \T{parameters}{parametri} & 71144 & 113504 & 71627 & 113256 \\
-    \T{training seeds}{semi di training} & 3 & 2 & 2 & 3 \\
+    \T{parameters}{parametri} & 71144 & 113504 & 71627 & 113256 & 114222 \\
+    \T{training seeds}{semi di training} & 5 & 2 & 2 & 5 & 3 \\
     \bottomrule
   \end{tabular}
   \end{center}
@@ -344,14 +353,14 @@
         \toprule
         \T{family}{famiglia} & Graph-Q-SAT & GAT-Q-SAT & $\Delta$ \\
         \midrule
-        \texttt{flat30-60}   & \upd{1.83} & \upd{2.00} & \upd{$+0.17$} \\
-        \texttt{flat50-115}  & \upd{2.18} & \upd{2.25} & \upd{$+0.07$} \\
-        \texttt{flat75-180}  & \upd{2.37} & \upd{2.94} & \upd{$+0.58$} \\
-        \texttt{flat100-239} & \upd{2.64} & \upd{2.76} & \upd{$+0.12$} \\
-        \texttt{flat125-301} & \upd{2.43} & \upd{3.09} & \upd{$+0.66$} \\
-        \texttt{flat150-360} & \upd{1.74} & \upd{3.40} & \upd{$+1.66$} \\
-        \texttt{flat175-417} & \upd{1.17} & \upd{2.59} & \upd{$+1.42$} \\
-        \texttt{flat200-479} & \upd{1.05} & \upd{2.64} & \upd{$+1.59$} \\
+        \texttt{flat30-60}   & \upd{1.92} & \upd{2.00} & \upd{$+0.08$} \\
+        \texttt{flat50-115}  & \upd{2.17} & \upd{2.29} & \upd{$+0.12$} \\
+        \texttt{flat75-180}  & \upd{2.43} & \upd{2.90} & \upd{$+0.47$} \\
+        \texttt{flat100-239} & \upd{2.65} & \upd{3.06} & \upd{$+0.41$} \\
+        \texttt{flat125-301} & \upd{2.49} & \upd{3.38} & \upd{$+0.88$} \\
+        \texttt{flat150-360} & \upd{2.14} & \upd{3.61} & \upd{$+1.46$} \\
+        \texttt{flat175-417} & \upd{1.63} & \upd{2.67} & \upd{$+1.04$} \\
+        \texttt{flat200-479} & \upd{1.36} & \upd{2.29} & \upd{$+0.93$} \\
         \bottomrule
       \end{tabular}\\[1mm]
       {\scriptsize \T{MRIR at cap 500, mean over the seeds}{MRIR al cap 500, media sui semi}}
@@ -390,13 +399,44 @@
 \end{frame}
 
 \begin{frame}{\T{Capacity or attention}{Capacit\`a o attenzione}}
-  \upd{\T{[The four variants on the eight families, from Table 2 of the note: whether
-  Graph-Q-SAT wide closes the gap, whether attention aggregation reaches GAT-Q-SAT at a sixth
-  of its added parameters, and the size of the differences against the variation across
-  the seeds.]}{[Le quattro varianti sulle otto famiglie, dalla tabella 2 della nota: se
-  Graph-Q-SAT wide chiude il divario, se attention aggregation arriva a GAT-Q-SAT con un
-  sesto dei suoi parametri aggiunti, e l'ampiezza delle differenze rispetto alla variazione
-  fra i semi.]}}
+  \begin{columns}[c,totalwidth=\textwidth]
+    \begin{column}{0.65\textwidth}
+      \centering\footnotesize\setlength{\tabcolsep}{1.5pt}
+      \begin{tabular}{lccccc}
+        \toprule
+         & & Graph-Q-SAT & attention & & GAT-Q-SAT \\
+        \T{nodes}{nodi} & Graph-Q-SAT & wide & aggr. & GAT-Q-SAT & pool \\
+        \midrule
+        30 & \upd{1.92} & \upd{1.82} & \upd{1.61} & \upd{2.00} & \upd{--} \\
+        50 & \upd{2.17} & \upd{2.20} & \upd{1.74} & \upd{2.29} & \upd{--} \\
+        75 & \upd{2.43} & \upd{2.67} & \upd{1.48} & \upd{2.90} & \upd{--} \\
+        100 & \upd{2.65} & \upd{2.50} & \upd{1.12} & \upd{3.06} & \upd{--} \\
+        125 & \upd{2.49} & \upd{2.29} & \upd{0.48} & \upd{3.38} & \upd{--} \\
+        150 & \upd{2.14} & \upd{2.01} & \upd{0.64} & \upd{3.61} & \upd{--} \\
+        175 & \upd{1.63} & \upd{1.78} & \upd{0.49} & \upd{2.67} & \upd{--} \\
+        200 & \upd{1.36} & \upd{1.56} & \upd{0.53} & \upd{2.29} & \upd{--} \\
+        \bottomrule
+      \end{tabular}\\[1mm]
+      {\scriptsize \T{Graph coloring, MRIR at cap 500, mean over the seeds}{Graph coloring, MRIR al cap 500, media sui semi}}
+    \end{column}
+    \begin{column}{0.34\textwidth}
+      \begin{itemize}\footnotesize
+        \item \T{Graph-Q-SAT wide stays within \upd{$0.25$} of Graph-Q-SAT and below
+              GAT-Q-SAT everywhere: the capacity does not explain the gap.}%
+              {Graph-Q-SAT wide resta entro \upd{$0.25$} da Graph-Q-SAT e sotto GAT-Q-SAT
+              ovunque: la capacit\`a non spiega il divario.}
+        \item \T{Attention aggregation is the worst variant everywhere, \upd{$0.48$ to
+              $0.64$} from 125 nodes on: in place of the sum, the attention hurts.}%
+              {Attention aggregation \`e la variante peggiore ovunque, \upd{da $0.48$ a
+              $0.64$} da 125 nodi in su: al posto della somma, l'attenzione nuoce.}
+        \item \T{A plausible reason: the weighted mean loses the degree of the node, which
+              the sum keeps (not tested).}%
+              {Una ragione plausibile: la media pesata perde il grado del nodo, che la somma
+              conserva (non verificato).}
+        \item \upd{\T{[GAT-Q-SAT pool against GAT-Q-SAT.]}{[GAT-Q-SAT pool contro GAT-Q-SAT.]}}
+      \end{itemize}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{\T{Trained on random formulas, tested on graph coloring}{Addestrati su formule random, provati sul graph coloring}}
@@ -494,15 +534,18 @@
           {Sul graph coloring GAT-Q-SAT ha preso meno decisioni su ogni famiglia, con un
           divario che cresce con la dimensione; \`e stato il migliore dei due anche addestrato
           su formule random e provato sul coloring.}
-    \item \upd{\T{[The controls: attention or capacity.]}{[I controlli: attenzione o capacit\`a.]}}
+    \item \T{A Graph-Q-SAT as large as GAT-Q-SAT did not close the gap, and attention in
+          place of the sum was the worst variant.}%
+          {Un Graph-Q-SAT grande quanto GAT-Q-SAT non ha chiuso il divario, e l'attenzione al
+          posto della somma \`e stata la variante peggiore.}
     \item \T{On satisfiable uniform random 3-SAT Graph-Q-SAT was clearly superior, where there
           is no structure for the attention to weight.}%
           {Sul random 3-SAT uniforme soddisfacibile Graph-Q-SAT \`e stato nettamente superiore,
           dove non c'\`e struttura che l'attenzione possa pesare.}
-    \item \T{Limits: three seeds per model (two per control) do not resolve differences of a
+    \item \T{Limits: five seeds per model (two or three per control) do not resolve differences of a
           few tenths; neither model is competitive with MiniSat in time; the largest SATLIB
           instances (e.g., bounded model checking) are beyond the size I could evaluate.}%
-          {Limiti: tre semi per modello (due per controllo) non bastano per differenze di pochi
+          {Limiti: cinque semi per modello (due o tre per controllo) non bastano per differenze di pochi
           decimi; nessuno dei due modelli \`e competitivo con MiniSat nel tempo; le istanze pi\`u
           grandi di SATLIB (per esempio il bounded model checking) sono oltre la dimensione che
           ho potuto valutare.}
