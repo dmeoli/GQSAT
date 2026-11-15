@@ -36,6 +36,10 @@ OUT_ROOT="${OUT_ROOT:-}"
 DEVICE_FLAG="${DEVICE_FLAG:---no-cuda}"
 # one thread and the lowest priority: the machine is shared, and an evaluation
 # that is killed halfway costs more than one that takes longer
+# seconds given to one log: past the cap MiniSat runs with no restarts and no
+# limit, and on some formulas it does not end; a log over the limit is marked
+# (<log>.timeout, removed to try again) and left out
+EVAL_TIMEOUT="${EVAL_TIMEOUT:-3600}"
 export OMP_NUM_THREADS=${THREADS:-2} MKL_NUM_THREADS=${THREADS:-2} \
        OPENBLAS_NUM_THREADS=${THREADS:-2} TORCH_NUM_THREADS=${THREADS:-2}
 FLAT="flat30-60 flat50-115 flat75-180 flat100-239 flat125-301 flat150-360 flat175-417 flat200-479"
@@ -127,15 +131,23 @@ one() {  # run dataset cap
     # a log is done only when every problem is in it: a crashed evaluation
     # leaves the header alone, or part of the rows
     [ "$(n_rows "$out")" -ge "$(n_problems "$ds")" ] && return 0
+    if [ -f "$out.timeout" ]; then
+        echo "[$(date +%H:%M:%S)] $run $ds cap $cap: over the time limit, skipped"; return 0
+    fi
     mkdir -p "$dir"
     wait_for_memory
     echo "[$(date +%H:%M:%S)] $run $ds cap $cap"
-    nice -n 10 "$PY" evaluate.py \
+    timeout "$EVAL_TIMEOUT" nice -n 10 "$PY" evaluate.py \
         --env-name sat-v0 --core-steps -1 --eps-final 0.0 --no_restarts $DEVICE_FLAG \
         --test_time_max_decisions_allowed "$cap" \
         --eval-problems-paths "$(data_path "$ds")" \
         --model-dir "$(run_dir "$run")" --model-checkpoint "$(last_checkpoint "$run")" \
         2>/dev/null | grep -E "^(sec to solve|[0-9])" > "$out.part"
+    if [ "${PIPESTATUS[0]}" -eq 124 ]; then
+        echo "$EVAL_TIMEOUT" > "$out.timeout"; rm -f "$out.part"
+        echo "[$(date +%H:%M:%S)] $run $ds cap $cap: over ${EVAL_TIMEOUT} s, left out" >&2
+        return 0
+    fi
     if [ "$(n_rows "$out.part")" -ge "$(n_problems "$ds")" ]; then
         mv "$out.part" "$out"
     else

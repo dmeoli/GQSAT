@@ -53,6 +53,10 @@ CONTROLS = ["Graph-Q-SAT wide", "Attention aggregation"]
 # the variant that extends GAT-Q-SAT, evaluated after the controls
 EXTENSIONS = ["GAT-Q-SAT pool"]
 DEVICE_FLAG = os.environ.get("DEVICE_FLAG", "--no-cuda")
+# seconds given to one run on one family: past the cap MiniSat runs with no
+# restarts and no limit, and on some formulas it does not end; a family over
+# the limit is marked (<log>.timeout, removed to try again) and left out
+TIMEOUT = int(os.environ.get("TRANSFER_TIMEOUT", "3600"))
 OUT_ROOT = os.environ.get("OUT_ROOT", "runs")
 CKPT_ROOT = os.environ.get("CKPT_ROOT", "")
 ROW = re.compile(r"^(sec to solve|[0-9])")
@@ -116,6 +120,9 @@ def run_eval(run, variant, name):
     out = os.path.join(log_dir(run), f"{name}-{pn.NAME[variant]}-max{CAP}.tsv")
     if n_rows(out) >= n_problems(path):
         return
+    if os.path.isfile(out + ".timeout"):
+        print(f"[skip] {run} {name}: over the time limit")
+        return
     d = run_dir(run)
     ck = last_checkpoint(d) if os.path.isdir(d) else None
     if ck is None:
@@ -132,7 +139,13 @@ def run_eval(run, variant, name):
         "--eval-problems-paths", path, "--model-dir", d, "--model-checkpoint", ck,
     ]
     print(f"{run} {name} cap {CAP}", flush=True)
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        with open(out + ".timeout", "w") as f:
+            f.write(f"{TIMEOUT}\n")
+        print(f"[over {TIMEOUT} s, left out] {run} {name}", file=sys.stderr)
+        return
     lines = [l for l in res.stdout.splitlines() if ROW.match(l)]
     if len(lines) - 1 >= n_problems(path):
         with open(out, "w") as f:
