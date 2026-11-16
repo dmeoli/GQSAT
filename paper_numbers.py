@@ -75,12 +75,24 @@ RAND = ["uf50-218", "uf100-430", "uf250-1065",
         "uuf50-218", "uuf100-430", "uuf250-1065"]
 
 
+def excluded():
+    """The instances listed in the EXCLUDED of a SATLIB family: they are left
+    out of every log, also of those written before they were excluded."""
+    names = set()
+    for d in glob.glob(os.path.join(SATLIB, "*", "EXCLUDED")):
+        with open(d) as f:
+            names.update(l.strip() for l in f if l.strip())
+    return names
+
+
 def scores(path, baseline):
     """Per-problem MRIR of one evaluation, read against the chosen baseline;
     "stronger" takes, over the problems of the log, the MiniSat run with fewer
     iterations in total."""
     with open(path, newline="") as f:
         rows = list(csv.DictReader(f, delimiter="\t"))
+    out_of_panel = excluded()
+    rows = [r for r in rows if r.get("problem") not in out_of_panel]
     if baseline == "stronger":
         if not rows or not rows[0].get("model_iters"):
             return None, None
@@ -144,10 +156,11 @@ def cap0(dataset, baseline):
     median of the per-problem ratio against the run with restarts."""
     b = resolve(baseline, dataset)
     rows = []
+    out_of_panel = excluded()
     with open(os.path.join(data_dir(dataset), "METADATA")) as f:
         for line in f:
             parts = line.strip().split(",")
-            if len(parts) >= 3:
+            if len(parts) >= 3 and parts[0] not in out_of_panel:
                 rows.append((float(parts[1]), float(parts[2])))
     if not rows:
         return None

@@ -711,7 +711,7 @@ them, with the exception of those whose instances exceed 2000 variables or
 150000 clauses (the size of the largest instances that we could evaluate on our
 hardware in reasonable time), and an instance enters the panel only if MiniSat,
 with and without restarts, solves it within 10 minutes (cf. the appendix). The resulting
-panel has thirteen families and 258 instances: AIM \cite{Asahiro1996},
+panel has thirteen families and 257 instances: AIM \cite{Asahiro1996},
 \code{jnh}, \code{dubois}, \code{pret}, pigeon hole, parity, all interval
 series, inductive inference, circuit fault analysis, the Beijing set, towers of
 Hanoi, planning \cite{KautzSelman1996} and quasigroup completion
@@ -992,12 +992,16 @@ solution and 24 unsatisfiable), \code{jnh} (50, random with clauses of variable
 length), \code{dubois} (13, unsatisfiable), \code{pret} (8, unsatisfiable
 2-coloring), pigeon hole (4, unsatisfiable), parity learning (20: \code{par8}
 and \code{par16}), all interval series (4),
-inductive inference (41), circuit fault analysis (9: the \code{bf} and
+inductive inference (40), circuit fault analysis (9: the \code{bf} and
 \code{ssa} instances within the limit), the Beijing set (8), towers of Hanoi
 (1), planning (8, blocks world and logistics) and quasigroup completion (20),
-i.e., 258 instances. The limit of 10 minutes on MiniSat leaves out 7 further
+i.e., 257 instances. The limit of 10 minutes on MiniSat leaves out 7 further
 instances within the bounds on the size (the five compressed \code{par32},
-\code{hole10} and \code{hanoi5}), which MiniSat does not solve in that time.
+\code{hole10} and \code{hanoi5}), which MiniSat does not solve in that time;
+we also leave out the inductive inference instance \code{ii16d1}, which MiniSat
+solves in 665 decisions but which, after the 200 decisions of the fourth seed
+of Graph-Q-SAT, MiniSat with no restarts does not solve within an hour, so that
+no model could be compared on it with all its seeds.
 The rule leaves out all of \code{bmc} and of the large graph coloring set
 \code{gcp}, the uncompressed \code{par32}, the largest blocks-world, logistics,
 quasigroup and circuit instances and most of the Beijing set; the large random

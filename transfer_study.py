@@ -172,10 +172,11 @@ def mrir(variant, name):
 def trivial_share(name):
     """Share of the instances that MiniSat solves in fewer than 10 decisions."""
     rows = []
+    out_of_panel = pn.excluded()
     with open(os.path.join(pn.data_dir(name), "METADATA")) as f:
         for line in f:
             p = line.strip().split(",")
-            if len(p) >= 3:
+            if len(p) >= 3 and p[0] not in out_of_panel:
                 rows.append(max(float(p[1]), float(p[2])))
     return sum(r < 10 for r in rows) / len(rows) if rows else None
 
