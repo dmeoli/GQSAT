@@ -51,6 +51,15 @@ if [ -f "$LOGDIR/status.yaml" ] && ! { \
     rm -rf "$LOGDIR"; mkdir -p "$LOGDIR"
 fi
 
+UPDATES=50000
+# a finished run is left as it is: resuming it would load its buffer only to find
+# no update left, and fail on the data paths saved in old status files
+if [ -f "$LOGDIR/status.yaml" ] && \
+   [ "$(grep -m1 -E '^step_ctr:' "$LOGDIR/status.yaml" | awk '{print $2}')" -ge $UPDATES ] 2>/dev/null; then
+    echo ">>> $LOGDIR already trained ($UPDATES updates)"
+    exit 0
+fi
+
 RESUME=""
 [ -f "$LOGDIR/status.yaml" ] && RESUME="--status-dict-path $LOGDIR/status.yaml"
 
@@ -61,7 +70,7 @@ python3 dqn.py \
   $ATTN $SEEDARG \
   --lr 0.00002 --bsize 64 --buffer-size 20000 \
   --eps-init 1.0 --eps-final 0.01 --eps-decay-steps 30000 --gamma 0.99 \
-  --batch-updates 50000 --history-len 1 --init-exploration-steps 5000 \
+  --batch-updates $UPDATES --history-len 1 --init-exploration-steps 5000 \
   --step-freq 4 --target-update-freq 10 --loss mse --opt adam \
   --save-freq 500 --grad_clip 0.1 --grad_clip_norm_type 2 \
   --eval-freq 1000 --eval-time-limit 3600 --core-steps 4 \
