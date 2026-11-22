@@ -137,7 +137,9 @@ class DQN:
         net = SATModel.load_from_yaml(os.path.join(args.logdir, "model.yaml")).to(
             args.device
         )
-        net.load_state_dict(torch.load(train_status["latest_model_name"]))
+        net.load_state_dict(
+            torch.load(train_status["latest_model_name"], map_location=args.device)
+        )
 
         target_net = SATModel.load_from_yaml(
             os.path.join(args.logdir, "model.yaml")
@@ -148,6 +150,7 @@ class DQN:
         if train_status["buffer_path"] is not None:
             with open(train_status["buffer_path"], "rb") as f:
                 self.buffer = pickle.load(f)
+            self.buffer.device = args.device
         else:
             self.buffer = None
         self.learner = GraphLearner(net, target_net, self.buffer, args)
@@ -614,10 +617,26 @@ if __name__ == "__main__":
         # training mode, resuming from the status dict
 
         # load the train status dict
-        with open(args.status_dict_path, "r") as f:
-            train_status = yaml.load(f, Loader=yaml.Loader)
+        # the tensors of a status saved on a GPU, on a machine without one
+        import io, torch.storage
+        load_from_bytes = torch.storage._load_from_bytes
+        if not torch.cuda.is_available():
+            torch.storage._load_from_bytes = lambda b: torch.load(
+                io.BytesIO(b), map_location="cpu", weights_only=False)
+        try:
+            with open(args.status_dict_path, "r") as f:
+                train_status = yaml.load(f, Loader=yaml.Loader)
+        finally:
+            # pickle saves the storages by this function, so it must be the original
+            torch.storage._load_from_bytes = load_from_bytes
         # swap the args
         args = train_status["args"]
+        # the device of this machine, not the one the run started on
+        args.device = (
+            torch.device("cpu")
+            if args.no_cuda or not torch.cuda.is_available()
+            else torch.device("cuda")
+        )
 
         seed_everything(args)
         dqn = DQN(args, train_status)
