@@ -10,14 +10,11 @@
 %%  The port and the reproduction test are in section 5; the instances and the
 %%  way the numbers are regenerated are in the appendix.
 %%
-%%  \upd{...} marks a number or a paragraph that the Colab campaign (third
-%%  seed, controls, transfer panel, timing A/A) will fill or change: grep for
-%%  it when the logs are in.
 %% ===========================================================================
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{mathtools}
 \usepackage{enumitem}
 \usepackage{booktabs}
@@ -33,7 +30,8 @@
 
 \newcommand{\code}[1]{\texttt{\def\_{\textunderscore\allowbreak}#1}}
 \newcommand{\MRIR}{\mathrm{MRIR}}
-\newcommand{\upd}[1]{#1}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}[lemma]{Proposition}
 \emergencystretch=2em
 
 \title{Graph Attention in a\\ Learned Branching Heuristic for {SAT}}
@@ -57,21 +55,21 @@ solver. We add to the core block of that network two edge-featured graph
 attention layers, which weight the neighbors of each node by learned
 coefficients before the global attribute is updated, and we compare the
 resulting model (GAT-Q-SAT) with Graph-Q-SAT at matched training set and
-configuration, together with two controls that separate the effect of the
+configuration, with two controls that separate the effect of the
 attention from that of the added parameters. On graph coloring GAT-Q-SAT takes
-fewer decisions than Graph-Q-SAT on all the families we test, and the
-difference tends to grow with the size of the instances, since Graph-Q-SAT
-degrades almost to the level of the reference solver on the largest ones.
-A wider Graph-Q-SAT does not close the gap, and attention in place of the sum
-of the messages is the worst variant. Trained on uniform random 3-SAT
-and tested on graph coloring, GAT-Q-SAT is again the better of the two, and it
-also appears to be the better one on some structured families that neither
-model has seen in training. Yet, on satisfiable uniform random 3-SAT
+fewer decisions than Graph-Q-SAT on all the families we test but the
+smallest, where the two are level, and the difference tends to grow with the
+size of the instances, since Graph-Q-SAT approaches the reference solver on the
+largest ones. A wider Graph-Q-SAT does not close the gap,
+attention in place of the sum of the messages is worse than Graph-Q-SAT
+throughout, and attention in the pooling of the global attribute does not
+improve GAT-Q-SAT. Trained on uniform random 3-SAT
+and tested on graph coloring, GAT-Q-SAT is again the better of the two, and it appears to be the better one on some structured families not seen in
+training. Yet, on satisfiable uniform random 3-SAT
 Graph-Q-SAT is clearly superior, and on instances of this size neither model is
 competitive with the solver in running time, each decision costing a forward
 pass of the network. This evidence rests on five training seeds per model on
-graph coloring (two or three per control), and on one run per training family
-elsewhere. Computational results are reported.
+graph coloring (two or three per control), and one run per training family elsewhere. Computational results are reported.
 \end{abstract}
 
 %% ===========================================================================
@@ -193,10 +191,37 @@ partial assignment (together with the clauses learned so far), and its actions
 are the pairs of an unassigned variable and a truth value. Transitions are
 computed by the solver itself (cf. \cite[section 3]{Kurin2020}): a step is one decision followed by the propagation, the
 conflict analysis and the backjumping that it triggers, and therefore the
-transition is deterministic but known only by running it. A reward of $-0.1$
-is given at each non-terminal step and $0$ at termination; hence, maximizing
-the return means terminating in as few decisions as possible. Note that the formula is first simplified by the variable elimination
-of MiniSat, which is part of the environment.
+transition is deterministic but known only by running it (the formula is
+first simplified by the variable elimination of MiniSat, which is part of the
+environment). A reward of $-0.1$
+is given at each non-terminal step and $0$ at termination, which makes the
+return a function of the length of the episode alone.
+
+\begin{lemma}\label{lem:return}
+Let $\gamma \in (0, 1)$, and let an episode terminate after $T \ge 1$ steps.
+Then its discounted return is
+\begin{equation}\label{eq:return}
+  G_T \;=\; -0.1 \sum_{t=0}^{T-2} \gamma^t \;=\; -0.1\, \frac{1 - \gamma^{T-1}}{1 - \gamma} \, ,
+\end{equation}
+which is strictly decreasing in $T$. Hence, on a given formula, of two
+deterministic policies the one that terminates in fewer steps has the larger
+return.
+\end{lemma}
+
+\begin{proof}
+The first $T-1$ rewards are $-0.1$ and the last one is $0$, which gives
+\eqref{eq:return}; each further step adds the negative term $-0.1\,\gamma^{T-1}$.
+Since the transitions are deterministic, so is the episode of a deterministic
+policy on a given formula.
+\end{proof}
+
+\noindent
+Note that \eqref{eq:return} is bounded below by $-0.1/(1 - \gamma)$, and hence
+for $\gamma = 0.99$ (cf. below) two episodes of a few hundred steps have
+almost the same return ($\gamma^{300} < 0.05$): the reward separates a ``short''
+episode from a ``long'' one much better than two long ones. Also, the lemma counts
+the steps of the model only, and the decisions that VSIDS takes after the cap
+(see below) do not enter the return.
 
 \smallskip
 \noindent
@@ -279,7 +304,35 @@ embedding of each variable node to 32 components, and a linear layer maps
 these to the two $Q$-values of the node. Since the weights are shared across
 the nodes and across the $M$ rounds, one set of them applies to a formula with
 any number of variables and clauses. With this configuration the network has
-71144 parameters. (The figures follow the notation of \cite{Battaglia2018},
+71144 parameters.
+
+\smallskip
+\noindent
+The network has the invariance required in section~\ref{sec:problem}, which
+we state formally since the variants of section~\ref{sec:gat} must preserve it.
+Let $\sigma$ be a permutation of the variables and $\tau$ one of the clauses
+of a formula. We denote by $G^{\sigma\tau}$ the graph obtained from the graph
+$G$ of the state by renaming its nodes accordingly (the features of the nodes
+and of the edges being carried along), and by $Q_\theta(G, x, b)$ the
+$Q$-value that the network computes on $G$ for the variable $x$ and the truth
+value $b$.
+
+\begin{proposition}\label{prop:inv}
+For all $\sigma$, $\tau$, $x$ and $b$ one has
+$Q_\theta(G^{\sigma\tau}, \sigma(x), b) = Q_\theta(G, x, b)$; hence, up to the
+rule that breaks the ties, $\pi$ takes the same decision on $G$ and on
+$G^{\sigma\tau}$, after the renaming.
+\end{proposition}
+
+\begin{proof}
+The encoder and the decoder act on each edge, node and global attribute
+separately, and so do $\phi^e$, $\phi^v$ and $\phi^u$ given their arguments.
+In \eqref{eq:gnblock} a node enters the arguments of $\phi^v$ only through the
+sum over $\mathcal N_i$, and the global update only through the means over all
+the edges and nodes, none of which depends on the order of its terms. Hence, by
+induction on the $M$ applications of the block, the embedding of each element
+of $G^{\sigma\tau}$ is that of the corresponding element of $G$.
+\end{proof} (The figures follow the notation of \cite{Battaglia2018},
 in which $V$ and $E$ are the sets of the node and edge embeddings and $\rho$
 denotes an aggregation, e.g., the sum in \eqref{eq:gnblock}.)
 
@@ -384,10 +437,36 @@ input of the same size as with the sum. The vectors $\mathbf z_k$ (each with a
 bias, which the normalization cancels) add 483 parameters to the 71144 of
 Graph-Q-SAT. The first control has the capacity of GAT-Q-SAT without its
 attention, and the second one has the attention (in a simpler form) without
-the added capacity. Note that a weighted mean such as \eqref{eq:attnagg} does not
-carry the degree of the node, which the sum does. This may matter on graphs
-whose degrees vary, and it is one of the reasons why the second control is not
-simply a smaller GAT-Q-SAT.
+the added capacity. However, a weighted mean such as \eqref{eq:attnagg} does not carry
+the degree of the node, which the sum does, as the following lemma shows
+(cf. \cite{Xu2019}, where the same fact is shown for the plain mean).
+
+\begin{lemma}\label{lem:degree}
+Let $i$ and $i'$ be two nodes with $v_i = v_{i'}$, and let the multiset of the
+edge embeddings $e'_{i'j}$, $j \in \mathcal N_{i'}$, be that of the
+$e'_{ij}$, $j \in \mathcal N_i$, with each element repeated $k \ge 1$ times
+(so that $|\mathcal N_{i'}| = k\, |\mathcal N_i|$). Then \eqref{eq:attnagg}
+gives the same vector at $i$ and at $i'$, while the sum of \eqref{eq:gnblock}
+gives at $i'$ $k$ times its value at $i$.
+\end{lemma}
+
+\begin{proof}
+The score $\mu^k_{ij}$ depends on $j$ only through $e'_{ij}$, and hence the
+$k$ copies of a term at $i'$ have the score of that term at $i$; the
+denominator of $\lambda^k_{i'j}$ is $k$ times that of $\lambda^k_{ij}$, so that
+each copy has $1/k$ of the coefficient of the original term, and the $k$
+copies add up to it. The sum, instead, is linear in the multiplicity of its
+terms.
+\end{proof}
+
+\noindent
+At the first application of the block, for instance, all the edges of a
+variable with the same polarity have the same embedding, and \eqref{eq:attnagg}
+then cannot tell a variable that occurs in two clauses from one that occurs in
+twenty with the same proportion of polarities. This may matter on graphs whose
+degrees vary, and it is one of the reasons why the second control is not simply
+a smaller GAT-Q-SAT, in which the attention layers act on embeddings already
+computed by the sum.
 
 \smallskip
 \noindent
@@ -412,7 +491,11 @@ vectors of its own. These add 966 parameters to the 113256 of GAT-Q-SAT. The
 model lets the global attribute summarize the formula by the variables and
 clauses that the network deems relevant, instead of all of them alike; unlike
 the two controls, it is meant as a possible improvement of GAT-Q-SAT, not as a
-test of it.
+test of it. All the three variants keep the invariance of
+Proposition~\ref{prop:inv}. In fact, \eqref{eq:gat}, \eqref{eq:attnagg} and
+\eqref{eq:attpool} replace a sum or a mean by a sum over the same set whose
+coefficients are a softmax over that set, which is permuted together with its
+arguments; hence, the induction of the proof goes through unchanged.
 
 %% ===========================================================================
 \section{Implementation}\label{sec:impl}
@@ -430,19 +513,17 @@ removes the two compiled extensions. The environment is constructed
 directly, without \code{gym.make} (whose checks reject the non-standard
 signatures of the MiniSat wrapper), which allows the same code to run with
 \code{gym} and with \code{gymnasium}; the SWIG wrapper is regenerated and
-rebuilt against \code{numpy}~2. Also, the version of PyTorch Geometric used in 2021
+rebuilt against \code{numpy}~2. Also, the version of PyTorch Geometric of the original implementation
 stores the linear map of an attention layer twice (\code{lin\_src} and
 \code{lin\_dst}), where the current one has a single \code{lin}. When a
-checkpoint of 2021 is loaded one of the two copies is kept; this loses nothing,
+checkpoint written by that version is loaded one of the two copies is kept; this loses nothing,
 since in all our checkpoints the two are equal.
 
 \smallskip
 \noindent
 In order to check that the port has not changed what the models compute, we
-re-ran on the new stack the evaluation of the checkpoints trained in 2021 on the
-original one, and compared the logs instance by instance. In 63 of the 86
-repeated evaluations the number of iterations of the model coincides with the
-2021 one on all the instances; in the other 23 the median over the instances
+re-ran on the new stack the evaluation of the checkpoints trained on the original one, and compared the logs instance by instance. In 63 of the 86
+repeated evaluations the number of iterations of the model coincides with the original one on all the instances; in the other 23 the median over the instances
 of the ratio between the iterations of MiniSat and those of the model (the
 measure \eqref{eq:mrir} of section~\ref{sec:results}) changes by at most $0.03$
 (on \code{flat30-60} at cap $500$,
@@ -453,8 +534,8 @@ smaller than the differences discussed in section~\ref{sec:results}. Indeed, inf
 exercises the graph construction, the message passing, the decoder and the
 stepping of the environment together, and hence this is a reasonably stringent
 test of all but the training path. The latter was checked by retraining the two
-coloring models from scratch on the new stack (these are the runs of 2026 of
-section~\ref{sec:results}).
+coloring models from scratch on the new stack (four of the five seeds of each of them in section~\ref{sec:results} are
+trained in this way).
 
 \smallskip
 \noindent
@@ -498,8 +579,8 @@ takes 2.2 and 2.9 times more. We divide by the stronger of the two on each
 family, i.e., by MiniSat with restarts on graph coloring (as in
 \cite{Kurin2020}) and without restarts on uniform random 3-SAT. The one
 exception is \code{uuf100-430}, where the run with restarts takes 6\% fewer
-iterations but where our logs (those of 2021, the only ones for the random
-families) record only the other one; hence, the MRIR reported there is slightly
+iterations but where the logs of the runs trained on random formulas record only the
+other one; hence, the MRIR reported there is slightly
 favorable to the models. On the families of
 section~\ref{sec:transfer} we also divide by the stronger of the two.
 
@@ -508,11 +589,9 @@ section~\ref{sec:transfer} we also divide by the stronger of the two.
 {\bf Runs.} Each run is trained once on one family, with the configuration of
 section~\ref{sec:problem}, and is evaluated at its last checkpoint. On graph
 coloring, Graph-Q-SAT and GAT-Q-SAT have five runs each trained on
-\code{flat50-115} (i.e., five seeds): one trained in 2021 on the original stack
-and four in 2026 on the ported one, the last three with fixed seeds of the
-random number generators (the others were not seeded). The two controls of
-section~\ref{sec:gat} have two runs each and GAT-Q-SAT pool has three, all
-trained in 2026 with fixed seeds. On uniform random 3-SAT each variant has two runs trained on satisfiable
+\code{flat50-115} (i.e., five seeds), one of them trained with the original implementation and
+four with the port of section~\ref{sec:impl}; the two controls of
+section~\ref{sec:gat} have two runs each, and GAT-Q-SAT pool has three. On uniform random 3-SAT each variant has two runs trained on satisfiable
 formulas (one on \code{uf50-218}, one on \code{uf100-430}), whose results we
 average, and two trained on the unsatisfiable \code{uuf50-218} and
 \code{uuf100-430}, used only for a comparison in section~\ref{sec:random}. For a
@@ -522,65 +601,71 @@ group of runs we report the mean of the MRIR of its runs.
 \noindent
 {\bf Instances and machine.} Each test set has 100 instances (101 for
 \code{flat150-360}): the held-out test part for the families used in training,
-and the whole family for the others (cf. the appendix). All the evaluations
-of 2026 were run on a Colab instance with a GPU; the MRIR, a ratio
-of iteration counts, does not depend on the machine, and the running times are
-discussed in section~\ref{sec:time}.
+and the whole family for the others (cf. the appendix). The evaluations were run on a cloud
+instance with an NVIDIA T4 GPU, except those of the fifth seed of Graph-Q-SAT
+and of GAT-Q-SAT and those of GAT-Q-SAT pool, which were run on the CPUs of a
+server with two AMD EPYC 9654 processors (4 threads per evaluation). The MRIR,
+a ratio of iteration counts, does not depend on the machine, while running
+times are only compared on the same machine (cf. section~\ref{sec:time}).
 
 \subsection{Graph coloring}\label{sec:indist}
 
 Table~\ref{tab:numbers} reports the MRIR of the coloring-trained models on the
-eight graph-coloring families. Column ``seeds'' gives the MRIR of the run of
-2021 and of the four of 2026, ``mean'' their mean, and ``$\Delta$'' the
+eight graph-coloring families. Column ``seeds'' gives the MRIR of the five
+seeds, ``mean'' their mean, and ``$\Delta$'' the
 difference of the means (positive when GAT-Q-SAT takes fewer decisions). Since
 the families range from 30 to 200 nodes, the largest test instances are four
 times the size of the training ones.
 
 \begin{table}[ht]\centering\small
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{lcccccr}
 \toprule
  & \multicolumn{2}{c}{Graph-Q-SAT} & \multicolumn{2}{c}{GAT-Q-SAT} & \\
 \cmidrule(r){2-3}\cmidrule(r){4-5}
 family & seeds & mean & seeds & mean & $\Delta$ \\
 \midrule
-\code{flat30-60} & 1.83 / \upd{2.00} / \upd{1.83} / \upd{2.00} / \upd{--} & \upd{1.92} & 2.00 / \upd{2.00} / \upd{2.00} / \upd{--} / \upd{--} & \upd{2.00} & \upd{$+0.08$} \\
-\code{flat50-115} & 2.18 / \upd{2.20} / \upd{2.12} / \upd{2.18} / \upd{--} & \upd{2.17} & 2.25 / \upd{2.33} / \upd{2.29} / \upd{--} / \upd{--} & \upd{2.29} & \upd{$+0.12$} \\
-\code{flat75-180} & 2.37 / \upd{2.57} / \upd{2.35} / \upd{2.42} / \upd{--} & \upd{2.43} & 2.94 / \upd{2.72} / \upd{3.03} / \upd{--} / \upd{--} & \upd{2.90} & \upd{$+0.47$} \\
-\code{flat100-239} & 2.64 / \upd{2.87} / \upd{2.49} / \upd{2.60} / \upd{--} & \upd{2.65} & 2.76 / \upd{3.08} / \upd{3.33} / \upd{--} / \upd{--} & \upd{3.06} & \upd{$+0.41$} \\
-\code{flat125-301} & 2.43 / \upd{2.82} / \upd{2.67} / \upd{2.05} / \upd{--} & \upd{2.49} & 3.09 / \upd{3.57} / \upd{3.46} / \upd{--} / \upd{--} & \upd{3.38} & \upd{$+0.88$} \\
-\code{flat150-360} & 1.74 / \upd{2.18} / \upd{2.65} / \upd{2.00} / \upd{--} & \upd{2.14} & 3.40 / \upd{3.59} / \upd{3.83} / \upd{--} / \upd{--} & \upd{3.61} & \upd{$+1.46$} \\
-\code{flat175-417} & 1.17 / \upd{1.77} / \upd{1.80} / \upd{1.77} / \upd{--} & \upd{1.63} & 2.59 / \upd{2.54} / \upd{2.88} / \upd{--} / \upd{--} & \upd{2.67} & \upd{$+1.04$} \\
-\code{flat200-479} & 1.05 / \upd{1.48} / \upd{1.44} / \upd{1.48} / \upd{--} & \upd{1.36} & 2.64 / \upd{1.68} / \upd{2.56} / \upd{--} / \upd{--} & \upd{2.29} & \upd{$+0.93$} \\
+\code{flat30-60} & 1.83 / 2.00 / 1.83 / 2.00 / 2.00 & 1.93 & 2.00 / 2.00 / 2.00 / 1.83 / 1.80 & 1.93 & $-0.01$ \\
+\code{flat50-115} & 2.18 / 2.20 / 2.12 / 2.18 / 2.05 & 2.15 & 2.25 / 2.33 / 2.29 / 2.27 / 2.17 & 2.26 & $+0.11$ \\
+\code{flat75-180} & 2.37 / 2.57 / 2.35 / 2.42 / 2.57 & 2.45 & 2.94 / 2.72 / 3.03 / 2.90 / 2.82 & 2.88 & $+0.43$ \\
+\code{flat100-239} & 2.64 / 2.87 / 2.49 / 2.60 / 3.03 & 2.73 & 2.76 / 3.08 / 3.33 / 3.04 / 2.97 & 3.04 & $+0.31$ \\
+\code{flat125-301} & 2.43 / 2.82 / 2.67 / 2.05 / 2.11 & 2.42 & 3.09 / 3.57 / 3.46 / 3.52 / 3.82 & 3.49 & $+1.08$ \\
+\code{flat150-360} & 1.74 / 2.18 / 2.65 / 2.00 / 1.61 & 2.04 & 3.40 / 3.59 / 3.83 / 3.27 / 3.44 & 3.50 & $+1.47$ \\
+\code{flat175-417} & 1.17 / 1.77 / 1.80 / 1.77 / 1.34 & 1.57 & 2.59 / 2.54 / 2.88 / 2.98 / 2.93 & 2.78 & $+1.21$ \\
+\code{flat200-479} & 1.05 / 1.48 / 1.44 / 1.48 / 1.11 & 1.31 & 2.64 / 1.68 / 2.56 / 2.70 / 2.66 & 2.45 & $+1.14$ \\
 \bottomrule
 \end{tabular}
 \caption{Coloring-trained models on graph coloring: MRIR against MiniSat
-with restarts at cap $500$, per seed (the run of 2021, the one of 2026
-without a fixed seed, and the three with fixed seeds) and mean over the seeds.}
+with restarts at cap $500$, per seed and mean over the seeds.}
 \label{tab:numbers}
 \end{table}
 
 \noindent
-GAT-Q-SAT takes fewer decisions than Graph-Q-SAT on all eight families. Up to
-100 nodes, which include the test part of the training family, the difference
-is \upd{between $0.07$ and $0.58$} and it does not grow with the size (it is
-\upd{$0.58$ at 75 nodes and $0.12$ at 100}). From 125 nodes on it is
-\upd{between $0.66$ and $1.66$}. This is mostly (but not only) due to
-Graph-Q-SAT, whose MRIR decreases from \upd{$2.64$} at 100 nodes to
-\upd{$1.05$} at 200 (i.e., almost to parity with the reference solver), while
-that of GAT-Q-SAT stays \upd{between $2.6$ and $3.4$}. In other words, the two
+GAT-Q-SAT takes fewer decisions than Graph-Q-SAT on seven of the eight
+families, and the two are level on \code{flat30-60} (where the means differ by
+$0.01$). Up to 100 nodes, which include the test part of the training family,
+the difference is at most $0.43$ and it does not grow with the size (it is
+$0.43$ at 75 nodes and $0.31$ at 100), while from 125 nodes on it is between
+$1.08$ and $1.47$. This is mostly (but not only) due to Graph-Q-SAT, whose MRIR
+decreases from $2.73$ at 100 nodes to $1.31$ at 200, while that of GAT-Q-SAT
+stays between $2.45$ and $3.50$ on the same families. In other words, the two
 models are quite close on instances of about the training size, and GAT-Q-SAT
-degrades much less when the instances grow. \upd{With the other four seeds the pattern is the same on all the families,
-although the size of the difference changes from seed to seed by up to $X$.}
+degrades much less when the instances grow. The ranking also holds seed by
+seed on most of the larger families: on \code{flat75-180} and from
+\code{flat125-301} on, the lowest seed of GAT-Q-SAT is above the highest of
+Graph-Q-SAT ($1.68$ against $1.48$ on \code{flat200-479}, e.g.), whereas on the other three
+families the values of the two models overlap.
 
 \smallskip
 \noindent
-Figure~\ref{fig:flatpair} shows the MRIR of the runs of 2021 as a function of
-the cap, family by family, on a common vertical scale (the runs of 2026 were
+Figure~\ref{fig:flatpair} shows the MRIR of one seed per model as a function
+of the cap, family by family, on a common vertical scale (the other seeds were
 evaluated only at the caps of Tables~\ref{tab:numbers} and~\ref{tab:budget}).
-\upd{On most families Graph-Q-SAT reaches its best MRIR at a cap of 50. It
-then degrades as it is allowed more decisions, down to $0.77$ on
-\code{flat200-479} at cap $1000$; the MRIR of GAT-Q-SAT does not decrease with
-the cap on any family.} On the larger instances, then, the decisions that
+On the five smaller families the MRIR of Graph-Q-SAT changes little above a cap
+of 50. On the three larger ones it is highest at a cap of 50 or 100, and it
+then decreases as the model is allowed more decisions, down to $0.77$ on
+\code{flat200-479} at cap $1000$; that of GAT-Q-SAT, instead, does not decrease
+by more than $0.07$ above a cap of 50 on any family. On the larger instances, then, the decisions that
 Graph-Q-SAT takes after the first few tens make the search
 longer, and the ranking of Table~\ref{tab:numbers} does not seem to depend on
 the choice of the cap (at least above a few tens of decisions).
@@ -590,7 +675,7 @@ the choice of the cap (at least above a few tens of decisions).
 \begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{graphqsat.png}\end{subfigure}
 \hfill
 \begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{gatqsat.png}\end{subfigure}
-\caption{Coloring-trained runs of 2021: MRIR against MiniSat with restarts as
+\caption{Coloring-trained models (one seed each): MRIR against MiniSat with restarts as
 a function of the cap, on the eight graph-coloring families, for Graph-Q-SAT
 (left) and GAT-Q-SAT (right), on a common log scale. The point at cap $0$ is
 MiniSat without restarts, i.e., the solver that the models drive, left alone.}
@@ -614,14 +699,14 @@ GAT-Q-SAT pool of three, and the other two of five.
  & & Graph-Q-SAT & attention & & GAT-Q-SAT \\
 family & Graph-Q-SAT & wide & aggregation & GAT-Q-SAT & pool \\
 \midrule
-\code{flat30-60} & \upd{1.92} & \upd{1.82} & \upd{1.61} & \upd{2.00} & \upd{--} \\
-\code{flat50-115} & \upd{2.17} & \upd{2.20} & \upd{1.74} & \upd{2.29} & \upd{--} \\
-\code{flat75-180} & \upd{2.43} & \upd{2.67} & \upd{1.48} & \upd{2.90} & \upd{--} \\
-\code{flat100-239} & \upd{2.65} & \upd{2.50} & \upd{1.12} & \upd{3.06} & \upd{--} \\
-\code{flat125-301} & \upd{2.49} & \upd{2.29} & \upd{0.48} & \upd{3.38} & \upd{--} \\
-\code{flat150-360} & \upd{2.14} & \upd{2.01} & \upd{0.64} & \upd{3.61} & \upd{--} \\
-\code{flat175-417} & \upd{1.63} & \upd{1.78} & \upd{0.49} & \upd{2.67} & \upd{--} \\
-\code{flat200-479} & \upd{1.36} & \upd{1.56} & \upd{0.53} & \upd{2.29} & \upd{--} \\
+\code{flat30-60} & 1.93 & 1.82 & 1.61 & 1.93 & 1.84 \\
+\code{flat50-115} & 2.15 & 2.20 & 1.74 & 2.26 & 1.71 \\
+\code{flat75-180} & 2.45 & 2.67 & 1.48 & 2.88 & 2.11 \\
+\code{flat100-239} & 2.73 & 2.50 & 1.12 & 3.04 & 2.18 \\
+\code{flat125-301} & 2.42 & 2.29 & 0.48 & 3.49 & 2.64 \\
+\code{flat150-360} & 2.04 & 2.01 & 0.64 & 3.50 & 2.16 \\
+\code{flat175-417} & 1.57 & 1.78 & 0.49 & 2.78 & 1.76 \\
+\code{flat200-479} & 1.31 & 1.56 & 0.53 & 2.45 & 1.80 \\
 \midrule
 parameters & 71144 & 113504 & 71627 & 113256 & 114222 \\
 \bottomrule
@@ -634,22 +719,41 @@ three for GAT-Q-SAT pool, two for the controls).}
 
 \noindent
 The larger network does not explain the advantage of GAT-Q-SAT: Graph-Q-SAT
-wide stays within \upd{$0.25$} of Graph-Q-SAT on all eight families, above it on
-\upd{four} and below on the other \upd{four} (a variation of the order of the one
-across the seeds of Graph-Q-SAT), and it is below GAT-Q-SAT on all of them, by
-\upd{$0.09$} to \upd{$0.56$} up to 100 nodes and by \upd{$0.73$} to \upd{$1.60$}
-from 125 nodes on. Attention aggregation, instead, is the worst of the variants
-on all the families: it is already \upd{$0.43$} below Graph-Q-SAT on the training
-family, and from \code{flat125-301} on its MRIR is between \upd{$0.48$} and
-\upd{$0.64$}, i.e., it takes about twice as many decisions as the reference
+wide stays within $0.25$ of Graph-Q-SAT on all eight families, above it on four and below on the other four (a variation of the order of the one
+across the seeds of Graph-Q-SAT), and it is below GAT-Q-SAT on all of them, by $0.06$ to $0.54$ up to 100 nodes and by $0.89$ to $1.49$
+from 125 nodes on. Attention aggregation, instead, is below Graph-Q-SAT on all the
+families, and the worst of the variants on all of them but \code{flat50-115}:
+it is already $0.41$ below Graph-Q-SAT on the training family, and from
+\code{flat125-301} on its MRIR is between $0.48$ and $0.64$, i.e., it takes about twice as many decisions as the reference
 solver. Hence, the attention helps when it is added to the sum of
 \eqref{eq:gnblock}, as in GAT-Q-SAT, and hurts when it takes its place. A
-plausible reason is the one noted in section~\ref{sec:gat}: the weighted mean
+plausible reason is the one of Lemma~\ref{lem:degree}: the weighted mean
 \eqref{eq:attnagg} loses the degree of the node, i.e., the number of clauses in
 which a variable still occurs, on which the classical branching heuristics
 (e.g., MOMS and Jeroslow--Wang \cite{MarquesSilva1999}) rely and which the sum
 keeps; in GAT-Q-SAT the attention layers can then weigh the neighbors on top of
-it. \upd{[GAT-Q-SAT pool against GAT-Q-SAT, from its three seeds.]}
+it.
+
+\smallskip
+\noindent
+GAT-Q-SAT pool does not improve GAT-Q-SAT: its mean is below that of GAT-Q-SAT
+on all the families, by $0.09$ on \code{flat30-60} and by $0.55$ to $1.34$ on
+the others. This mean, however, is largely determined by one of its three
+seeds, whose MRIR is between $0.42$ and $0.76$ on all the families but
+\code{flat30-60}, while that of the other two is between $2.09$ and $3.95$
+there. During training its median relative score on the validation part of
+\code{flat50-115} is in line with that of the other two (its median over the
+evaluations after 20000 updates is $2.29$, against $2.24$ and $2.27$, and the
+score typically moves by a few tenths from one evaluation to the next). At the
+last evaluation, however, it drops from $2.40$ to $1.09$, and this is the
+checkpoint that is evaluated; we keep the seed, since all the runs are
+evaluated at their last checkpoint (cf. the beginning of
+section~\ref{sec:results}).
+Without this seed, GAT-Q-SAT pool is $0.05$ to $0.10$ below GAT-Q-SAT up to
+100 nodes and $0.13$ to $0.48$ below it on the three larger families, while it
+is about $0.25$ above it on \code{flat125-301}. Hence, also with two seeds
+there is no indication that the attention in the pooling helps (although two
+seeds may well hide a difference of a few tenths).
 
 \subsection{A change of the training distribution}\label{sec:shift}
 
@@ -695,7 +799,7 @@ random formulas
 more than on the particular instances, and the learned weighting of the
 neighbors seems to be of some use even on a structure that the model has not
 seen in training. We remark, however, that the absolute difference is smaller
-here than in section~\ref{sec:indist} (\upd{$0.55$ against $0.78$} on average),
+here than in section~\ref{sec:indist} ($0.55$ against $0.72$ on average),
 and that the MRIR of both models decreases with the size of the coloring
 instances.
 
@@ -736,23 +840,23 @@ start at parity.}
 \noindent
 On \code{dubois} and \code{pret}, all of whose instances MiniSat solves in
 fewer than 10 decisions, the MRIR of both models is $1$, and these two families
-carry no information on the heuristic. \upd{On the other eleven GAT-Q-SAT is
-above the reference solver on eight families (from $1.06$ on quasigroup
-completion to $2.03$ on AIM) and Graph-Q-SAT on six (from $1.03$ on \code{jnh}
-to $1.65$ on towers of Hanoi). GAT-Q-SAT is the better of the two on eight
-families, by $0.09$ to $1.29$ (and by $0.2$ to $0.4$ on five of them),
-Graph-Q-SAT on the Beijing set and on towers of Hanoi, and the two are level on
-circuit fault analysis. Leaving out the instances that MiniSat solves in fewer
-than 10 decisions changes this ranking only on two families: on circuit fault
-analysis Graph-Q-SAT moves ahead ($1.19$ against $0.88$), and on planning the
-two become level ($1.69$). On AIM, instead, the gap widens ($3.27$ against
-$1.63$). We
-remark, however, that the variation across the seeds is large: the values of
-the seeds of the two models overlap on all the families but \code{jnh}. On the
-smallest families they differ by more than the gap between the models (on all
-interval series, e.g., the two seeds of GAT-Q-SAT give $2.85$ and $0.20$, and
-on the single instance of towers of Hanoi those of Graph-Q-SAT give $0.47$ and
-$2.82$).} The panel therefore suggests that GAT-Q-SAT transfers
+carry no information on the heuristic. On the other eleven GAT-Q-SAT is
+above the reference solver on eight families (from $1.03$ on inductive
+inference to $1.90$ on AIM) and Graph-Q-SAT on six (from $1.02$ to $1.23$ on
+the Beijing set). GAT-Q-SAT is the better of the two on eight families, by
+$0.04$ to $1.01$ (and by more than $0.1$ on seven of them), Graph-Q-SAT on
+inductive inference (by $0.03$) and on towers of Hanoi (by $0.46$), and the two
+are level on circuit fault analysis. Leaving out the instances that MiniSat
+solves in fewer than 10 decisions changes this ranking only on circuit fault
+analysis, where Graph-Q-SAT moves ahead ($1.05$ against $0.96$); on AIM,
+instead, the gap widens ($3.12$ against $1.20$). We remark, however, that the
+variation across the seeds is large: the values of the seeds of the two models
+overlap on all the families, and on the smallest ones they often differ by more than the gap between the models (on all interval series, e.g., the seeds of
+GAT-Q-SAT range from $0.20$ to $2.85$, and on the single instance of towers of
+Hanoi those of Graph-Q-SAT from $0.37$ to $2.82$). Of the other three variants
+(also shown in Figure~\ref{fig:transfer}), only Graph-Q-SAT wide is better than
+GAT-Q-SAT on any of these families, i.e., on inductive inference ($1.75$
+against $1.03$), and attention aggregation is below parity on eight of them. The panel therefore suggests that GAT-Q-SAT transfers
 somewhat better to structured families, rather than showing it, and the
 families with fewer than 10 instances are to be read as indications only.
 
@@ -764,19 +868,19 @@ are the 5-coloring problems of graphs on 100 vertices obtained from a ring
 lattice by rewiring each edge with probability $p$, and SATLIB provides nine levels, from $p = 1$ (a
 random graph) to $p = 2^{-8}$ (almost the lattice), plus the lattice itself.
 Figure~\ref{fig:sw} reports the MRIR of the coloring-trained models on 20
-instances per level (one for the lattice). \upd{The MRIR of both models
-decreases with $p$: it is above parity for $p \ge 2^{-2}$ (from $2.65$ to
-$1.66$ for Graph-Q-SAT and from $1.49$ to $1.38$ for GAT-Q-SAT), below it from
-$p = 2^{-3}$ on, and about $0.03$ at $p = 2^{-8}$. Up to $p = 2^{-6}$ the
-decisions of MiniSat do not decrease (their median is between 99 and 239 at
-every level), and hence the decline is due to the models, which take more and
+instances per level (one for the lattice). The MRIR of both models
+decreases with $p$. Graph-Q-SAT is above parity for $p \ge 2^{-2}$ (from $2.18$
+to $1.24$), and GAT-Q-SAT only at $p = 1$ ($1.04$), being slightly below it at
+$p = 2^{-1}$ and $2^{-2}$ ($0.97$ and $0.95$); both are below parity from
+$p = 2^{-3}$ on, and about $0.04$ at $p = 2^{-8}$. Up to $p = 2^{-6}$ the
+decisions of MiniSat do not decrease (their median is between 99 and 239 at each level), and hence the decline is due to the models, which take more and
 more decisions as the graphs move away from the random ones of the training
 family. At $p = 2^{-7}$, $2^{-8}$ and on the lattice, instead, MiniSat needs
 only 11 to 17 decisions, and the MRIR falls also because the reference solver
 becomes much faster. Graph-Q-SAT is ahead at the three highest levels, i.e., on
-the graphs closest to those of training (where the two seeds of GAT-Q-SAT
-differ widely, e.g., $0.69$ and $2.29$ at $p = 1$). Below them the two models
-are level within $0.15$.} On this family, then, the attention does not
+the graphs closest to those of training, by $0.29$ to $1.14$ (although one of
+the seeds of GAT-Q-SAT reaches $2.29$ at $p = 1$); below them the two models
+are level within $0.14$. On this family, then, the attention does not
 help as the graphs become regular, and neither model is of use on graphs close
 to the lattice.
 
@@ -866,9 +970,9 @@ at each decision, the forward passes and the part of the search left to VSIDS
 (but not the loading of the model and the runs of MiniSat that give
 the denominator of \eqref{eq:mrir}, which are computed once per family and
 stored with it). We report medians over the instances, since a few instances
-usually take much longer than the others. The load of the Colab instance was
-not under our control. Repeating two of the evaluations (the two models of 2021
-on \code{flat200-479} at cap $500$) gave the same iterations on every instance
+usually take much longer than the others. The times are those measured on the GPU
+instance, whose load was not under our control. Repeating two of the
+evaluations (one seed per model on \code{flat200-479} at cap $500$) gave the same iterations on every instance
 and medians within 5\% of the first ones ($4.6$\% and $2.4$\%), and hence we
 only comment on differences much larger than that.
 
@@ -879,27 +983,28 @@ only comment on differences much larger than that.
 \cmidrule(r){2-3}\cmidrule(r){4-5}\cmidrule(l){6-7}
  & sec & MRIR & sec & MRIR & sec & MRIR \\
 \midrule
-Graph-Q-SAT & \upd{2.55} & \upd{1.59} & \upd{26.51} & \upd{1.05} & \upd{57.67} & \upd{0.77} \\
-GAT-Q-SAT   & \upd{3.52} & \upd{2.43} & \upd{12.20} & \upd{2.64} & \upd{12.19} & \upd{2.64} \\
+Graph-Q-SAT & 2.44 & 1.61 & 21.61 & 1.31 & 29.84 & 1.17 \\
+GAT-Q-SAT   & 3.74 & 2.26 & 15.31 & 2.45 & 15.01 & 2.44 \\
 \bottomrule
 \end{tabular}
 \caption{Coloring-trained models on \code{flat200-479}: median seconds per
-instance (``sec'') and MRIR against MiniSat with restarts, as a function of the
-cap (mean over the seeds).}
+instance (``sec'', mean over the four seeds evaluated on the GPU instance) and
+MRIR against MiniSat with restarts (mean over the five seeds), as a function of
+the cap.}
 \label{tab:budget}
 \end{table}
 
 \noindent
 Table~\ref{tab:budget} reports time and MRIR on the largest coloring family at
 three values of the cap. At cap $50$ a decision of GAT-Q-SAT is more expensive
-than one of Graph-Q-SAT (\upd{$3.52$ against $2.55$} seconds for the same number
+than one of Graph-Q-SAT ($3.74$ against $2.44$ seconds for the same number
 of model decisions), as expected. At larger caps, instead, GAT-Q-SAT is the
-faster of the two (\upd{by a factor of 2 at cap $500$ and of almost 5 at cap
-$1000$}), since it terminates in fewer decisions; indeed, each decision of a
+faster of the two (by a factor of $1.4$ at cap $500$ and of $2$ at cap $1000$), since it terminates in fewer decisions; indeed, each decision of a
 model costs far more than the VSIDS decisions it replaces. Graph-Q-SAT pays
-\upd{22 times} the time of cap $50$ to reach a lower MRIR, and it ends up below
-the reference solver at cap $1000$. Going from cap $50$ to cap $500$ improves
-GAT-Q-SAT by \upd{$0.21$}, and going to $1000$ changes nothing, since its episodes
+$12$ times the time of cap $50$ to reach a lower MRIR at cap $1000$ ($1.17$
+against $1.61$), and one of its seeds ends up below the reference solver
+there. Going from cap $50$ to cap $500$ improves
+GAT-Q-SAT by $0.19$, and going to $1000$ changes nothing, since its episodes
 terminate before the cap is reached.
 
 \smallskip
@@ -919,13 +1024,14 @@ search is long enough to dominate the cost of inference.
 
 We have added two edge-featured graph attention layers to the core block of
 Graph-Q-SAT, and compared the resulting model, GAT-Q-SAT, with Graph-Q-SAT at
-matched training set and configuration. On all the graph-coloring families
-GAT-Q-SAT took fewer decisions. The difference was small on instances of about
-the training size and large (up to about \upd{$1.7$}) on those three and four
-times larger, where Graph-Q-SAT approached the reference solver. A Graph-Q-SAT
-with as many parameters as GAT-Q-SAT did not close this gap, and attention that
-replaced the sum of the messages, instead of being added to it, was the worst
-of the variants. GAT-Q-SAT was also the better of the two when
+matched training set and configuration. On all the graph-coloring families but
+the smallest one, where the two were level, GAT-Q-SAT took fewer decisions. The
+difference was small on instances of about the training size and large (up to
+about $1.5$) on those three and four times larger, where Graph-Q-SAT approached
+the reference solver. A Graph-Q-SAT with as many parameters as GAT-Q-SAT did
+not close this gap, attention that replaced the sum of the messages, instead of
+being added to it, was worse than Graph-Q-SAT on all the families, and
+attention in the pooling of the global attribute did not improve GAT-Q-SAT. GAT-Q-SAT was also the better of the two when
 trained on random formulas and tested on graph coloring and, with the caveats
 due to the size of the families, on some of the structured families that
 neither model had seen. On satisfiable uniform random 3-SAT, instead,
@@ -1022,9 +1128,9 @@ runs the two MiniSat configurations on each instance with a limit of 10 minutes
 and leaves out (listing it) any instance that is not solved within the limit
 (the 7 instances above). The evaluation
 of a model on a family at a cap writes one line per instance, with the time, the
-iterations of the model and the two iterations of MiniSat. The logs of 2021,
-which are the only ones for the random families, record only the ratio against
-MiniSat without restarts. The tables of section~\ref{sec:results} are printed
+iterations of the model and the two iterations of MiniSat. The logs of the
+runs trained on random formulas record only the ratio against MiniSat without
+restarts. The tables of section~\ref{sec:results} are printed
 by \code{paper\_numbers.py}, which reads the logs, groups the runs by variant
 and training family, and applies the choice of the denominator described at the
 beginning of section~\ref{sec:results}. The figures are drawn from the same
@@ -1033,9 +1139,9 @@ logs, and with the same grouping, by \code{make\_plots.py}
 (Figures~\ref{fig:thesis} and~\ref{fig:gen}) and \code{transfer\_study.py}
 (Figure~\ref{fig:transfer}), which also runs the evaluations of
 section~\ref{sec:transfer}; those of the other sections are run by
-\code{reeval.sh}. %% TODO before submission: copy the logs of 2026 (reeval/, transfer_logs/)
+\code{reeval.sh}. %% TODO before submission: copy the logs (reeval/, transfer_logs/)
 %% from Drive into the repository and say so here
-The logs written in 2026 are kept with the checkpoints,
-outside the repository.
+The logs of the evaluations are kept with the checkpoints, outside the
+repository.
 
 \end{document}

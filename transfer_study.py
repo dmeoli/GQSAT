@@ -213,7 +213,10 @@ def main():
     ax.set_xticks(range(len(fams)))
     ax.set_xticklabels([f"{l}\n({n_problems(pn.data_dir(n))})" for l, n in fams], fontsize=6)
     ax.set_ylabel(f"MRIR (cap {CAP}, log scale)")
-    ax.legend(); ax.grid(axis="y", alpha=.3); fig.tight_layout()
+    # above the axes: inside, the bars below parity of the left families run into it
+    ax.legend(ncol=len(variants), loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False,
+              fontsize=6.5, columnspacing=1.2, handlelength=1.8)
+    ax.grid(axis="y", alpha=.3); fig.tight_layout()
     fig.savefig(f"{od}/transfer.png"); plt.close(fig); print("wrote", f"{od}/transfer.png")
 
     # the small-world levels: MRIR against the rewiring probability
@@ -224,6 +227,9 @@ def main():
         ax.plot(xs, [y if y is not None else float("nan") for y in ys], marker="o",
                 label=v, color=fs.model_color(v), ls=fs.MODEL_LS.get(v, "-"))
     ratio_axis(ax, 0.005, 4)
+    # fewer ticks than ratio_axis puts: on three decades its upper ones run into each other
+    ticks = [0.01, 0.03, 0.1, 0.25, 0.5, 1, 2, 4]
+    ax.set_yticks(ticks); ax.set_yticklabels([f"{t:g}" for t in ticks]); ax.minorticks_off()
     ax.set_xticks(xs); ax.set_xticklabels(["1"] + [f"$2^{{-{k}}}$" for k in range(1, 9)] + ["0"])
     ax.set_xlabel("rewiring probability (1: random graph, 0: ring lattice)")
     ax.set_ylabel(f"MRIR (cap {CAP}, log scale)")

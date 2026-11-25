@@ -37,8 +37,11 @@ plt.rcParams.update({
 # in every figure: the eight graph-coloring families have eight distinct
 # colors, the uniform random ones three more, and an unsatisfiable family has
 # the color of the satisfiable one with as many variables, lighter (and its
-# curve dashed).  The models are in the violet of the theme: light lilac
-# Graph-Q-SAT, deep violet GAT-Q-SAT, the two controls in between and hatched or
+# curve dashed).  The two main models are in the violet of the theme, light
+# lilac Graph-Q-SAT and deep violet GAT-Q-SAT, which are told apart by their
+# lightness; the other three variants, which only appear next to them, take
+# hues far from violet and from one another (orange, green and blue, checked
+# for protanopia and deuteranopia), and the controls are also hatched or
 # dashed.
 from matplotlib import colors as mcolors
 
@@ -61,11 +64,11 @@ def _lighter(c, f=0.45):
 for _n in ("50-218", "100-430", "250-1065"):
     DATASET_COLOR["uuf" + _n] = _lighter(DATASET_COLOR["uf" + _n])
 
-MODEL_COLOR = {"Graph-Q-SAT": "#b9a7d6", "Graph-Q-SAT wide": "#9a86c4",
-              "Attention aggregation": "#6f58a8", "GAT-Q-SAT": "#4b2e83",
-              "GAT-Q-SAT pool": "#2a1650"}
+MODEL_COLOR = {"Graph-Q-SAT": "#b9a7d6", "GAT-Q-SAT": "#4b2e83",
+               "Graph-Q-SAT wide": "#e69f00", "Attention aggregation": "#009e73",
+               "GAT-Q-SAT pool": "#0072b2"}
 MODEL_HATCH = {"Graph-Q-SAT wide": "////", "Attention aggregation": "...."}
-MODEL_LS = {"Graph-Q-SAT wide": "--", "Attention aggregation": ":"}
+MODEL_LS = {"Graph-Q-SAT wide": "--", "Attention aggregation": ":", "GAT-Q-SAT pool": "-."}
 
 
 def dataset_color(d):
