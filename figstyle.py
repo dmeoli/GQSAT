@@ -65,8 +65,8 @@ def _lighter(c, f=0.45):
 for _n in ("50-218", "100-430", "250-1065"):
     DATASET_COLOR["uuf" + _n] = _lighter(DATASET_COLOR["uf" + _n])
 
-MODEL_COLOR = {"Graph-Q-SAT": "#b9a7d6", "GAT-Q-SAT": "#4b2e83",
-               "Graph-Q-SAT wide": "#e69f00", "Attention aggregation": "#009e73",
+MODEL_COLOR = {"Graph-Q-SAT": "#d99600", "GAT-Q-SAT": "#4b2e83",
+               "Graph-Q-SAT wide": "#a6361c", "Attention aggregation": "#009e73",
                "GAT-Q-SAT pool": "#0072b2"}
 MODEL_HATCH = {}
 MODEL_LS = {}
@@ -81,7 +81,7 @@ def model_color(model):
 
 
 def model_legend(ax, models, **kw):
-    """A legend of the models, by their violet."""
+    """A legend of the models, by their color."""
     from matplotlib.patches import Patch
     hs = [Patch(facecolor=MODEL_COLOR[m], hatch=MODEL_HATCH.get(m, ""),
                 edgecolor="white", label=m) for m in models]
