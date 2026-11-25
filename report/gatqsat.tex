@@ -400,9 +400,10 @@ non-local block inserted between the node and the global update
 \includegraphics[width=\textwidth]{gatqsat_epd.png}
 \caption{The core block of GAT-Q-SAT: the block of Figure~\ref{fig:epd} with a
 non-local block of two attention layers \eqref{eq:gat} inserted between the
-node and the global update (in violet the edge and node blocks, whose outputs
-enter the attention layers, and in ochre the global block, before which their
-output is inserted). Blocks drawn after \cite{Battaglia2018}.}
+node and the global update (in violet the edge and node blocks and the two
+arrows that bring their outputs to the attention layers, in ochre the global
+block and the arrow that brings the output of the attention layers before
+it). Blocks drawn after \cite{Battaglia2018}.}
 \label{fig:gatepd}
 \end{figure}
 
@@ -1141,9 +1142,8 @@ logs, and with the same grouping, by \code{make\_plots.py}
 (Figures~\ref{fig:thesis} and~\ref{fig:gen}) and \code{transfer\_study.py}
 (Figure~\ref{fig:transfer}), which also runs the evaluations of
 section~\ref{sec:transfer}; those of the other sections are run by
-\code{reeval.sh}. %% TODO before submission: copy the logs (reeval/, transfer_logs/)
-%% from Drive into the repository and say so here
-The logs of the evaluations are kept with the checkpoints, outside the
-repository.
+\code{reeval.sh}. All the logs are in the repository, next to each run
+(\code{runs/<run>/reeval} and \code{runs/<run>/transfer}), and therefore the
+tables and the figures can be regenerated without evaluating any model again.
 
 \end{document}
