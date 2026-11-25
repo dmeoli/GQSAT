@@ -41,18 +41,19 @@ plt.rcParams.update({
 # lilac Graph-Q-SAT and deep violet GAT-Q-SAT, which are told apart by their
 # lightness; the other three variants, which only appear next to them, take
 # hues far from violet and from one another (orange, green and blue, checked
-# for protanopia and deuteranopia), and the controls are also hatched or
-# dashed.
+# for protanopia and deuteranopia).  The marks stay plain (no hatches, solid
+# lines): the colors alone tell the models apart.
 from matplotlib import colors as mcolors
 
 DATASET_COLOR = {
-    # graph coloring: deep, muted tones in the order of the wheel, from teal to
-    # ochre as the graphs grow, so that the order of the sizes can be read
-    "flat30-60": "#0f7c78", "flat50-115": "#3b7dbf", "flat75-180": "#4c46a8",
-    "flat100-239": "#7d4fa3", "flat125-301": "#b8457a", "flat150-360": "#d0624a",
-    "flat175-417": "#c88a1c", "flat200-479": "#6f8a2a",
+    # graph coloring: the "muted" scheme of Paul Tol, safe for protanopia and
+    # deuteranopia between neighbors, from cool to warm as the graphs grow, so
+    # that the order of the sizes can be read
+    "flat30-60": "#332288", "flat50-115": "#88ccee", "flat75-180": "#44aa99",
+    "flat100-239": "#117733", "flat125-301": "#999933", "flat150-360": "#ddcc77",
+    "flat175-417": "#cc6677", "flat200-479": "#882255",
     # uniform random 3-SAT
-    "uf50-218": "#17becf", "uf100-430": "#1a3a6b", "uf250-1065": "#8e1b5c",
+    "uf50-218": "#33bbee", "uf100-430": "#1a3a6b", "uf250-1065": "#ee7733",
 }
 
 
@@ -67,8 +68,8 @@ for _n in ("50-218", "100-430", "250-1065"):
 MODEL_COLOR = {"Graph-Q-SAT": "#b9a7d6", "GAT-Q-SAT": "#4b2e83",
                "Graph-Q-SAT wide": "#e69f00", "Attention aggregation": "#009e73",
                "GAT-Q-SAT pool": "#0072b2"}
-MODEL_HATCH = {"Graph-Q-SAT wide": "////", "Attention aggregation": "...."}
-MODEL_LS = {"Graph-Q-SAT wide": "--", "Attention aggregation": ":", "GAT-Q-SAT pool": "-."}
+MODEL_HATCH = {}
+MODEL_LS = {}
 
 
 def dataset_color(d):

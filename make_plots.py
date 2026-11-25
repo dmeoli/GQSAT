@@ -67,16 +67,15 @@ def plot_curves(agg, model, datasets, idx, ylabel, title, out_path, ratio=False,
                 ylim=None, dashed=()):
     fig, ax = plt.subplots(figsize=fs.HALF)
     # one line per dataset, in the color of the dataset (the same in every
-    # figure, figstyle), with varied markers; a cap with no log is a gap in the
-    # line, not a segment across it
-    markers = ["o", "s", "^", "D", "v", "P", "X", "*", "<", ">"]
-    for i, d in enumerate(datasets):
+    # figure, figstyle), all with the same plain marker; a cap with no log is a
+    # gap in the line, not a segment across it
+    for d in datasets:
         xs = [0] + CAPS if ratio else CAPS
         ys = [point(agg, model, d, c, idx, ratio) for c in xs]
         if all(y is None for y in (ys[1:] if ratio else ys)):
             continue
         ys = [float("nan") if y is None else y for y in ys]
-        ax.plot(xs, ys, marker=markers[i % len(markers)],
+        ax.plot(xs, ys, marker="o",
                 ls="--" if d in dashed else "-", label=d, color=fs.dataset_color(d))
     ax.set_xscale("symlog", linthresh=10)
     # at the width of half the text block the labels of 300, 500 and 1000

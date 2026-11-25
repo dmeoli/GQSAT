@@ -181,8 +181,7 @@ def fig_generalization(data, out):
     """Random-trained: MRIR (cap 500) against the size of the test instances, on
     graph coloring and on random 3-SAT (satisfiable solid, unsatisfiable dashed)."""
     fig, axes = plt.subplots(1, 2, figsize=fs.FULL, sharey=True)
-    # the lines are the models, in their violet; each point has the color of its
-    # family, as in the curves of make_plots.py (figstyle)
+    # the lines and their points are the models, in their violet (figstyle)
     panels = [(axes[0], [("", FLAT, "-")], "graph coloring", "# variables (3 per node)"),
               (axes[1], [(" (sat)", [d for d in RANDOM if d.startswith("uf")], "-"),
                          (" (unsat)", [d for d in RANDOM if d.startswith("uuf")], "--")],
@@ -195,9 +194,8 @@ def fig_generalization(data, out):
                 if pts:
                     ax.plot([p[0] for p in pts], [p[1] for p in pts], ls=ls,
                             label=model + suffix, color=fs.model_color(model), zorder=1)
-                    ax.scatter([p[0] for p in pts], [p[1] for p in pts], s=22, zorder=2,
-                               c=[fs.dataset_color(p[2]) for p in pts],
-                               edgecolors=fs.model_color(model), linewidths=1.0)
+                    ax.scatter([p[0] for p in pts], [p[1] for p in pts], s=14, zorder=2,
+                               color=fs.model_color(model))
         ratio_axis(ax, 0.5, 6)
         ax.set_xlabel(xlabel); ax.set_title(name); ax.grid(alpha=.3); ax.legend(fontsize=6)
     axes[0].set_ylabel("MRIR (cap 500, log scale)")

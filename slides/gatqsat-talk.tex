@@ -47,8 +47,7 @@
 % the figures are those of the note
 \graphicspath{{img/}{../report/img/}}
 
-% \upd{...} marks a number that the Colab campaign will change, as in the note
-\newcommand{\upd}[1]{#1}
+
 
 % a section divider: a box of the primary in the minor part of the golden
 % section of the page (38.2% at the right), inside the margins, with the
@@ -275,30 +274,30 @@
 
 \begin{frame}{\T{The port, and a test of what it computes}{Il port, e una prova di ci\`o che calcola}}
   \begin{itemize}
-    \item \T{The code of 2020 is written for PyTorch~1.1 with pinned compiled extensions
+    \item \T{The original code is written for PyTorch~1.1 with pinned compiled extensions
           (\texttt{torch-scatter}, \texttt{torch-sparse}), which can no longer be installed:
           I ported it to the current PyTorch and PyTorch Geometric.}%
-          {Il codice del 2020 \`e scritto per PyTorch~1.1 con estensioni compilate a versione
+          {Il codice originale \`e scritto per PyTorch~1.1 con estensioni compilate a versione
           fissa (\texttt{torch-scatter}, \texttt{torch-sparse}), che non si installano pi\`u:
           l'ho portato alle versioni attuali di PyTorch e PyTorch Geometric.}
     \item \T{The aggregations come from \texttt{torch\_geometric.utils.scatter}; the
           environment runs with \texttt{gym} and \texttt{gymnasium}; the MiniSat wrapper is
-          rebuilt against \texttt{numpy}~2; the checkpoints of 2021 load with the current
+          rebuilt against \texttt{numpy}~2; the original checkpoints load with the current
           \texttt{GATConv}.}%
           {Le aggregazioni vengono da \texttt{torch\_geometric.utils.scatter}; l'ambiente gira
           con \texttt{gym} e con \texttt{gymnasium}; il wrapper di MiniSat \`e ricompilato
-          su \texttt{numpy}~2; i checkpoint del 2021 si caricano con il \texttt{GATConv}
+          su \texttt{numpy}~2; i checkpoint originali si caricano con il \texttt{GATConv}
           attuale.}
-    \item \T{The checkpoints of 2021, evaluated on the new stack, give the same iterations
-          as in 2021 on every instance in 63 of 86 evaluations, and medians within $0.03$ in
-          the others (on \texttt{flat30-60}: $1.833$ and $2.000$ on both stacks).}%
-          {I checkpoint del 2021, valutati sul nuovo stack, danno le stesse iterazioni del
-          2021 su ogni istanza in 63 valutazioni su 86, e mediane entro $0.03$ nelle altre (su
-          \texttt{flat30-60}: $1.833$ e $2.000$ su entrambi gli stack).}
+    \item \T{The original checkpoints, evaluated on the new stack, give the same iterations
+          as on the original one on every instance in 63 of 86 evaluations, and medians within
+          $0.03$ in the others (on \texttt{flat30-60}: $1.833$ and $2.000$ on both stacks).}%
+          {I checkpoint originali, valutati sul nuovo stack, danno le stesse iterazioni che
+          sul vecchio su ogni istanza in 63 valutazioni su 86, e mediane entro $0.03$ nelle
+          altre (su \texttt{flat30-60}: $1.833$ e $2.000$ su entrambi gli stack).}
     \item \T{The training path was checked by retraining the two coloring models from scratch
-          (the seeds of 2026).}%
-          {Il training \`e stato verificato riaddestrando da zero i due modelli sul coloring (i
-          semi del 2026).}
+          (four of the five seeds of each).}%
+          {Il training \`e stato verificato riaddestrando da zero i due modelli sul coloring
+          (quattro dei cinque semi di ciascuno).}
   \end{itemize}
 \end{frame}
 
@@ -353,28 +352,34 @@
         \toprule
         \T{family}{famiglia} & Graph-Q-SAT & GAT-Q-SAT & $\Delta$ \\
         \midrule
-        \texttt{flat30-60}   & \upd{1.92} & \upd{2.00} & \upd{$+0.08$} \\
-        \texttt{flat50-115}  & \upd{2.17} & \upd{2.29} & \upd{$+0.12$} \\
-        \texttt{flat75-180}  & \upd{2.43} & \upd{2.90} & \upd{$+0.47$} \\
-        \texttt{flat100-239} & \upd{2.65} & \upd{3.06} & \upd{$+0.41$} \\
-        \texttt{flat125-301} & \upd{2.49} & \upd{3.38} & \upd{$+0.88$} \\
-        \texttt{flat150-360} & \upd{2.14} & \upd{3.61} & \upd{$+1.46$} \\
-        \texttt{flat175-417} & \upd{1.63} & \upd{2.67} & \upd{$+1.04$} \\
-        \texttt{flat200-479} & \upd{1.36} & \upd{2.29} & \upd{$+0.93$} \\
+        \texttt{flat30-60}   & 1.93 & 1.93 & $-0.01$ \\
+        \texttt{flat50-115}  & 2.15 & 2.26 & $+0.11$ \\
+        \texttt{flat75-180}  & 2.45 & 2.88 & $+0.43$ \\
+        \texttt{flat100-239} & 2.73 & 3.04 & $+0.31$ \\
+        \texttt{flat125-301} & 2.42 & 3.49 & $+1.08$ \\
+        \texttt{flat150-360} & 2.04 & 3.50 & $+1.47$ \\
+        \texttt{flat175-417} & 1.57 & 2.78 & $+1.21$ \\
+        \texttt{flat200-479} & 1.31 & 2.45 & $+1.14$ \\
         \bottomrule
       \end{tabular}\\[1mm]
-      {\scriptsize \T{MRIR at cap 500, mean over the seeds}{MRIR al cap 500, media sui semi}}
+      {\scriptsize \T{MRIR at cap 500, mean over five seeds}{MRIR al cap 500, media su cinque semi}}
     \end{column}
     \begin{column}{0.48\textwidth}
       \begin{itemize}
-        \item \T{GAT-Q-SAT takes fewer decisions on all eight families.}%
-              {GAT-Q-SAT prende meno decisioni su tutte e otto le famiglie.}
-        \item \T{Up to 100 nodes the two are close; from 125 nodes on the gap is large,
-              mostly because Graph-Q-SAT degrades almost to the level of MiniSat at 200
-              nodes, four times the training size.}%
-              {Fino a 100 nodi i due sono vicini; da 125 nodi in su il divario \`e grande,
-              soprattutto perch\'e Graph-Q-SAT scende quasi al livello di MiniSat a 200 nodi,
+        \item \T{GAT-Q-SAT takes fewer decisions on seven of the eight families; on the
+              smallest the two are level.}%
+              {GAT-Q-SAT prende meno decisioni su sette delle otto famiglie; sulla pi\`u
+              piccola i due sono alla pari.}
+        \item \T{Up to 100 nodes the two are close; from 125 nodes on the gap is $1.08$ to
+              $1.47$, mostly because Graph-Q-SAT degrades towards MiniSat at 200 nodes, four
+              times the training size.}%
+              {Fino a 100 nodi i due sono vicini; da 125 nodi in su il divario va da $1.08$ a
+              $1.47$, soprattutto perch\'e Graph-Q-SAT scende verso MiniSat a 200 nodi,
               quattro volte la dimensione di training.}
+        \item \T{On \texttt{flat75-180} and from 125 nodes on, the worst seed of GAT-Q-SAT is
+              above the best of Graph-Q-SAT.}%
+              {Su \texttt{flat75-180} e da 125 nodi in su, il seme peggiore di GAT-Q-SAT \`e
+              sopra il migliore di Graph-Q-SAT.}
       \end{itemize}
     \end{column}
   \end{columns}
@@ -392,9 +397,9 @@
     \end{column}
   \end{columns}
   \vspace{1mm}
-  {\footnotesize \T{Runs of 2021, one line per family, each in its color (the same in every figure); the point at cap 0
+  {\footnotesize \T{One seed per model, one line per family, each in its color (the same in every figure); the point at cap 0
   is MiniSat without restarts. On the large families the decisions of Graph-Q-SAT after the
-  first few tens make the search longer.}{Run del 2021, una linea per famiglia, ognuna nel suo colore (lo stesso in ogni figura); il punto al cap 0 \`e MiniSat senza restart. Sulle famiglie grandi le decisioni di
+  first few tens make the search longer.}{Un seme per modello, una linea per famiglia, ognuna nel suo colore (lo stesso in ogni figura); il punto al cap 0 \`e MiniSat senza restart. Sulle famiglie grandi le decisioni di
   Graph-Q-SAT dopo le prime decine allungano la ricerca.}\par}
 \end{frame}
 
@@ -407,33 +412,30 @@
          & & Graph-Q-SAT & attention & & GAT-Q-SAT \\
         \T{nodes}{nodi} & Graph-Q-SAT & wide & aggr. & GAT-Q-SAT & pool \\
         \midrule
-        30 & \upd{1.92} & \upd{1.82} & \upd{1.61} & \upd{2.00} & \upd{--} \\
-        50 & \upd{2.17} & \upd{2.20} & \upd{1.74} & \upd{2.29} & \upd{--} \\
-        75 & \upd{2.43} & \upd{2.67} & \upd{1.48} & \upd{2.90} & \upd{--} \\
-        100 & \upd{2.65} & \upd{2.50} & \upd{1.12} & \upd{3.06} & \upd{--} \\
-        125 & \upd{2.49} & \upd{2.29} & \upd{0.48} & \upd{3.38} & \upd{--} \\
-        150 & \upd{2.14} & \upd{2.01} & \upd{0.64} & \upd{3.61} & \upd{--} \\
-        175 & \upd{1.63} & \upd{1.78} & \upd{0.49} & \upd{2.67} & \upd{--} \\
-        200 & \upd{1.36} & \upd{1.56} & \upd{0.53} & \upd{2.29} & \upd{--} \\
+        30 & 1.93 & 1.82 & 1.61 & 1.93 & 1.84 \\
+        50 & 2.15 & 2.20 & 1.74 & 2.26 & 1.71 \\
+        75 & 2.45 & 2.67 & 1.48 & 2.88 & 2.11 \\
+        100 & 2.73 & 2.50 & 1.12 & 3.04 & 2.18 \\
+        125 & 2.42 & 2.29 & 0.48 & 3.49 & 2.64 \\
+        150 & 2.04 & 2.01 & 0.64 & 3.50 & 2.16 \\
+        175 & 1.57 & 1.78 & 0.49 & 2.78 & 1.76 \\
+        200 & 1.31 & 1.56 & 0.53 & 2.45 & 1.80 \\
         \bottomrule
       \end{tabular}\\[1mm]
       {\scriptsize \T{Graph coloring, MRIR at cap 500, mean over the seeds}{Graph coloring, MRIR al cap 500, media sui semi}}
     \end{column}
     \begin{column}{0.34\textwidth}
       \begin{itemize}\footnotesize
-        \item \T{Graph-Q-SAT wide stays within \upd{$0.25$} of Graph-Q-SAT and below
-              GAT-Q-SAT everywhere: the capacity does not explain the gap.}%
-              {Graph-Q-SAT wide resta entro \upd{$0.25$} da Graph-Q-SAT e sotto GAT-Q-SAT
-              ovunque: la capacit\`a non spiega il divario.}
-        \item \T{Attention aggregation is the worst variant everywhere, \upd{$0.48$ to
-              $0.64$} from 125 nodes on: in place of the sum, the attention hurts.}%
-              {Attention aggregation \`e la variante peggiore ovunque, \upd{da $0.48$ a
-              $0.64$} da 125 nodi in su: al posto della somma, l'attenzione nuoce.}
-        \item \T{A plausible reason: the weighted mean loses the degree of the node, which
-              the sum keeps (not tested).}%
-              {Una ragione plausibile: la media pesata perde il grado del nodo, che la somma
-              conserva (non verificato).}
-        \item \upd{\T{[GAT-Q-SAT pool against GAT-Q-SAT.]}{[GAT-Q-SAT pool contro GAT-Q-SAT.]}}
+        \item \T{Graph-Q-SAT wide stays within $0.25$ of Graph-Q-SAT and below GAT-Q-SAT
+              everywhere: the capacity does not explain the gap.}%
+              {Graph-Q-SAT wide resta entro $0.25$ da Graph-Q-SAT e sotto GAT-Q-SAT ovunque:
+              la capacit\`a non spiega il divario.}
+        \item \T{Attention aggregation is below Graph-Q-SAT everywhere: its weighted mean
+              loses the degree of the node (a lemma in the note).}%
+              {Attention aggregation \`e sotto Graph-Q-SAT ovunque: la sua media pesata perde
+              il grado del nodo (un lemma nella nota).}
+        \item \T{GAT-Q-SAT pool does not improve GAT-Q-SAT.}%
+              {GAT-Q-SAT pool non migliora GAT-Q-SAT.}
       \end{itemize}
     \end{column}
   \end{columns}
@@ -466,13 +468,12 @@
       \T{The coloring-trained models with no retraining, cap 200, MRIR against the stronger
       MiniSat.}{I modelli addestrati sul coloring senza riaddestramento, cap 200, MRIR contro il
       MiniSat pi\`u forte.}
-      \upd{\T{On the eleven informative families GAT-Q-SAT is above MiniSat on eight and
+      \T{On the eleven informative families GAT-Q-SAT is above MiniSat on eight and
       Graph-Q-SAT on six; GAT-Q-SAT is the better of the two on eight, Graph-Q-SAT on two.
-      Yet, the seeds overlap on all the families but \texttt{jnh}: an indication, not a
-      proof.}{Sulle undici famiglie informative GAT-Q-SAT \`e sopra MiniSat su otto e
-      Graph-Q-SAT su sei; GAT-Q-SAT \`e il migliore dei due su otto, Graph-Q-SAT su due.
-      Per\`o i semi si sovrappongono su tutte le famiglie tranne \texttt{jnh}: un indizio,
-      non una prova.}}
+      Yet, the seeds overlap on all the families: an indication, not a proof.}%
+      {Sulle undici famiglie informative GAT-Q-SAT \`e sopra MiniSat su otto e Graph-Q-SAT su
+      sei; GAT-Q-SAT \`e il migliore dei due su otto, Graph-Q-SAT su due. Per\`o i semi si
+      sovrappongono su tutte le famiglie: un indizio, non una prova.}
     \end{column}
   \end{columns}
 \end{frame}
@@ -504,18 +505,21 @@
      & \multicolumn{2}{c}{cap $50$} & \multicolumn{2}{c}{cap $500$} & \multicolumn{2}{c}{cap $1000$} \\
      & \T{sec}{sec} & MRIR & \T{sec}{sec} & MRIR & \T{sec}{sec} & MRIR \\
     \midrule
-    Graph-Q-SAT & \upd{2.55} & \upd{1.59} & \upd{26.51} & \upd{1.05} & \upd{57.67} & \upd{0.77} \\
-    GAT-Q-SAT   & \upd{3.52} & \upd{2.43} & \upd{12.20} & \upd{2.64} & \upd{12.19} & \upd{2.64} \\
+    Graph-Q-SAT & 2.44 & 1.61 & 21.61 & 1.31 & 29.84 & 1.17 \\
+    GAT-Q-SAT   & 3.74 & 2.26 & 15.31 & 2.45 & 15.01 & 2.44 \\
     \bottomrule
   \end{tabular}\\[1mm]
-  {\scriptsize \T{\texttt{flat200-479}, median seconds per instance}{\texttt{flat200-479}, secondi
-  per istanza, mediana}}
+  {\scriptsize \T{\texttt{flat200-479}, median seconds per instance (four seeds on one
+  GPU), MRIR over five seeds}{\texttt{flat200-479}, secondi per istanza, mediana (quattro
+  semi su una GPU), MRIR su cinque semi}}
   \end{center}
   \begin{itemize}
     \item \T{A decision of GAT-Q-SAT costs more, but at larger caps it is the faster of the
-          two, since it terminates in fewer decisions.}%
+          two (by a factor of $1.4$ at cap 500 and of $2$ at cap 1000), since it terminates in
+          fewer decisions.}%
           {Una decisione di GAT-Q-SAT costa di pi\`u, ma ai cap pi\`u alti \`e il pi\`u veloce
-          dei due, perch\'e termina con meno decisioni.}
+          dei due (di un fattore $1.4$ al cap 500 e $2$ al cap 1000), perch\'e termina con meno
+          decisioni.}
     \item \T{Both take seconds where MiniSat takes a fraction of a second: at this size
           neither is competitive in time, which is the motivation of the restricted
           heuristics (implemented, not measured) and of offline inference.}%
@@ -528,16 +532,20 @@
 % ==================================================================== conclusions
 \begin{frame}{\T{Conclusions and limits}{Conclusioni e limiti}}
   \begin{itemize}
-    \item \T{On graph coloring GAT-Q-SAT took fewer decisions on every family, with a gap
+    \item \T{On graph coloring GAT-Q-SAT took fewer decisions on all the families but the
+          smallest (where the two were level), with a gap
           that grows with the size; it was also the better of the two when trained on random
           formulas and tested on coloring.}%
-          {Sul graph coloring GAT-Q-SAT ha preso meno decisioni su ogni famiglia, con un
+          {Sul graph coloring GAT-Q-SAT ha preso meno decisioni su tutte le famiglie tranne la
+          pi\`u piccola (dove i due erano alla pari), con un
           divario che cresce con la dimensione; \`e stato il migliore dei due anche addestrato
           su formule random e provato sul coloring.}
-    \item \T{A Graph-Q-SAT as large as GAT-Q-SAT did not close the gap, and attention in
-          place of the sum was the worst variant.}%
-          {Un Graph-Q-SAT grande quanto GAT-Q-SAT non ha chiuso il divario, e l'attenzione al
-          posto della somma \`e stata la variante peggiore.}
+    \item \T{A Graph-Q-SAT as large as GAT-Q-SAT did not close the gap, attention in place
+          of the sum was below Graph-Q-SAT everywhere, and attention in the pooling did not
+          improve GAT-Q-SAT.}%
+          {Un Graph-Q-SAT grande quanto GAT-Q-SAT non ha chiuso il divario, l'attenzione al
+          posto della somma \`e stata sotto Graph-Q-SAT ovunque, e l'attenzione nel pooling non
+          ha migliorato GAT-Q-SAT.}
     \item \T{On satisfiable uniform random 3-SAT Graph-Q-SAT was clearly superior, where there
           is no structure for the attention to weight.}%
           {Sul random 3-SAT uniforme soddisfacibile Graph-Q-SAT \`e stato nettamente superiore,
