@@ -11,7 +11,7 @@ still in the text. Check the abstract again against the tex once the numbers are
 - **Cross-lists**: cs.AI (Artificial Intelligence), cs.LO (Logic in Computer Science)
 - **License**: CC BY 4.0
 - **Comments**: 18 pages, 8 figures, 4 tables. Code, instances and logs:
-  https://github.com/dmeoli/GQSAT
+  https://github.com/dmeoli/GATQSAT
 - **ACM class**: I.2.6; I.2.8
 - **MSC class, report number, journal reference, DOI**: none
 

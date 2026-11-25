@@ -14,7 +14,7 @@ Outputs (under ``results/``):
                             over the runs of that model (paper-style mean MRIR),
                             with the run count noted.
 
-Pure standard library: no pandas/torch needed. Run from the GQSAT root:
+Pure standard library: no pandas/torch needed. Run from the GATQSAT root:
 
     python3 aggregate_results.py [--runs-dir runs] [--out-dir results]
 """

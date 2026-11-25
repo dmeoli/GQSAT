@@ -4,7 +4,7 @@ seconds against the number of model decisions (the cap), one line per dataset,
 for each model, on the graph-coloring and on the random families.
 
 The logs, the runs and the baseline are those of paper_numbers.py. Outputs PNGs
-under ../img/ (pure matplotlib/stdlib). Run from the GQSAT root:
+under ../img/ (pure matplotlib/stdlib). Run from the GATQSAT root:
 
     python3 make_plots.py [--reeval-root DIR] [--out-dir DIR]
 """

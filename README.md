@@ -1,6 +1,6 @@
-# GQSAT: Graph-Q-SAT and GAT-Q-SAT
+# GATQSAT: Graph-Q-SAT and GAT-Q-SAT
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/dmeoli/GQSAT/blob/main/notebooks/gatqsat.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/dmeoli/GATQSAT/blob/main/notebooks/gatqsat.ipynb)
 
 A port of [Graph-Q-SAT](https://github.com/NVIDIA/GraphQSat) (Kurin et al.,
 NeurIPS 2020) to the current releases of PyTorch and PyTorch Geometric, and

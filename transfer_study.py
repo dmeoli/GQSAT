@@ -17,7 +17,7 @@ against the stronger of the two MiniSat runs on each family, and averaged over
 the seeds.
 
 Produces transfer.png, transfer_sw.png and transfer_summary.md under
-PAPER_IMG_DIR (../img/paper by default). Run from the GQSAT root:
+PAPER_IMG_DIR (../img/paper by default). Run from the GATQSAT root:
     python3 transfer_study.py [--plot-only]
 On Colab:
     OUT_ROOT=<Drive>/transfer_logs CKPT_ROOT=<Drive> PAPER_IMG_DIR=<Drive>/transfer \

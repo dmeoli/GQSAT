@@ -8,7 +8,7 @@ trained on satisfiable uniform random 3-SAT (the four trained on unsatisfiable
 formulas are a control and are not pooled with them), and the MRIR is read
 against MiniSat with restarts on coloring and without on random 3-SAT.
 
-Pure matplotlib/stdlib. Run from the GQSAT root:
+Pure matplotlib/stdlib. Run from the GATQSAT root:
     python3 paper_analysis.py [--reeval-root DIR]      (or OUT_ROOT=DIR)
 """
 import argparse
