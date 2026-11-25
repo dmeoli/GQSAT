@@ -37,13 +37,11 @@
 \title{Graph Attention in a\\ Learned Branching Heuristic for {SAT}}
 \author{Antonio Frangioni\\
         Dipartimento di Informatica, Universit{\`a} di Pisa\\
-        Largo B. Pontecorvo 3, 56127 Pisa -- Italy\\
         {\tt frangio@di.unipi.it}
         %
         \and
         Donato Meoli\\
         Dipartimento di Informatica, Universit{\`a} di Pisa\\
-        Largo B. Pontecorvo 3, 56127 Pisa -- Italy\\
         {\tt donato.meoli@outlook.com}
         }
 
@@ -338,9 +336,7 @@ sum over $\mathcal N_i$, and the global update only through the means over all
 the edges and nodes, none of which depends on the order of its terms. Hence, by
 induction on the $M$ applications of the block, the embedding of each element
 of $G^{\sigma\tau}$ is that of the corresponding element of $G$.
-\end{proof} (The figures follow the notation of \cite{Battaglia2018},
-in which $V$ and $E$ are the sets of the node and edge embeddings and $\rho$
-denotes an aggregation, e.g., the sum in \eqref{eq:gnblock}.)
+\end{proof}
 
 \begin{figure}[ht]
 \centering
@@ -348,7 +344,9 @@ denotes an aggregation, e.g., the sum in \eqref{eq:gnblock}.)
 \caption{The encode--process--decode network of Graph-Q-SAT: an independent
 block encodes the edges, the nodes and the global attribute, a full graph-network
 block is applied $M$ times with shared weights, and a second independent block
-decodes the $Q$-values. Blocks drawn after \cite{Battaglia2018}.}
+decodes the $Q$-values. Blocks drawn after \cite{Battaglia2018}, in whose
+notation $V$ and $E$ are the sets of the node and edge embeddings and $\rho$
+denotes an aggregation (e.g., the sum in \eqref{eq:gnblock}).}
 \label{fig:epd}
 \end{figure}
 
@@ -498,9 +496,9 @@ returned by the attention layers), the sums run over all the nodes of the
 graph, and $K = 3$; the mean of the edges is replaced in the same way, with
 vectors of its own. These add 966 parameters to the 113256 of GAT-Q-SAT. The
 model lets the global attribute summarize the formula by the variables and
-clauses that the network deems relevant, instead of all of them alike; unlike
-the two controls, it is meant as a possible improvement of GAT-Q-SAT, not as a
-test of it. All the three variants keep the invariance of
+clauses that the network deems relevant, instead of all of them alike; the two
+controls test GAT-Q-SAT, whereas this model is meant as a possible improvement
+of it. All the three variants keep the invariance of
 Proposition~\ref{prop:inv}. In fact, \eqref{eq:gat}, \eqref{eq:attnagg} and
 \eqref{eq:attpool} replace a sum or a mean by a sum over the same set whose
 coefficients are a softmax over that set, which is permuted together with its
@@ -581,7 +579,7 @@ remaining decisions; unless stated otherwise the cap is $500$, as in training.
 {\bf Reference solver.} The model-guided solver runs without
 restarts, while MiniSat can be run with or without them (with the restart
 sequence of \cite{Luby1993}), and the choice of the denominator of
-\eqref{eq:mrir} is by no means inconsequential. On graph coloring MiniSat with
+\eqref{eq:mrir} affects the results. On graph coloring MiniSat with
 restarts takes up to 26\% fewer iterations than without (on
 \code{flat175-417}); on \code{uf250-1065} and \code{uuf250-1065}, however, it
 takes 2.2 and 2.9 times more. We divide by the stronger of the two on each
@@ -734,8 +732,9 @@ from 125 nodes on. Attention aggregation, instead, is below Graph-Q-SAT on all t
 families, and the worst of the variants on all of them but \code{flat50-115}:
 it is already $0.41$ below Graph-Q-SAT on the training family, and from
 \code{flat125-301} on its MRIR is between $0.48$ and $0.64$, i.e., it takes about twice as many decisions as the reference
-solver. Hence, the attention helps when it is added to the sum of
-\eqref{eq:gnblock}, as in GAT-Q-SAT, and hurts when it takes its place. A
+solver. Hence, in these experiments the attention is of use when it is added
+to the sum of \eqref{eq:gnblock}, as in GAT-Q-SAT, and harmful when it replaces
+it. A
 plausible reason is the one of Lemma~\ref{lem:degree}: the weighted mean
 \eqref{eq:attnagg} loses the degree of the node, i.e., the number of clauses in
 which a variable still occurs, on which the classical branching heuristics
@@ -865,9 +864,10 @@ GAT-Q-SAT range from $0.20$ to $2.85$, and on the single instance of towers of
 Hanoi those of Graph-Q-SAT from $0.37$ to $2.82$). Of the other three variants
 (also shown in Figure~\ref{fig:transfer}), only Graph-Q-SAT wide is better than
 GAT-Q-SAT on any of these families, i.e., on inductive inference ($1.75$
-against $1.03$), and attention aggregation is below parity on eight of them. The panel therefore suggests that GAT-Q-SAT transfers
-somewhat better to structured families, rather than showing it, and the
-families with fewer than 10 instances are to be read as indications only.
+against $1.03$), and attention aggregation is below parity on eight of them.
+The panel is therefore only an indication that GAT-Q-SAT transfers somewhat
+better to structured families, and its families with fewer than 10 instances
+are to be read with particular care.
 
 \smallskip
 \noindent
