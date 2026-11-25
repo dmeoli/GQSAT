@@ -6,7 +6,7 @@ package to upload (`arxiv.tar.gz`) and stops while a placeholder of the campaign
 still in the text. Check the abstract again against the tex once the numbers are in.
 
 - **Title**: Graph Attention in a Learned Branching Heuristic for SAT
-- **Authors**: Donato Meoli
+- **Authors**: Antonio Frangioni, Donato Meoli
 - **Primary category**: cs.LG (Machine Learning)
 - **Cross-lists**: cs.AI (Artificial Intelligence), cs.LO (Logic in Computer Science)
 - **License**: CC BY 4.0
